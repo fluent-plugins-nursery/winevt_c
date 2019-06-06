@@ -44,6 +44,7 @@ struct WinevtQuery {
 struct WinevtBookmark {
   EVT_HANDLE bookmark;
   LPWSTR     bookmarkXml;
+  ULONG      count;
 };
 
 static const rb_data_type_t rb_winevt_bookmark_type = {
@@ -101,6 +102,19 @@ rb_winevt_bookmark_update(VALUE self, VALUE event)
     return Qtrue;
 
   return Qfalse;
+}
+
+static VALUE
+rb_winevt_bookmark_render(VALUE self)
+{
+  char* result;
+  struct WinevtBookmark *winevtBookmark;
+
+  TypedData_Get_Struct(self, struct WinevtBookmark, &rb_winevt_bookmark_type, winevtBookmark);
+
+  result = render_event(winevtBookmark->bookmark, EvtRenderBookmark);
+
+  return rb_str_new2(result);
 }
 
 static void
@@ -310,4 +324,5 @@ Init_winevt(void)
   rb_define_alloc_func(rb_cBookmark, rb_winevt_bookmark_alloc);
   rb_define_method(rb_cBookmark, "initialize", rb_winevt_bookmark_initialize, 0);
   rb_define_method(rb_cBookmark, "update", rb_winevt_bookmark_update, 1);
+  rb_define_method(rb_cBookmark, "render", rb_winevt_bookmark_render, 0);
 }

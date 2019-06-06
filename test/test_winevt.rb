@@ -26,5 +26,11 @@ class WinevtTest < Test::Unit::TestCase
       @query.next
       assert_true(@bookmark.update(@query))
     end
+
+    def test_render
+      @query.next
+      assert_true(@bookmark.update(@query))
+      assert(@bookmark.render)
+    end
   end
 end
