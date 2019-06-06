@@ -75,13 +75,28 @@ rb_winevt_bookmark_alloc(VALUE klass)
 }
 
 static VALUE
-rb_winevt_bookmark_initialize(VALUE self)
+rb_winevt_bookmark_initialize(int argc, VALUE *argv, VALUE self)
 {
+  PWSTR bookmarkXml;
+  DWORD len;
   struct WinevtBookmark *winevtBookmark;
 
   TypedData_Get_Struct(self, struct WinevtBookmark, &rb_winevt_bookmark_type, winevtBookmark);
 
-  winevtBookmark->bookmark = EvtCreateBookmark(NULL);
+  if (argc == 0) {
+    winevtBookmark->bookmark = EvtCreateBookmark(NULL);
+  } else if (argc == 1) {
+    VALUE rb_bookmarkXml;
+    rb_scan_args(argc, argv, "10", &rb_bookmarkXml);
+    Check_Type(rb_bookmarkXml, T_STRING);
+
+    // bookmarkXml : To wide char
+    len = MultiByteToWideChar(CP_UTF8, 0, RSTRING_PTR(rb_bookmarkXml), RSTRING_LEN(rb_bookmarkXml), NULL, 0);
+    bookmarkXml = ALLOCV_N(WCHAR, bookmarkXml, len+1);
+    MultiByteToWideChar(CP_UTF8, 0, RSTRING_PTR(rb_bookmarkXml), RSTRING_LEN(rb_bookmarkXml), bookmarkXml, len);
+    bookmarkXml[len] = L'\0';
+    winevtBookmark->bookmark = EvtCreateBookmark(bookmarkXml);
+  }
 
   return Qnil;
 }
@@ -270,7 +285,7 @@ Init_winevt(void)
   rb_define_method(rb_cQuery, "next", rb_winevt_query_next, 0);
   rb_define_method(rb_cQuery, "render", rb_winevt_query_render, 0);
   rb_define_alloc_func(rb_cBookmark, rb_winevt_bookmark_alloc);
-  rb_define_method(rb_cBookmark, "initialize", rb_winevt_bookmark_initialize, 0);
+  rb_define_method(rb_cBookmark, "initialize", rb_winevt_bookmark_initialize, -1);
   rb_define_method(rb_cBookmark, "update", rb_winevt_bookmark_update, 1);
   rb_define_method(rb_cBookmark, "render", rb_winevt_bookmark_render, 0);
 }
