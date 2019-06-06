@@ -9,7 +9,7 @@ Gem::Specification.new do |spec|
   spec.authors       = ["Hiroshi Hatake"]
   spec.email         = ["cosmo0920.wp@gmail.com"]
 
-  spec.summary       = %q{Windows Event Log API from Winevt.h binding.}
+  spec.summary       = %q{Windows Event Log API bindings from winevt.h.}
   spec.description   = spec.summary
   spec.homepage      = "https://github.com/cosmo0920/winevt_c"
 
