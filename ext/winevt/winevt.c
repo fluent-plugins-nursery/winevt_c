@@ -15,13 +15,17 @@
 
 #include <winevt.h>
 #include <oleauto.h>
+#define EventQuery(object) ((struct WinevtQuery *)DATA_PTR(object))
+#define EventBookMark(object) ((struct WinevtBookmark *)DATA_PTR(object))
 
 VALUE rb_mWin32;
 VALUE rb_cWinevt;
 VALUE rb_cQuery;
+VALUE rb_cBookmark;
 VALUE rb_eWinevtQueryError;
 
-static void query_free(void *query);
+static void query_free(void *ptr);
+static void bookmark_free(void *ptr);
 
 static const rb_data_type_t rb_winevt_query_type = {
   "winevt/query", {
@@ -35,6 +39,68 @@ struct WinevtQuery {
   EVT_HANDLE event;
   ULONG      count;
 };
+
+struct WinevtBookmark {
+  EVT_HANDLE bookmark;
+  LPWSTR     bookmarkXml;
+};
+
+static const rb_data_type_t rb_winevt_bookmark_type = {
+  "winevt/bookmark", {
+    0, bookmark_free, 0,
+  }, NULL, NULL,
+  RUBY_TYPED_FREE_IMMEDIATELY
+};
+
+static void
+bookmark_free(void *ptr)
+{
+  struct WinevtBookmark *winevtBookmark = (struct WinevtBookmark *)ptr;
+  EvtClose(winevtBookmark->bookmark);
+  free(winevtBookmark->bookmarkXml);
+
+  xfree(ptr);
+}
+
+static VALUE
+rb_winevt_bookmark_alloc(VALUE klass)
+{
+  VALUE obj;
+  struct WinevtBookmark *winevtBookmark;
+  obj = TypedData_Make_Struct(klass,
+                              struct WinevtBookmark,
+                              &rb_winevt_bookmark_type,
+                              winevtBookmark);
+  return obj;
+}
+
+static VALUE
+rb_winevt_bookmark_initialize(VALUE self)
+{
+  struct WinevtBookmark *winevtBookmark;
+
+  TypedData_Get_Struct(self, struct WinevtBookmark, &rb_winevt_bookmark_type, winevtBookmark);
+
+  winevtBookmark->bookmark = EvtCreateBookmark(NULL);
+
+  return Qnil;
+}
+
+static VALUE
+rb_winevt_bookmark_update(VALUE self, VALUE event)
+{
+  struct WinevtQuery *winevtQuery;
+  struct WinevtBookmark *winevtBookmark;
+
+  winevtQuery = EventQuery(event);
+
+  TypedData_Get_Struct(self, struct WinevtBookmark, &rb_winevt_bookmark_type, winevtBookmark);
+
+  if(EvtUpdateBookmark(winevtBookmark->bookmark, winevtQuery->event))
+    return Qtrue;
+
+  return Qfalse;
+}
 
 static void
 query_free(void *ptr)
@@ -174,10 +240,14 @@ Init_winevt(void)
   rb_mWin32 = rb_define_module("Win32");
   rb_cWinevt = rb_define_class_under(rb_mWin32, "Winevt", rb_cObject);
   rb_cQuery = rb_define_class_under(rb_cWinevt, "Query", rb_cObject);
+  rb_cBookmark = rb_define_class_under(rb_cWinevt, "Bookmark", rb_cObject);
   rb_eWinevtQueryError = rb_define_class_under(rb_cQuery, "Error", rb_eStandardError);
 
   rb_define_alloc_func(rb_cQuery, rb_winevt_query_alloc);
   rb_define_method(rb_cQuery, "initialize", rb_winevt_query_initialize, 2);
   rb_define_method(rb_cQuery, "next", rb_winevt_query_next, 0);
   rb_define_method(rb_cQuery, "render", rb_winevt_query_render, 0);
+  rb_define_alloc_func(rb_cBookmark, rb_winevt_bookmark_alloc);
+  rb_define_method(rb_cBookmark, "initialize", rb_winevt_bookmark_initialize, 0);
+  rb_define_method(rb_cBookmark, "update", rb_winevt_bookmark_update, 1);
 }
