@@ -271,6 +271,66 @@ rb_winevt_query_render(VALUE self)
   return rb_str_new2(result);
 }
 
+static DWORD
+get_evt_seek_flag_from_cstr(char* flag_str)
+{
+  if (strcmp(flag_str, "first") == 0)
+    return EvtSeekRelativeToFirst;
+  else if (strcmp(flag_str, "last") == 0)
+    return EvtSeekRelativeToLast;
+  else if (strcmp(flag_str, "current") == 0)
+    return EvtSeekRelativeToCurrent;
+  else if (strcmp(flag_str, "bookmark") == 0)
+    return EvtSeekRelativeToBookmark;
+  else if (strcmp(flag_str, "originmask") == 0)
+    return EvtSeekOriginMask;
+  else if (strcmp(flag_str, "strict") == 0)
+    return EvtSeekStrict;
+}
+
+static VALUE
+rb_winevt_query_seek(int argc, VALUE *argv, VALUE self)
+{
+  struct WinevtQuery *winevtQuery;
+  struct WinevtBookmark *winevtBookmark;
+  DWORD status;
+
+  if (argc == 1) {
+    VALUE rb_bookmark;
+
+    rb_scan_args(argc, argv, "10", &rb_bookmark);
+    winevtBookmark = EventBookMark(rb_bookmark);
+    if (!winevtBookmark)
+      return Qfalse;
+
+    TypedData_Get_Struct(self, struct WinevtQuery, &rb_winevt_query_type, winevtQuery);
+    if (EvtSeek(winevtQuery->query, 0, winevtBookmark->bookmark, 0, EvtSeekRelativeToBookmark))
+      return Qtrue;
+  } else if (argc == 2) {
+    VALUE rb_position, rb_flag;
+    DWORD flag;
+
+    rb_scan_args(argc, argv, "20", &rb_position, &rb_flag);
+    switch(TYPE(rb_flag)) {
+    case T_SYMBOL:
+      flag = get_evt_seek_flag_from_cstr(RSTRING_PTR(rb_sym2str(rb_flag)));
+      break;
+    case T_STRING:
+      flag = get_evt_seek_flag_from_cstr(StringValueCStr(rb_flag));
+      break;
+    default:
+      rb_raise(rb_eArgError, "Expected a String or a Symbol");
+      break;
+    }
+
+    TypedData_Get_Struct(self, struct WinevtQuery, &rb_winevt_query_type, winevtQuery);
+    if (EvtSeek(winevtQuery->query, NUM2LONG(rb_position), NULL, 0, flag))
+      return Qtrue;
+  }
+
+  return Qfalse;
+}
+
 void
 Init_winevt(void)
 {
@@ -284,6 +344,7 @@ Init_winevt(void)
   rb_define_method(rb_cQuery, "initialize", rb_winevt_query_initialize, 2);
   rb_define_method(rb_cQuery, "next", rb_winevt_query_next, 0);
   rb_define_method(rb_cQuery, "render", rb_winevt_query_render, 0);
+  rb_define_method(rb_cQuery, "seek", rb_winevt_query_seek, -1);
   rb_define_alloc_func(rb_cBookmark, rb_winevt_bookmark_alloc);
   rb_define_method(rb_cBookmark, "initialize", rb_winevt_bookmark_initialize, -1);
   rb_define_method(rb_cBookmark, "update", rb_winevt_bookmark_update, 1);

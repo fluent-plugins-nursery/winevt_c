@@ -14,6 +14,13 @@ class WinevtTest < Test::Unit::TestCase
       @query.next
       assert(@query.render)
     end
+
+    def test_seek
+      assert_true(@query.seek(0, :first))
+      assert_true(@query.seek(0, "first"))
+      assert_true(@query.seek(0, :last))
+      assert_true(@query.seek(0, "last"))
+    end
   end
 
   class BookmarkTest < self
@@ -25,6 +32,12 @@ class WinevtTest < Test::Unit::TestCase
     def test_update
       @query.next
       assert_true(@bookmark.update(@query))
+    end
+
+    def test_update_with_seek_bookmark
+      @query.next
+      assert_true(@bookmark.update(@query))
+      assert_true(@query.seek(@bookmark))
     end
 
     def test_render
