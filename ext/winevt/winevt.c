@@ -43,7 +43,6 @@ struct WinevtQuery {
 
 struct WinevtBookmark {
   EVT_HANDLE bookmark;
-  LPWSTR     bookmarkXml;
   ULONG      count;
 };
 
@@ -59,7 +58,6 @@ bookmark_free(void *ptr)
 {
   struct WinevtBookmark *winevtBookmark = (struct WinevtBookmark *)ptr;
   EvtClose(winevtBookmark->bookmark);
-  free(winevtBookmark->bookmarkXml);
 
   xfree(ptr);
 }
