@@ -26,6 +26,7 @@ VALUE rb_eWinevtQueryError;
 
 static void query_free(void *ptr);
 static void bookmark_free(void *ptr);
+static char* render_event(EVT_HANDLE handle, DWORD flags);
 
 static const rb_data_type_t rb_winevt_query_type = {
   "winevt/query", {
@@ -170,6 +171,65 @@ rb_winevt_query_next(VALUE self)
   }
 
   return Qfalse;
+}
+
+static char* render_event(EVT_HANDLE handle, DWORD flags)
+{
+  PWSTR      buffer = NULL;
+  ULONG      bufferSize = 0;
+  ULONG      bufferSizeNeeded = 0;
+  EVT_HANDLE event;
+  ULONG      len, status, count;
+  char*      errBuf;
+  char*      result;
+  LPTSTR     msgBuf;
+
+  do {
+    if (bufferSizeNeeded > bufferSize) {
+      free(buffer);
+      bufferSize = bufferSizeNeeded;
+      buffer = malloc(bufferSize);
+      if (buffer == NULL) {
+        status = ERROR_OUTOFMEMORY;
+        bufferSize = 0;
+        rb_raise(rb_eWinevtQueryError, "Out of memory");
+        break;
+      }
+    }
+
+    if (EvtRender(NULL,
+                  handle,
+                  flags,
+                  bufferSize,
+                  buffer,
+                  &bufferSizeNeeded,
+                  &count) != FALSE) {
+      status = ERROR_SUCCESS;
+    } else {
+      status = GetLastError();
+    }
+  } while (status == ERROR_INSUFFICIENT_BUFFER);
+
+  if (status != ERROR_SUCCESS) {
+    FormatMessage(
+        FORMAT_MESSAGE_ALLOCATE_BUFFER |
+        FORMAT_MESSAGE_FROM_SYSTEM |
+        FORMAT_MESSAGE_IGNORE_INSERTS,
+        NULL, status,
+        MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+        &msgBuf, 0, NULL);
+    len = WideCharToMultiByte(CP_UTF8, 0, msgBuf, -1, NULL, 0, NULL, NULL);
+    if (!(result = malloc(len))) return "";
+    WideCharToMultiByte(CP_UTF8, 0, msgBuf, -1, result, len, NULL, NULL);
+
+    rb_raise(rb_eWinevtQueryError, "ErrorCode: %d\nError: %s\n", status, result);
+  }
+
+  len = WideCharToMultiByte(CP_UTF8, 0, buffer, -1, NULL, 0, NULL, NULL);
+  if (!(result = malloc(len))) return "";
+  WideCharToMultiByte(CP_UTF8, 0, buffer, -1, result, len, NULL, NULL);
+
+  return result;
 }
 
 static VALUE
