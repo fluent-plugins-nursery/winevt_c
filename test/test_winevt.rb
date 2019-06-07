@@ -15,6 +15,16 @@ class WinevtTest < Test::Unit::TestCase
       assert(@query.render)
     end
 
+    def test_timeout
+      @query.timeout = 1
+      assert_equal(1, @query.timeout)
+    end
+
+    def test_offset
+      @query.offset = 1
+      assert_equal(1, @query.offset)
+    end
+
     def test_seek
       assert_true(@query.seek(0, :first))
       assert_true(@query.seek(0, "first"))

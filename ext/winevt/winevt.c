@@ -39,6 +39,8 @@ struct WinevtQuery {
   EVT_HANDLE query;
   EVT_HANDLE event;
   ULONG      count;
+  LONG       offset;
+  LONG       timeout;
 };
 
 struct WinevtBookmark {
@@ -177,6 +179,52 @@ rb_winevt_query_initialize(VALUE self, VALUE channel, VALUE xpath)
 
   winevtQuery->query = EvtQuery(NULL, evtChannel, evtXPath,
                                 EvtQueryChannelPath | EvtQueryTolerateQueryErrors);
+  winevtQuery->offset = 0L;
+  winevtQuery->timeout = 0L;
+
+  return Qnil;
+}
+
+static VALUE
+rb_winevt_query_get_offset(VALUE self, VALUE offset)
+{
+  struct WinevtQuery *winevtQuery;
+
+  TypedData_Get_Struct(self, struct WinevtQuery, &rb_winevt_query_type, winevtQuery);
+
+  return LONG2NUM(winevtQuery->offset);
+}
+
+static VALUE
+rb_winevt_query_set_offset(VALUE self, VALUE offset)
+{
+  struct WinevtQuery *winevtQuery;
+
+  TypedData_Get_Struct(self, struct WinevtQuery, &rb_winevt_query_type, winevtQuery);
+
+  winevtQuery->offset = NUM2LONG(offset);
+
+  return Qnil;
+}
+
+static VALUE
+rb_winevt_query_get_timeout(VALUE self, VALUE timeout)
+{
+  struct WinevtQuery *winevtQuery;
+
+  TypedData_Get_Struct(self, struct WinevtQuery, &rb_winevt_query_type, winevtQuery);
+
+  return LONG2NUM(winevtQuery->timeout);
+}
+
+static VALUE
+rb_winevt_query_set_timeout(VALUE self, VALUE timeout)
+{
+  struct WinevtQuery *winevtQuery;
+
+  TypedData_Get_Struct(self, struct WinevtQuery, &rb_winevt_query_type, winevtQuery);
+
+  winevtQuery->timeout = NUM2LONG(timeout);
 
   return Qnil;
 }
@@ -345,6 +393,10 @@ Init_winevt(void)
   rb_define_method(rb_cQuery, "next", rb_winevt_query_next, 0);
   rb_define_method(rb_cQuery, "render", rb_winevt_query_render, 0);
   rb_define_method(rb_cQuery, "seek", rb_winevt_query_seek, -1);
+  rb_define_method(rb_cQuery, "offset", rb_winevt_query_get_offset, 0);
+  rb_define_method(rb_cQuery, "offset=", rb_winevt_query_set_offset, 1);
+  rb_define_method(rb_cQuery, "timeout", rb_winevt_query_get_timeout, 0);
+  rb_define_method(rb_cQuery, "timeout=", rb_winevt_query_set_timeout, 1);
   rb_define_alloc_func(rb_cBookmark, rb_winevt_bookmark_alloc);
   rb_define_method(rb_cBookmark, "initialize", rb_winevt_bookmark_initialize, -1);
   rb_define_method(rb_cBookmark, "update", rb_winevt_bookmark_update, 1);
