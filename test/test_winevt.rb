@@ -26,10 +26,10 @@ class WinevtTest < Test::Unit::TestCase
     end
 
     def test_seek
-      assert_true(@query.seek(0, :first))
-      assert_true(@query.seek(0, "first"))
-      assert_true(@query.seek(0, :last))
-      assert_true(@query.seek(0, "last"))
+      assert_true(@query.seek(:first))
+      assert_true(@query.seek("first"))
+      assert_true(@query.seek(:last))
+      assert_true(@query.seek("last"))
     end
   end
 

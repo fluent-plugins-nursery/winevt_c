@@ -337,42 +337,33 @@ get_evt_seek_flag_from_cstr(char* flag_str)
 }
 
 static VALUE
-rb_winevt_query_seek(int argc, VALUE *argv, VALUE self)
+rb_winevt_query_seek(VALUE self, VALUE bookmark_or_flag)
 {
   struct WinevtQuery *winevtQuery;
-  struct WinevtBookmark *winevtBookmark;
+  struct WinevtBookmark *winevtBookmark = NULL;
   DWORD status;
+  DWORD flag;
 
-  if (argc == 1) {
-    VALUE rb_bookmark;
-
-    rb_scan_args(argc, argv, "10", &rb_bookmark);
-    winevtBookmark = EventBookMark(rb_bookmark);
+  switch (TYPE(bookmark_or_flag)) {
+  case T_SYMBOL:
+    flag = get_evt_seek_flag_from_cstr(RSTRING_PTR(rb_sym2str(bookmark_or_flag)));
+    break;
+  case T_STRING:
+    flag = get_evt_seek_flag_from_cstr(StringValueCStr(bookmark_or_flag));
+    break;
+  default:
+    winevtBookmark = EventBookMark(bookmark_or_flag);
     if (!winevtBookmark)
-      return Qfalse;
+      rb_raise(rb_eArgError, "Expected a String or a Symbol or a Bookmark instance");
+  }
 
+  if (winevtBookmark) {
     TypedData_Get_Struct(self, struct WinevtQuery, &rb_winevt_query_type, winevtQuery);
-    if (EvtSeek(winevtQuery->query, 0, winevtBookmark->bookmark, 0, EvtSeekRelativeToBookmark))
+    if (EvtSeek(winevtQuery->query, winevtQuery->offset, winevtBookmark->bookmark, winevtQuery->timeout, EvtSeekRelativeToBookmark))
       return Qtrue;
-  } else if (argc == 2) {
-    VALUE rb_position, rb_flag;
-    DWORD flag;
-
-    rb_scan_args(argc, argv, "20", &rb_position, &rb_flag);
-    switch(TYPE(rb_flag)) {
-    case T_SYMBOL:
-      flag = get_evt_seek_flag_from_cstr(RSTRING_PTR(rb_sym2str(rb_flag)));
-      break;
-    case T_STRING:
-      flag = get_evt_seek_flag_from_cstr(StringValueCStr(rb_flag));
-      break;
-    default:
-      rb_raise(rb_eArgError, "Expected a String or a Symbol");
-      break;
-    }
-
+  } else {
     TypedData_Get_Struct(self, struct WinevtQuery, &rb_winevt_query_type, winevtQuery);
-    if (EvtSeek(winevtQuery->query, NUM2LONG(rb_position), NULL, 0, flag))
+    if (EvtSeek(winevtQuery->query, winevtQuery->offset, NULL, winevtQuery->timeout, flag))
       return Qtrue;
   }
 
@@ -392,7 +383,7 @@ Init_winevt(void)
   rb_define_method(rb_cQuery, "initialize", rb_winevt_query_initialize, 2);
   rb_define_method(rb_cQuery, "next", rb_winevt_query_next, 0);
   rb_define_method(rb_cQuery, "render", rb_winevt_query_render, 0);
-  rb_define_method(rb_cQuery, "seek", rb_winevt_query_seek, -1);
+  rb_define_method(rb_cQuery, "seek", rb_winevt_query_seek, 1);
   rb_define_method(rb_cQuery, "offset", rb_winevt_query_get_offset, 0);
   rb_define_method(rb_cQuery, "offset=", rb_winevt_query_set_offset, 1);
   rb_define_method(rb_cQuery, "timeout", rb_winevt_query_get_timeout, 0);
