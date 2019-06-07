@@ -25,6 +25,14 @@ class WinevtTest < Test::Unit::TestCase
       assert_equal(1, @query.offset)
     end
 
+    def test_each
+      @query.offset = 0
+      @query.seek(:last)
+      @query.each do |xml|
+        assert(xml)
+      end
+    end
+
     def test_seek
       assert_true(@query.seek(:first))
       assert_true(@query.seek("first"))

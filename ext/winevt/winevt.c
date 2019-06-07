@@ -370,6 +370,22 @@ rb_winevt_query_seek(VALUE self, VALUE bookmark_or_flag)
   return Qfalse;
 }
 
+static VALUE
+rb_winevt_query_each(VALUE self)
+{
+  struct WinevtQuery *winevtQuery;
+
+  RETURN_ENUMERATOR(self, 0, 0);
+
+  TypedData_Get_Struct(self, struct WinevtQuery, &rb_winevt_query_type, winevtQuery);
+
+  while (rb_winevt_query_next(self)) {
+    rb_yield(rb_winevt_query_render(self));
+  }
+
+  return Qnil;
+}
+
 void
 Init_winevt(void)
 {
@@ -388,6 +404,7 @@ Init_winevt(void)
   rb_define_method(rb_cQuery, "offset=", rb_winevt_query_set_offset, 1);
   rb_define_method(rb_cQuery, "timeout", rb_winevt_query_get_timeout, 0);
   rb_define_method(rb_cQuery, "timeout=", rb_winevt_query_set_timeout, 1);
+  rb_define_method(rb_cQuery, "each", rb_winevt_query_each, 0);
   rb_define_alloc_func(rb_cBookmark, rb_winevt_bookmark_alloc);
   rb_define_method(rb_cBookmark, "initialize", rb_winevt_bookmark_initialize, -1);
   rb_define_method(rb_cBookmark, "update", rb_winevt_bookmark_update, 1);
