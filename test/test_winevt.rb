@@ -3,7 +3,7 @@ require "helper"
 class WinevtTest < Test::Unit::TestCase
   class QueryTest < self
     def setup
-      @query = Win32::Winevt::Query.new("Application", "*[System[(Level <= 3) and TimeCreated[timediff(@SystemTime) <= 86400000]]]")
+      @query = Winevt::EventLog::Query.new("Application", "*[System[(Level <= 3) and TimeCreated[timediff(@SystemTime) <= 86400000]]]")
     end
 
     def test_next
@@ -35,8 +35,8 @@ class WinevtTest < Test::Unit::TestCase
 
   class BookmarkTest < self
     def setup
-      @bookmark = Win32::Winevt::Bookmark.new
-      @query = Win32::Winevt::Query.new("Application", "*[System[(Level <= 3) and TimeCreated[timediff(@SystemTime) <= 86400000]]]")
+      @bookmark = Winevt::EventLog::Bookmark.new
+      @query = Winevt::EventLog::Query.new("Application", "*[System[(Level <= 3) and TimeCreated[timediff(@SystemTime) <= 86400000]]]")
     end
 
     def test_update

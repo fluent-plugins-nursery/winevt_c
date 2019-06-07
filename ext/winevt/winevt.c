@@ -18,8 +18,8 @@
 #define EventQuery(object) ((struct WinevtQuery *)DATA_PTR(object))
 #define EventBookMark(object) ((struct WinevtBookmark *)DATA_PTR(object))
 
-VALUE rb_mWin32;
-VALUE rb_cWinevt;
+VALUE rb_mWinevt;
+VALUE rb_cEventLog;
 VALUE rb_cQuery;
 VALUE rb_cBookmark;
 VALUE rb_eWinevtQueryError;
@@ -373,10 +373,10 @@ rb_winevt_query_seek(VALUE self, VALUE bookmark_or_flag)
 void
 Init_winevt(void)
 {
-  rb_mWin32 = rb_define_module("Win32");
-  rb_cWinevt = rb_define_class_under(rb_mWin32, "Winevt", rb_cObject);
-  rb_cQuery = rb_define_class_under(rb_cWinevt, "Query", rb_cObject);
-  rb_cBookmark = rb_define_class_under(rb_cWinevt, "Bookmark", rb_cObject);
+  rb_mWinevt = rb_define_module("Winevt");
+  rb_cEventLog = rb_define_class_under(rb_mWinevt, "EventLog", rb_cObject);
+  rb_cQuery = rb_define_class_under(rb_cEventLog, "Query", rb_cObject);
+  rb_cBookmark = rb_define_class_under(rb_cEventLog, "Bookmark", rb_cObject);
   rb_eWinevtQueryError = rb_define_class_under(rb_cQuery, "Error", rb_eStandardError);
 
   rb_define_alloc_func(rb_cQuery, rb_winevt_query_alloc);

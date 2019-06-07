@@ -5,7 +5,7 @@ require "winevt/version"
 
 Gem::Specification.new do |spec|
   spec.name          = "winevt_c"
-  spec.version       = Win32::Winevt::VERSION
+  spec.version       = Winevt::VERSION
   spec.authors       = ["Hiroshi Hatake"]
   spec.email         = ["cosmo0920.wp@gmail.com"]
 

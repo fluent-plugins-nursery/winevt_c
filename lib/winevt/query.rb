@@ -1,5 +1,5 @@
-module Win32
-  class Winevt
+module Winevt
+  class EventLog
     class Query
     end
   end

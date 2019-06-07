@@ -1,5 +1,3 @@
-module Win32
-  class Winevt
-    VERSION = "0.1.0"
-  end
+module Winevt
+  VERSION = "0.1.0"
 end
