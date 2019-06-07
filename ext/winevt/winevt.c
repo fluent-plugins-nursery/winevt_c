@@ -59,7 +59,8 @@ static void
 bookmark_free(void *ptr)
 {
   struct WinevtBookmark *winevtBookmark = (struct WinevtBookmark *)ptr;
-  EvtClose(winevtBookmark->bookmark);
+  if (winevtBookmark->bookmark)
+    EvtClose(winevtBookmark->bookmark);
 
   xfree(ptr);
 }
@@ -138,7 +139,8 @@ static void
 query_free(void *ptr)
 {
   struct WinevtQuery *winevtQuery = (struct WinevtQuery *)ptr;
-  EvtClose(winevtQuery->query);
+  if (winevtQuery->query)
+    EvtClose(winevtQuery->query);
 
   xfree(ptr);
 }
