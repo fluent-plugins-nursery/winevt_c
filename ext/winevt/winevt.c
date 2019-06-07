@@ -80,6 +80,7 @@ static VALUE
 rb_winevt_bookmark_initialize(int argc, VALUE *argv, VALUE self)
 {
   PWSTR bookmarkXml;
+  VALUE wbookmarkXmlBuf;
   DWORD len;
   struct WinevtBookmark *winevtBookmark;
 
@@ -94,10 +95,11 @@ rb_winevt_bookmark_initialize(int argc, VALUE *argv, VALUE self)
 
     // bookmarkXml : To wide char
     len = MultiByteToWideChar(CP_UTF8, 0, RSTRING_PTR(rb_bookmarkXml), RSTRING_LEN(rb_bookmarkXml), NULL, 0);
-    bookmarkXml = ALLOCV_N(WCHAR, bookmarkXml, len+1);
+    bookmarkXml = ALLOCV_N(WCHAR, wbookmarkXmlBuf, len+1);
     MultiByteToWideChar(CP_UTF8, 0, RSTRING_PTR(rb_bookmarkXml), RSTRING_LEN(rb_bookmarkXml), bookmarkXml, len);
     bookmarkXml[len] = L'\0';
     winevtBookmark->bookmark = EvtCreateBookmark(bookmarkXml);
+    ALLOCV_END(wbookmarkXmlBuf);
   }
 
   return Qnil;
@@ -159,19 +161,20 @@ rb_winevt_query_initialize(VALUE self, VALUE channel, VALUE xpath)
   PWSTR evtChannel, evtXPath;
   struct WinevtQuery *winevtQuery;
   DWORD len;
+  VALUE wchannelBuf, wpathBuf;
 
   Check_Type(channel, T_STRING);
   Check_Type(xpath, T_STRING);
 
   // channel : To wide char
   len = MultiByteToWideChar(CP_UTF8, 0, RSTRING_PTR(channel), RSTRING_LEN(channel), NULL, 0);
-  evtChannel = ALLOCV_N(WCHAR, evtChannel, len+1);
+  evtChannel = ALLOCV_N(WCHAR, wchannelBuf, len+1);
   MultiByteToWideChar(CP_UTF8, 0, RSTRING_PTR(channel), RSTRING_LEN(channel), evtChannel, len);
   evtChannel[len] = L'\0';
 
   // xpath : To wide char
   len = MultiByteToWideChar(CP_UTF8, 0, RSTRING_PTR(xpath), RSTRING_LEN(xpath), NULL, 0);
-  evtXPath = ALLOCV_N(WCHAR, evtXPath, len+1);
+  evtXPath = ALLOCV_N(WCHAR, wpathBuf, len+1);
   MultiByteToWideChar(CP_UTF8, 0, RSTRING_PTR(xpath), RSTRING_LEN(xpath), evtXPath, len);
   evtXPath[len] = L'\0';
 
@@ -181,6 +184,9 @@ rb_winevt_query_initialize(VALUE self, VALUE channel, VALUE xpath)
                                 EvtQueryChannelPath | EvtQueryTolerateQueryErrors);
   winevtQuery->offset = 0L;
   winevtQuery->timeout = 0L;
+
+  ALLOCV_END(wchannelBuf);
+  ALLOCV_END(wpathBuf);
 
   return Qnil;
 }
