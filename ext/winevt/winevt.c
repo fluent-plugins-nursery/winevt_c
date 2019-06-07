@@ -395,6 +395,11 @@ Init_winevt(void)
   rb_cBookmark = rb_define_class_under(rb_cEventLog, "Bookmark", rb_cObject);
   rb_eWinevtQueryError = rb_define_class_under(rb_cQuery, "Error", rb_eStandardError);
 
+  rb_define_alloc_func(rb_cBookmark, rb_winevt_bookmark_alloc);
+  rb_define_method(rb_cBookmark, "initialize", rb_winevt_bookmark_initialize, -1);
+  rb_define_method(rb_cBookmark, "update", rb_winevt_bookmark_update, 1);
+  rb_define_method(rb_cBookmark, "render", rb_winevt_bookmark_render, 0);
+
   rb_define_alloc_func(rb_cQuery, rb_winevt_query_alloc);
   rb_define_method(rb_cQuery, "initialize", rb_winevt_query_initialize, 2);
   rb_define_method(rb_cQuery, "next", rb_winevt_query_next, 0);
@@ -405,8 +410,4 @@ Init_winevt(void)
   rb_define_method(rb_cQuery, "timeout", rb_winevt_query_get_timeout, 0);
   rb_define_method(rb_cQuery, "timeout=", rb_winevt_query_set_timeout, 1);
   rb_define_method(rb_cQuery, "each", rb_winevt_query_each, 0);
-  rb_define_alloc_func(rb_cBookmark, rb_winevt_bookmark_alloc);
-  rb_define_method(rb_cBookmark, "initialize", rb_winevt_bookmark_initialize, -1);
-  rb_define_method(rb_cBookmark, "update", rb_winevt_bookmark_update, 1);
-  rb_define_method(rb_cBookmark, "render", rb_winevt_bookmark_render, 0);
 }
