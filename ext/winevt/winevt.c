@@ -360,9 +360,10 @@ rb_winevt_query_seek(VALUE self, VALUE bookmark_or_flag)
     flag = get_evt_seek_flag_from_cstr(StringValueCStr(bookmark_or_flag));
     break;
   default:
-    winevtBookmark = EventBookMark(bookmark_or_flag);
-    if (!winevtBookmark)
+    if (!rb_obj_is_kind_of(bookmark_or_flag, rb_cBookmark))
       rb_raise(rb_eArgError, "Expected a String or a Symbol or a Bookmark instance");
+
+    winevtBookmark = EventBookMark(bookmark_or_flag);
   }
 
   if (winevtBookmark) {
