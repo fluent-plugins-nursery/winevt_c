@@ -64,4 +64,16 @@ class WinevtTest < Test::Unit::TestCase
       assert(@bookmark.render)
     end
   end
+
+  class ChannelTest < self
+    def setup
+      @channel = Winevt::EventLog::Channel.new
+    end
+
+    def test_each
+      assert do
+        @channel.each
+      end
+    end
+  end
 end
