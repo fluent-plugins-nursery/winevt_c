@@ -218,7 +218,7 @@ rb_winevt_subscribe_subscribe(VALUE self, VALUE rb_path, VALUE rb_query, VALUE r
   VALUE func = NULL;
   EVT_HANDLE hSubscription = NULL, hBookmark = NULL;
   HANDLE hSignalEvent;
-  DWORD len;
+  DWORD len, flags;
   VALUE wpathBuf, wqueryBuf;
   PWSTR path, query;
   struct WinevtBookmark *winevtBookmark;
@@ -227,8 +227,6 @@ rb_winevt_subscribe_subscribe(VALUE self, VALUE rb_path, VALUE rb_query, VALUE r
 
   if (rb_obj_is_kind_of(rb_bookmark, rb_cBookmark)) {
     hBookmark = EventBookMark(rb_bookmark)->bookmark;
-  } else {
-    hBookmark = EvtCreateBookmark(NULL);
   }
 
   hSignalEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
@@ -247,12 +245,21 @@ rb_winevt_subscribe_subscribe(VALUE self, VALUE rb_path, VALUE rb_query, VALUE r
   MultiByteToWideChar(CP_UTF8, 0, RSTRING_PTR(rb_query), RSTRING_LEN(rb_query), query, len);
   query[len] = L'\0';
 
-  hSubscription = EvtSubscribe(NULL, hSignalEvent, path, query, hBookmark, NULL, NULL,
-                               hBookmark ? EvtSubscribeStartAfterBookmark : EvtSubscribeStartAtOldestRecord);
+  if (hBookmark) {
+    flags |= EvtSubscribeStartAfterBookmark;
+  } else {
+    flags |= EvtSubscribeStartAtOldestRecord;
+  }
+
+  hSubscription = EvtSubscribe(NULL, hSignalEvent, path, query, hBookmark, NULL, NULL, flags);
 
   winevtSubscribe->signalEvent = hSignalEvent;
   winevtSubscribe->subscription = hSubscription;
-  winevtSubscribe->bookmark = hBookmark;
+  if (hBookmark) {
+    winevtSubscribe->bookmark = hBookmark;
+  } else {
+    winevtSubscribe->bookmark = EvtCreateBookmark(NULL);
+  }
 
   return Qnil;
 }
