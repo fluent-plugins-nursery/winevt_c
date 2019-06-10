@@ -14,7 +14,6 @@
 #define _WIN32_WINNT MINIMUM_WINDOWS_VERSION
 
 #include <winevt.h>
-#include <oleauto.h>
 #define EventQuery(object) ((struct WinevtQuery *)DATA_PTR(object))
 #define EventBookMark(object) ((struct WinevtBookmark *)DATA_PTR(object))
 #define EventChannel(object) ((struct WinevtChannel *)DATA_PTR(object))

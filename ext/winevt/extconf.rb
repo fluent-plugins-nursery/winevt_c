@@ -12,10 +12,8 @@ dir_config("winevt", includedir, libdir)
 
 have_library("wevtapi")
 have_func("EvtQuery", "winevt.h")
-have_library("OleAut32")
-have_func("SysAllocStringLen", "oleauto.h")
 
-$LDFLAGS << " -lwevtapi -lOleAut32"
+$LDFLAGS << " -lwevtapi"
 $CFLAGS << " -std=c99 -fPIC -fms-extensions "
 # $CFLAGS << " -g -O0"
 
