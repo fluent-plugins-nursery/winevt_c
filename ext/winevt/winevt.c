@@ -85,8 +85,6 @@ struct WinevtSubscribe {
   EVT_HANDLE bookmark;
   EVT_HANDLE event;
   DWORD      flags;
-  /* TODO: Implement push subscription. */
-  /* EVT_SUBSCRIBE_CALLBACK callback; */
 };
 
 static void
@@ -312,45 +310,6 @@ rb_winevt_subscribe_get_bookmark(VALUE self)
 
   return rb_str_new2(result);
 }
-
-/* TODO: Implement push type subscription callback.
-static DWORD CALLBACK SubscriptionCallback(EVT_SUBSCRIBE_NOTIFY_ACTION action, PVOID pContext, EVT_HANDLE hEvent)
-{
-  UNREFERENCED_PARAMETER(pContext);
-  char *result;
-
-  DWORD status = ERROR_SUCCESS;
-
-  switch(action) {
-  case EvtSubscribeActionError:
-    if (ERROR_EVT_QUERY_RESULT_STALE == (DWORD)hEvent) {
-      wprintf(L"The subscription callback was notified that event records are missing.\n");
-    } else {
-      wprintf(L"The subscription callback received the following Win32 error: %lu\n", (DWORD)hEvent);
-    }
-    break;
-
-  case EvtSubscribeActionDeliver:
-    result = render_event(hEvent, EvtRenderEventXml);
-    if (strcmp("", result) == 0) {
-      goto cleanup;
-    }
-    break;
-
-  default:
-    wprintf(L"SubscriptionCallback: Unknown action.\n");
-  }
-
-cleanup:
-
-  if (ERROR_SUCCESS != status) {
-    // End subscription - Use some kind of IPC mechanism to signal
-    // your application to close the subscription handle.
-  }
-
-  return status;
-}
-*/
 
 static void
 bookmark_free(void *ptr)
