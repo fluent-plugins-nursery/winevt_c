@@ -251,55 +251,35 @@ rb_winevt_subscribe_subscribe(int argc, VALUE argv, VALUE self)
 
   TypedData_Get_Struct(self, struct WinevtSubscribe, &rb_winevt_subscribe_type, winevtSubscribe);
 
-  if (argc == 2) {
-    rb_scan_args(argc, argv, "20", &rb_path, &rb_query);
-    Check_Type(rb_path, T_STRING);
-    Check_Type(rb_query, T_STRING);
+  rb_scan_args(argc, argv, "21", &rb_path, &rb_query, &rb_bookmark);
+  Check_Type(rb_path, T_STRING);
+  Check_Type(rb_query, T_STRING);
 
-    // path : To wide char
-    len = MultiByteToWideChar(CP_UTF8, 0, RSTRING_PTR(rb_path), RSTRING_LEN(rb_path), NULL, 0);
-    path = ALLOCV_N(WCHAR, wpathBuf, len+1);
-    MultiByteToWideChar(CP_UTF8, 0, RSTRING_PTR(rb_path), RSTRING_LEN(rb_path), path, len);
-    path[len] = L'\0';
-
-    // query : To wide char
-    len = MultiByteToWideChar(CP_UTF8, 0, RSTRING_PTR(rb_query), RSTRING_LEN(rb_query), NULL, 0);
-    query = ALLOCV_N(WCHAR, wqueryBuf, len+1);
-    MultiByteToWideChar(CP_UTF8, 0, RSTRING_PTR(rb_query), RSTRING_LEN(rb_query), query, len);
-    query[len] = L'\0';
-
-    if (winevtSubscribe->tailing) {
-      flags |= EvtSubscribeToFutureEvents;
-    } else {
-      flags |= EvtSubscribeStartAtOldestRecord;
-    }
-
-    hSubscription = EvtSubscribe(NULL, hSignalEvent, path, query, hBookmark, NULL, NULL, flags);
-  } else if (argc == 3) {
-    rb_scan_args(argc, argv, "30", &rb_path, &rb_query, &rb_bookmark);
-    Check_Type(rb_path, T_STRING);
-    Check_Type(rb_query, T_STRING);
-
-    // path : To wide char
-    len = MultiByteToWideChar(CP_UTF8, 0, RSTRING_PTR(rb_path), RSTRING_LEN(rb_path), NULL, 0);
-    path = ALLOCV_N(WCHAR, wpathBuf, len+1);
-    MultiByteToWideChar(CP_UTF8, 0, RSTRING_PTR(rb_path), RSTRING_LEN(rb_path), path, len);
-    path[len] = L'\0';
-
-    // query : To wide char
-    len = MultiByteToWideChar(CP_UTF8, 0, RSTRING_PTR(rb_query), RSTRING_LEN(rb_query), NULL, 0);
-    query = ALLOCV_N(WCHAR, wqueryBuf, len+1);
-    MultiByteToWideChar(CP_UTF8, 0, RSTRING_PTR(rb_query), RSTRING_LEN(rb_query), query, len);
-    query[len] = L'\0';
-
-    if (rb_obj_is_kind_of(rb_bookmark, rb_cBookmark)) {
-      hBookmark = EventBookMark(rb_bookmark)->bookmark;
-    }
-    flags |= EvtSubscribeStartAfterBookmark;
-
-
-    hSubscription = EvtSubscribe(NULL, hSignalEvent, path, query, hBookmark, NULL, NULL, flags);
+  if (rb_obj_is_kind_of(rb_bookmark, rb_cBookmark)) {
+    hBookmark = EventBookMark(rb_bookmark)->bookmark;
   }
+
+  // path : To wide char
+  len = MultiByteToWideChar(CP_UTF8, 0, RSTRING_PTR(rb_path), RSTRING_LEN(rb_path), NULL, 0);
+  path = ALLOCV_N(WCHAR, wpathBuf, len+1);
+  MultiByteToWideChar(CP_UTF8, 0, RSTRING_PTR(rb_path), RSTRING_LEN(rb_path), path, len);
+  path[len] = L'\0';
+
+  // query : To wide char
+  len = MultiByteToWideChar(CP_UTF8, 0, RSTRING_PTR(rb_query), RSTRING_LEN(rb_query), NULL, 0);
+  query = ALLOCV_N(WCHAR, wqueryBuf, len+1);
+  MultiByteToWideChar(CP_UTF8, 0, RSTRING_PTR(rb_query), RSTRING_LEN(rb_query), query, len);
+  query[len] = L'\0';
+
+  if (hBookmark){
+    flags |= EvtSubscribeStartAfterBookmark;
+  } else if (winevtSubscribe->tailing) {
+    flags |= EvtSubscribeToFutureEvents;
+  } else {
+    flags |= EvtSubscribeStartAtOldestRecord;
+  }
+
+  hSubscription = EvtSubscribe(NULL, hSignalEvent, path, query, hBookmark, NULL, NULL, flags);
 
   winevtSubscribe->signalEvent = hSignalEvent;
   winevtSubscribe->subscription = hSubscription;
