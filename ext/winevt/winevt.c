@@ -249,8 +249,7 @@ rb_winevt_subscribe_subscribe(VALUE self, VALUE rb_path, VALUE rb_query, VALUE r
 
   winevtSubscribe->signalEvent = hSignalEvent;
   winevtSubscribe->subscription = hSubscription;
-  if (hBookmark)
-    winevtSubscribe->bookmark = hBookmark;
+  winevtSubscribe->bookmark = hBookmark;
 
   return Qnil;
 }
