@@ -76,6 +76,12 @@ class WinevtTest < Test::Unit::TestCase
       assert_true(@subscribe.next)
     end
 
+    def test_tailing
+      assert_false(@subscribe.tail?)
+      @subscribe.tail = true
+      assert_true(@subscribe.tail?)
+    end
+
     def test_bookmark
       @subscribe.next
       assert(@subscribe.bookmark)

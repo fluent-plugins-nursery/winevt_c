@@ -213,6 +213,28 @@ rb_winevt_subscribe_initialize(VALUE self)
 }
 
 static VALUE
+rb_winevt_subscribe_set_tail(VALUE self, VALUE rb_tailing_p)
+{
+  struct WinevtSubscribe *winevtSubscribe;
+
+  TypedData_Get_Struct(self, struct WinevtSubscribe, &rb_winevt_subscribe_type, winevtSubscribe);
+
+  winevtSubscribe->tailing = RTEST(rb_tailing_p);
+
+  return Qnil;
+}
+
+static VALUE
+rb_winevt_subscribe_tail_p(VALUE self, VALUE rb_flag)
+{
+  struct WinevtSubscribe *winevtSubscribe;
+
+  TypedData_Get_Struct(self, struct WinevtSubscribe, &rb_winevt_subscribe_type, winevtSubscribe);
+
+  return winevtSubscribe->tailing ? Qtrue : Qfalse;
+}
+
+static VALUE
 rb_winevt_subscribe_subscribe(VALUE self, VALUE rb_path, VALUE rb_query, VALUE rb_bookmark)
 {
   VALUE func = NULL;
@@ -223,7 +245,6 @@ rb_winevt_subscribe_subscribe(VALUE self, VALUE rb_path, VALUE rb_query, VALUE r
   PWSTR path, query;
   struct WinevtBookmark *winevtBookmark;
   struct WinevtSubscribe *winevtSubscribe;
-
 
   if (rb_obj_is_kind_of(rb_bookmark, rb_cBookmark)) {
     hBookmark = EventBookMark(rb_bookmark)->bookmark;
@@ -247,6 +268,8 @@ rb_winevt_subscribe_subscribe(VALUE self, VALUE rb_path, VALUE rb_query, VALUE r
 
   if (hBookmark) {
     flags |= EvtSubscribeStartAfterBookmark;
+  } else if (winevtSubscribe->tailing) {
+    flags |= EvtSubscribeToFutureEvents;
   } else {
     flags |= EvtSubscribeStartAtOldestRecord;
   }
@@ -687,6 +710,8 @@ Init_winevt(void)
   rb_define_method(rb_cSubscribe, "render", rb_winevt_subscribe_render, 0);
   rb_define_method(rb_cSubscribe, "each", rb_winevt_subscribe_each, 0);
   rb_define_method(rb_cSubscribe, "bookmark", rb_winevt_subscribe_get_bookmark, 0);
+  rb_define_method(rb_cSubscribe, "tail?", rb_winevt_subscribe_tail_p, 0);
+  rb_define_method(rb_cSubscribe, "tail=", rb_winevt_subscribe_set_tail, 1);
 
   rb_define_alloc_func(rb_cChannel, rb_winevt_channel_alloc);
   rb_define_method(rb_cChannel, "initialize", rb_winevt_channel_initialize, 0);
