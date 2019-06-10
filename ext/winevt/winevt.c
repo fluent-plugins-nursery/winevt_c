@@ -179,11 +179,17 @@ static void
 subscribe_free(void *ptr)
 {
   struct WinevtSubscribe *winevtSubscribe = (struct WinevtSubscribe *)ptr;
+  if (winevtSubscribe->signalEvent)
+    CloseHandle(winevtSubscribe->signalEvent);
+
   if (winevtSubscribe->subscription)
     EvtClose(winevtSubscribe->subscription);
 
-  if (winevtSubscribe->signalEvent)
-    CloseHandle(winevtSubscribe->signalEvent);
+  if (winevtSubscribe->bookmark)
+    EvtClose(winevtSubscribe->bookmark);
+
+  if (winevtSubscribe->event)
+    EvtClose(winevtSubscribe->event);
 
   xfree(ptr);
 }
@@ -397,6 +403,9 @@ query_free(void *ptr)
   struct WinevtQuery *winevtQuery = (struct WinevtQuery *)ptr;
   if (winevtQuery->query)
     EvtClose(winevtQuery->query);
+
+  if (winevtQuery->event)
+    EvtClose(winevtQuery->event);
 
   xfree(ptr);
 }
