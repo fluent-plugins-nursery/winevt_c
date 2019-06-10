@@ -21,15 +21,19 @@
 
 VALUE rb_mWinevt;
 VALUE rb_cEventLog;
+VALUE rb_cSubscribe;
 VALUE rb_cChannel;
 VALUE rb_cQuery;
 VALUE rb_cBookmark;
 VALUE rb_eWinevtQueryError;
 
+static ID id_call;
 static void channel_free(void *ptr);
+static void subscribe_free(void *ptr);
 static void query_free(void *ptr);
 static void bookmark_free(void *ptr);
 static char* render_event(EVT_HANDLE handle, DWORD flags);
+static DWORD WINAPI SubscriptionCallback(EVT_SUBSCRIBE_NOTIFY_ACTION action, PVOID pContext, EVT_HANDLE hEvent);
 
 static const rb_data_type_t rb_winevt_channel_type = {
   "winevt/channel", {
@@ -67,6 +71,23 @@ static const rb_data_type_t rb_winevt_bookmark_type = {
 struct WinevtBookmark {
   EVT_HANDLE bookmark;
   ULONG      count;
+};
+
+static const rb_data_type_t rb_winevt_subscribe_type = {
+  "winevt/subscribe", {
+    0, subscribe_free, 0,
+  }, NULL, NULL,
+  RUBY_TYPED_FREE_IMMEDIATELY
+};
+
+struct WinevtSubscribe {
+  HANDLE     signalEvent;
+  EVT_HANDLE subscription;
+  EVT_HANDLE bookmark;
+  EVT_HANDLE event;
+  DWORD      flags;
+  /* TODO: Implement push subscription. */
+  /* EVT_SUBSCRIBE_CALLBACK callback; */
 };
 
 static void
@@ -156,6 +177,182 @@ rb_winevt_channel_each(VALUE self)
 
   return Qnil;
 }
+
+static void
+subscribe_free(void *ptr)
+{
+  struct WinevtSubscribe *winevtSubscribe = (struct WinevtSubscribe *)ptr;
+  if (winevtSubscribe->subscription)
+    EvtClose(winevtSubscribe->subscription);
+
+  if (winevtSubscribe->signalEvent)
+    CloseHandle(winevtSubscribe->signalEvent);
+
+  xfree(ptr);
+}
+
+static VALUE
+rb_winevt_subscribe_alloc(VALUE klass)
+{
+  VALUE obj;
+  struct WinevtSubscribe *winevtSubscribe;
+  obj = TypedData_Make_Struct(klass,
+                              struct WinevtSubscribe,
+                              &rb_winevt_subscribe_type,
+                              winevtSubscribe);
+  return obj;
+}
+
+static VALUE
+rb_winevt_subscribe_initialize(VALUE self)
+{
+  return Qnil;
+}
+
+static VALUE
+rb_winevt_subscribe_subscribe(VALUE self, VALUE rb_path, VALUE rb_query, VALUE rb_bookmark)
+{
+  VALUE func = NULL;
+  EVT_HANDLE hSubscription = NULL, hBookmark = NULL;
+  HANDLE hSignalEvent;
+  DWORD len;
+  VALUE wpathBuf, wqueryBuf;
+  PWSTR path, query;
+  struct WinevtBookmark *winevtBookmark;
+  struct WinevtSubscribe *winevtSubscribe;
+
+
+  if (rb_obj_is_kind_of(rb_bookmark, rb_cBookmark)) {
+    hBookmark = EventBookMark(rb_bookmark)->bookmark;
+  } else {
+    hBookmark = EvtCreateBookmark(NULL);
+  }
+
+  hSignalEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
+
+  TypedData_Get_Struct(self, struct WinevtSubscribe, &rb_winevt_subscribe_type, winevtSubscribe);
+
+  // path : To wide char
+  len = MultiByteToWideChar(CP_UTF8, 0, RSTRING_PTR(rb_path), RSTRING_LEN(rb_path), NULL, 0);
+  path = ALLOCV_N(WCHAR, wpathBuf, len+1);
+  MultiByteToWideChar(CP_UTF8, 0, RSTRING_PTR(rb_path), RSTRING_LEN(rb_path), path, len);
+  path[len] = L'\0';
+
+  // query : To wide char
+  len = MultiByteToWideChar(CP_UTF8, 0, RSTRING_PTR(rb_query), RSTRING_LEN(rb_query), NULL, 0);
+  query = ALLOCV_N(WCHAR, wqueryBuf, len+1);
+  MultiByteToWideChar(CP_UTF8, 0, RSTRING_PTR(rb_query), RSTRING_LEN(rb_query), query, len);
+  query[len] = L'\0';
+
+  hSubscription = EvtSubscribe(NULL, hSignalEvent, path, query, hBookmark, NULL, NULL,
+                               hBookmark ? EvtSubscribeStartAfterBookmark : EvtSubscribeStartAtOldestRecord);
+
+  winevtSubscribe->signalEvent = hSignalEvent;
+  winevtSubscribe->subscription = hSubscription;
+  if (hBookmark)
+    winevtSubscribe->bookmark = hBookmark;
+
+  return Qnil;
+}
+
+static VALUE
+rb_winevt_subscribe_next(VALUE self)
+{
+  EVT_HANDLE event;
+  ULONG      count;
+  struct WinevtSubscribe *winevtSubscribe;
+
+  TypedData_Get_Struct(self, struct WinevtSubscribe, &rb_winevt_subscribe_type, winevtSubscribe);
+
+  if (EvtNext(winevtSubscribe->subscription, 1, &event, INFINITE, 0, &count) != FALSE) {
+    winevtSubscribe->event = event;
+    EvtUpdateBookmark(winevtSubscribe->bookmark, winevtSubscribe->event);
+
+    return Qtrue;
+  }
+
+  return Qfalse;
+}
+
+static VALUE
+rb_winevt_subscribe_render(VALUE self)
+{
+  char* result;
+  struct WinevtSubscribe *winevtSubscribe;
+
+  TypedData_Get_Struct(self, struct WinevtSubscribe, &rb_winevt_subscribe_type, winevtSubscribe);
+  result = render_event(winevtSubscribe->event, EvtRenderEventXml);
+
+  return rb_str_new2(result);
+}
+
+static VALUE
+rb_winevt_subscribe_each(VALUE self)
+{
+  struct WinevtSubscribe *winevtSubscribe;
+
+  RETURN_ENUMERATOR(self, 0, 0);
+
+  TypedData_Get_Struct(self, struct WinevtSubscribe, &rb_winevt_subscribe_type, winevtSubscribe);
+
+  while (rb_winevt_subscribe_next(self)) {
+    rb_yield(rb_winevt_subscribe_render(self));
+  }
+
+  return Qnil;
+}
+
+static VALUE
+rb_winevt_subscribe_get_bookmark(VALUE self)
+{
+  char* result;
+  struct WinevtSubscribe *winevtSubscribe;
+
+  TypedData_Get_Struct(self, struct WinevtSubscribe, &rb_winevt_subscribe_type, winevtSubscribe);
+
+  result = render_event(winevtSubscribe->bookmark, EvtRenderBookmark);
+
+  return rb_str_new2(result);
+}
+
+/* TODO: Implement push type subscription callback.
+static DWORD CALLBACK SubscriptionCallback(EVT_SUBSCRIBE_NOTIFY_ACTION action, PVOID pContext, EVT_HANDLE hEvent)
+{
+  UNREFERENCED_PARAMETER(pContext);
+  char *result;
+
+  DWORD status = ERROR_SUCCESS;
+
+  switch(action) {
+  case EvtSubscribeActionError:
+    if (ERROR_EVT_QUERY_RESULT_STALE == (DWORD)hEvent) {
+      wprintf(L"The subscription callback was notified that event records are missing.\n");
+    } else {
+      wprintf(L"The subscription callback received the following Win32 error: %lu\n", (DWORD)hEvent);
+    }
+    break;
+
+  case EvtSubscribeActionDeliver:
+    result = render_event(hEvent, EvtRenderEventXml);
+    if (strcmp("", result) == 0) {
+      goto cleanup;
+    }
+    break;
+
+  default:
+    wprintf(L"SubscriptionCallback: Unknown action.\n");
+  }
+
+cleanup:
+
+  if (ERROR_SUCCESS != status) {
+    // End subscription - Use some kind of IPC mechanism to signal
+    // your application to close the subscription handle.
+  }
+
+  return status;
+}
+*/
 
 static void
 bookmark_free(void *ptr)
@@ -505,7 +702,18 @@ Init_winevt(void)
   rb_cQuery = rb_define_class_under(rb_cEventLog, "Query", rb_cObject);
   rb_cBookmark = rb_define_class_under(rb_cEventLog, "Bookmark", rb_cObject);
   rb_cChannel = rb_define_class_under(rb_cEventLog, "Channel", rb_cObject);
+  rb_cSubscribe = rb_define_class_under(rb_cEventLog, "Subscribe", rb_cObject);
   rb_eWinevtQueryError = rb_define_class_under(rb_cQuery, "Error", rb_eStandardError);
+
+  id_call = rb_intern("call");
+
+  rb_define_alloc_func(rb_cSubscribe, rb_winevt_subscribe_alloc);
+  rb_define_method(rb_cSubscribe, "initialize", rb_winevt_subscribe_initialize, 0);
+  rb_define_method(rb_cSubscribe, "subscribe", rb_winevt_subscribe_subscribe, 3);
+  rb_define_method(rb_cSubscribe, "next", rb_winevt_subscribe_next, 0);
+  rb_define_method(rb_cSubscribe, "render", rb_winevt_subscribe_render, 0);
+  rb_define_method(rb_cSubscribe, "each", rb_winevt_subscribe_each, 0);
+  rb_define_method(rb_cSubscribe, "bookmark", rb_winevt_subscribe_get_bookmark, 0);
 
   rb_define_alloc_func(rb_cChannel, rb_winevt_channel_alloc);
   rb_define_method(rb_cChannel, "initialize", rb_winevt_channel_initialize, 0);

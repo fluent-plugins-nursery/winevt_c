@@ -65,6 +65,34 @@ class WinevtTest < Test::Unit::TestCase
     end
   end
 
+  class SubscribeTest < self
+    def setup
+      @bookmark = Winevt::EventLog::Bookmark.new
+      @subscribe = Winevt::EventLog::Subscribe.new
+      @subscribe.subscribe("Application", "*[System[(Level <= 3) and TimeCreated[timediff(@SystemTime) <= 86400000]]]", @bookmark)
+    end
+
+    def test_next
+      assert_true(@subscribe.next)
+    end
+
+    def test_bookmark
+      @subscribe.next
+      assert(@subscribe.bookmark)
+    end
+
+    def test_render
+      @subscribe.next
+      assert(@subscribe.render)
+    end
+
+    def test_each
+      assert do
+        @subscribe.each
+      end
+    end
+  end
+
   class ChannelTest < self
     def setup
       @channel = Winevt::EventLog::Channel.new
