@@ -235,9 +235,9 @@ rb_winevt_subscribe_tail_p(VALUE self, VALUE rb_flag)
 }
 
 static VALUE
-rb_winevt_subscribe_subscribe(VALUE self, VALUE rb_path, VALUE rb_query, VALUE rb_bookmark)
+rb_winevt_subscribe_subscribe(int argc, VALUE argv, VALUE self)
 {
-  VALUE func = NULL;
+  VALUE rb_path, rb_query, rb_bookmark;
   EVT_HANDLE hSubscription = NULL, hBookmark = NULL;
   HANDLE hSignalEvent;
   DWORD len, flags;
@@ -246,35 +246,59 @@ rb_winevt_subscribe_subscribe(VALUE self, VALUE rb_path, VALUE rb_query, VALUE r
   struct WinevtBookmark *winevtBookmark;
   struct WinevtSubscribe *winevtSubscribe;
 
-  if (rb_obj_is_kind_of(rb_bookmark, rb_cBookmark)) {
-    hBookmark = EventBookMark(rb_bookmark)->bookmark;
-  }
-
   hSignalEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
 
   TypedData_Get_Struct(self, struct WinevtSubscribe, &rb_winevt_subscribe_type, winevtSubscribe);
 
-  // path : To wide char
-  len = MultiByteToWideChar(CP_UTF8, 0, RSTRING_PTR(rb_path), RSTRING_LEN(rb_path), NULL, 0);
-  path = ALLOCV_N(WCHAR, wpathBuf, len+1);
-  MultiByteToWideChar(CP_UTF8, 0, RSTRING_PTR(rb_path), RSTRING_LEN(rb_path), path, len);
-  path[len] = L'\0';
+  if (argc == 2) {
+    rb_scan_args(argc, argv, "20", &rb_path, &rb_query);
+    Check_Type(rb_path, T_STRING);
+    Check_Type(rb_query, T_STRING);
 
-  // query : To wide char
-  len = MultiByteToWideChar(CP_UTF8, 0, RSTRING_PTR(rb_query), RSTRING_LEN(rb_query), NULL, 0);
-  query = ALLOCV_N(WCHAR, wqueryBuf, len+1);
-  MultiByteToWideChar(CP_UTF8, 0, RSTRING_PTR(rb_query), RSTRING_LEN(rb_query), query, len);
-  query[len] = L'\0';
+    // path : To wide char
+    len = MultiByteToWideChar(CP_UTF8, 0, RSTRING_PTR(rb_path), RSTRING_LEN(rb_path), NULL, 0);
+    path = ALLOCV_N(WCHAR, wpathBuf, len+1);
+    MultiByteToWideChar(CP_UTF8, 0, RSTRING_PTR(rb_path), RSTRING_LEN(rb_path), path, len);
+    path[len] = L'\0';
 
-  if (hBookmark) {
+    // query : To wide char
+    len = MultiByteToWideChar(CP_UTF8, 0, RSTRING_PTR(rb_query), RSTRING_LEN(rb_query), NULL, 0);
+    query = ALLOCV_N(WCHAR, wqueryBuf, len+1);
+    MultiByteToWideChar(CP_UTF8, 0, RSTRING_PTR(rb_query), RSTRING_LEN(rb_query), query, len);
+    query[len] = L'\0';
+
+    if (winevtSubscribe->tailing) {
+      flags |= EvtSubscribeToFutureEvents;
+    } else {
+      flags |= EvtSubscribeStartAtOldestRecord;
+    }
+
+    hSubscription = EvtSubscribe(NULL, hSignalEvent, path, query, hBookmark, NULL, NULL, flags);
+  } else if (argc == 3) {
+    rb_scan_args(argc, argv, "30", &rb_path, &rb_query, &rb_bookmark);
+    Check_Type(rb_path, T_STRING);
+    Check_Type(rb_query, T_STRING);
+
+    // path : To wide char
+    len = MultiByteToWideChar(CP_UTF8, 0, RSTRING_PTR(rb_path), RSTRING_LEN(rb_path), NULL, 0);
+    path = ALLOCV_N(WCHAR, wpathBuf, len+1);
+    MultiByteToWideChar(CP_UTF8, 0, RSTRING_PTR(rb_path), RSTRING_LEN(rb_path), path, len);
+    path[len] = L'\0';
+
+    // query : To wide char
+    len = MultiByteToWideChar(CP_UTF8, 0, RSTRING_PTR(rb_query), RSTRING_LEN(rb_query), NULL, 0);
+    query = ALLOCV_N(WCHAR, wqueryBuf, len+1);
+    MultiByteToWideChar(CP_UTF8, 0, RSTRING_PTR(rb_query), RSTRING_LEN(rb_query), query, len);
+    query[len] = L'\0';
+
+    if (rb_obj_is_kind_of(rb_bookmark, rb_cBookmark)) {
+      hBookmark = EventBookMark(rb_bookmark)->bookmark;
+    }
     flags |= EvtSubscribeStartAfterBookmark;
-  } else if (winevtSubscribe->tailing) {
-    flags |= EvtSubscribeToFutureEvents;
-  } else {
-    flags |= EvtSubscribeStartAtOldestRecord;
-  }
 
-  hSubscription = EvtSubscribe(NULL, hSignalEvent, path, query, hBookmark, NULL, NULL, flags);
+
+    hSubscription = EvtSubscribe(NULL, hSignalEvent, path, query, hBookmark, NULL, NULL, flags);
+  }
 
   winevtSubscribe->signalEvent = hSignalEvent;
   winevtSubscribe->subscription = hSubscription;
@@ -705,7 +729,7 @@ Init_winevt(void)
 
   rb_define_alloc_func(rb_cSubscribe, rb_winevt_subscribe_alloc);
   rb_define_method(rb_cSubscribe, "initialize", rb_winevt_subscribe_initialize, 0);
-  rb_define_method(rb_cSubscribe, "subscribe", rb_winevt_subscribe_subscribe, 3);
+  rb_define_method(rb_cSubscribe, "subscribe", rb_winevt_subscribe_subscribe, -1);
   rb_define_method(rb_cSubscribe, "next", rb_winevt_subscribe_next, 0);
   rb_define_method(rb_cSubscribe, "render", rb_winevt_subscribe_render, 0);
   rb_define_method(rb_cSubscribe, "each", rb_winevt_subscribe_each, 0);
