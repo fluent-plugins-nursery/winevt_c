@@ -101,12 +101,6 @@ class WinevtTest < Test::Unit::TestCase
       assert_true(subscribe.next)
     end
 
-    def test_subscribe_without_bookmark
-      subscribe = Winevt::EventLog::Subscribe.new
-      subscribe.subscribe("Application", "*[System[(Level <= 3) and TimeCreated[timediff(@SystemTime) <= 86400000]]]")
-      assert_true(subscribe.next)
-    end
-
     def test_next
       assert_true(@subscribe.next)
     end
