@@ -1,4 +1,8 @@
-require "winevt/winevt"
+begin
+  require "winevt/#{RUBY_VERSION[/\d+.\d+/]}/winevt"
+rescue LoadError
+  require "winevt/winevt"
+end
 require "winevt/query"
 require "winevt/version"
 
