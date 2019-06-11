@@ -3,12 +3,15 @@ require "helper"
 class WinevtTest < Test::Unit::TestCase
   class QueryTest < self
     def setup
-      query = if ENV["CI"]
-                "*"
-              else
-                "*[System[(Level <= 3) and TimeCreated[timediff(@SystemTime) <= 86400000]]]"
-              end
-      @query = Winevt::EventLog::Query.new("Application", query)
+      @query = Winevt::EventLog::Query.new("Application", "*")
+    end
+
+    def test_query
+      query = "*[System[(Level <= 3) and TimeCreated[timediff(@SystemTime) <= 86400000]]]"
+
+      assert do
+        Winevt::EventLog::Query.new("Application", query)
+      end
     end
 
     def test_next
@@ -48,13 +51,16 @@ class WinevtTest < Test::Unit::TestCase
 
   class BookmarkTest < self
     def setup
-      query = if ENV["CI"]
-                "*"
-              else
-                "*[System[(Level <= 3) and TimeCreated[timediff(@SystemTime) <= 86400000]]]"
-              end
       @bookmark = Winevt::EventLog::Bookmark.new
-      @query = Winevt::EventLog::Query.new("Application", query)
+      @query = Winevt::EventLog::Query.new("Application", "*")
+    end
+
+    def test_query
+      query = "*[System[(Level <= 3) and TimeCreated[timediff(@SystemTime) <= 86400000]]]"
+      @bookmark = Winevt::EventLog::Bookmark.new
+      assert do
+        Winevt::EventLog::Query.new("Application", query)
+      end
     end
 
     def test_update
@@ -79,17 +85,19 @@ class WinevtTest < Test::Unit::TestCase
     def setup
       @bookmark = Winevt::EventLog::Bookmark.new
       @subscribe = Winevt::EventLog::Subscribe.new
-      @query = if ENV["CI"]
-                 "*"
-               else
-                 "*[System[(Level <= 3) and TimeCreated[timediff(@SystemTime) <= 86400000]]]"
-               end
-      @subscribe.subscribe("Application", @query)
+      @subscribe.subscribe("Application", "*")
+    end
+
+    def test_query
+      query = "*[System[(Level <= 3) and TimeCreated[timediff(@SystemTime) <= 86400000]]]"
+      assert do
+        @subscribe.subscribe("Application", query)
+      end
     end
 
     def test_subscribe_without_bookmark
       subscribe = Winevt::EventLog::Subscribe.new
-      subscribe.subscribe("Application", @query)
+      subscribe.subscribe("Application", "*")
       assert_true(subscribe.next)
     end
 
