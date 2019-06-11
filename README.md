@@ -1,5 +1,7 @@
 # winevt_c
 
+[![Build status](https://ci.appveyor.com/api/projects/status/hr3phv8ihvgc68oj/branch/master?svg=true)](https://ci.appveyor.com/project/cosmo0920/winevt-c/branch/master)
+
 ## Installation
 
 Add this line to your application's Gemfile:
