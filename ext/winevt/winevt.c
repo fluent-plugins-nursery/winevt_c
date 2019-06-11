@@ -244,6 +244,7 @@ rb_winevt_subscribe_subscribe(int argc, VALUE argv, VALUE self)
   DWORD len, flags;
   VALUE wpathBuf, wqueryBuf;
   PWSTR path, query;
+  DWORD status = ERROR_SUCCESS;
   struct WinevtBookmark *winevtBookmark;
   struct WinevtSubscribe *winevtSubscribe;
 
@@ -289,7 +290,12 @@ rb_winevt_subscribe_subscribe(int argc, VALUE argv, VALUE self)
     winevtSubscribe->bookmark = EvtCreateBookmark(NULL);
   }
 
-  return Qnil;
+  status = GetLastError();
+
+  if (status == ERROR_SUCCESS)
+    return Qtrue;
+
+  return Qfalse;
 }
 
 static VALUE
