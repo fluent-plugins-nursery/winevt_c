@@ -3,7 +3,12 @@ require "helper"
 class WinevtTest < Test::Unit::TestCase
   class QueryTest < self
     def setup
-      @query = Winevt::EventLog::Query.new("Application", "*[System[(Level <= 3) and TimeCreated[timediff(@SystemTime) <= 86400000]]]")
+      query = if ENV["CI"]
+                "*"
+              else
+                "*[System[(Level <= 3) and TimeCreated[timediff(@SystemTime) <= 86400000]]]"
+              end
+      @query = Winevt::EventLog::Query.new("Application", query)
     end
 
     def test_next
@@ -43,8 +48,13 @@ class WinevtTest < Test::Unit::TestCase
 
   class BookmarkTest < self
     def setup
+      query = if ENV["CI"]
+                "*"
+              else
+                "*[System[(Level <= 3) and TimeCreated[timediff(@SystemTime) <= 86400000]]]"
+              end
       @bookmark = Winevt::EventLog::Bookmark.new
-      @query = Winevt::EventLog::Query.new("Application", "*[System[(Level <= 3) and TimeCreated[timediff(@SystemTime) <= 86400000]]]")
+      @query = Winevt::EventLog::Query.new("Application", query)
     end
 
     def test_update
@@ -69,12 +79,17 @@ class WinevtTest < Test::Unit::TestCase
     def setup
       @bookmark = Winevt::EventLog::Bookmark.new
       @subscribe = Winevt::EventLog::Subscribe.new
-      @subscribe.subscribe("Application", "*[System[(Level <= 3) and TimeCreated[timediff(@SystemTime) <= 86400000]]]", @bookmark)
+      @query = if ENV["CI"]
+                 "*"
+               else
+                 "*[System[(Level <= 3) and TimeCreated[timediff(@SystemTime) <= 86400000]]]"
+               end
+      @subscribe.subscribe("Application", @query)
     end
 
     def test_subscribe_without_bookmark
       subscribe = Winevt::EventLog::Subscribe.new
-      subscribe.subscribe("Application", "*[System[(Level <= 3) and TimeCreated[timediff(@SystemTime) <= 86400000]]]")
+      subscribe.subscribe("Application", @query)
       assert_true(subscribe.next)
     end
 
