@@ -618,6 +618,9 @@ static char* render_event(EVT_HANDLE handle, DWORD flags)
   if (!(result = malloc(len))) return "";
   WideCharToMultiByte(CP_UTF8, 0, buffer, -1, result, len, NULL, NULL);
 
+  if (buffer)
+    free(buffer);
+
   return result;
 }
 
