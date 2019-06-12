@@ -32,7 +32,7 @@ static void subscribe_free(void *ptr);
 static void query_free(void *ptr);
 static void bookmark_free(void *ptr);
 static char* render_event(EVT_HANDLE handle, DWORD flags);
-static DWORD WINAPI SubscriptionCallback(EVT_SUBSCRIBE_NOTIFY_ACTION action, PVOID pContext, EVT_HANDLE hEvent);
+static char* wstr_to_mbstr(UINT cp, const WCHAR *wstr, int clen);
 
 static const rb_data_type_t rb_winevt_channel_type = {
   "winevt/channel", {
@@ -175,6 +175,18 @@ rb_winevt_channel_each(VALUE self)
 
   return Qnil;
 }
+
+static char *
+wstr_to_mbstr(UINT cp, const WCHAR *wstr, int clen)
+{
+    char *ptr;
+    int len = WideCharToMultiByte(cp, 0, wstr, clen, NULL, 0, NULL, NULL);
+    if (!(ptr = malloc(len))) return 0;
+    WideCharToMultiByte(cp, 0, wstr, clen, ptr, len, NULL, NULL);
+
+    return ptr;
+}
+
 
 static void
 subscribe_free(void *ptr)
