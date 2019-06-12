@@ -33,6 +33,8 @@ static void query_free(void *ptr);
 static void bookmark_free(void *ptr);
 static char* render_event(EVT_HANDLE handle, DWORD flags);
 static char* wstr_to_mbstr(UINT cp, const WCHAR *wstr, int clen);
+static VALUE render_values_event(EVT_HANDLE hEvent);
+static VALUE render_system_event(EVT_HANDLE hEvent);
 
 static const rb_data_type_t rb_winevt_channel_type = {
   "winevt/channel", {
@@ -58,6 +60,7 @@ struct WinevtQuery {
   ULONG      count;
   LONG       offset;
   LONG       timeout;
+  BOOL       doesRenderHash;
 };
 
 static const rb_data_type_t rb_winevt_bookmark_type = {
@@ -86,6 +89,7 @@ struct WinevtSubscribe {
   EVT_HANDLE event;
   DWORD      flags;
   BOOL       tailing;
+  BOOL       doesRenderHash;
 };
 
 static void
@@ -245,6 +249,28 @@ rb_winevt_subscribe_tail_p(VALUE self, VALUE rb_flag)
 }
 
 static VALUE
+rb_winevt_subscribe_set_does_render_hash(VALUE self, VALUE rb_render_hash_p)
+{
+  struct WinevtSubscribe *winevtSubscribe;
+
+  TypedData_Get_Struct(self, struct WinevtSubscribe, &rb_winevt_subscribe_type, winevtSubscribe);
+
+  winevtSubscribe->doesRenderHash = RTEST(rb_render_hash_p);
+
+  return Qnil;
+}
+
+static VALUE
+rb_winevt_subscribe_get_render_hash_p(VALUE self, VALUE rb_render_hash_p)
+{
+  struct WinevtSubscribe *winevtSubscribe;
+
+  TypedData_Get_Struct(self, struct WinevtSubscribe, &rb_winevt_subscribe_type, winevtSubscribe);
+
+  return winevtSubscribe->doesRenderHash ? Qtrue : Qfalse;
+}
+
+static VALUE
 rb_winevt_subscribe_subscribe(int argc, VALUE argv, VALUE self)
 {
   VALUE rb_path, rb_query, rb_bookmark;
@@ -331,11 +357,19 @@ rb_winevt_subscribe_render(VALUE self)
 {
   char* result;
   struct WinevtSubscribe *winevtSubscribe;
+  VALUE ary, hash;
 
   TypedData_Get_Struct(self, struct WinevtSubscribe, &rb_winevt_subscribe_type, winevtSubscribe);
-  result = render_event(winevtSubscribe->event, EvtRenderEventXml);
 
-  return rb_str_new2(result);
+  if (winevtSubscribe->doesRenderHash) {
+    ary = render_values_event(winevtSubscribe->event);
+    hash = render_system_event(winevtSubscribe->event);
+    rb_hash_aset(hash, ID2SYM(rb_intern("Data")), ary);
+    return hash;
+  } else {
+    result = render_event(winevtSubscribe->event, EvtRenderEventXml);
+    return rb_str_new2(result);
+  }
 }
 
 static VALUE
@@ -501,11 +535,35 @@ rb_winevt_query_initialize(VALUE self, VALUE channel, VALUE xpath)
                                 EvtQueryChannelPath | EvtQueryTolerateQueryErrors);
   winevtQuery->offset = 0L;
   winevtQuery->timeout = 0L;
+  winevtQuery->doesRenderHash = FALSE;
 
   ALLOCV_END(wchannelBuf);
   ALLOCV_END(wpathBuf);
 
   return Qnil;
+}
+
+static VALUE
+rb_winevt_query_set_does_render_hash(VALUE self, VALUE rb_render_hash_p)
+{
+  struct WinevtQuery *winevtQuery;
+  struct WinevtRenderContext *winevtRenderContext;
+
+  TypedData_Get_Struct(self, struct WinevtQuery, &rb_winevt_query_type, winevtQuery);
+
+  winevtQuery->doesRenderHash = RTEST(rb_render_hash_p);
+
+  return Qnil;
+}
+
+static VALUE
+rb_winevt_query_get_render_hash_p(VALUE self)
+{
+  struct WinevtQuery *winevtQuery;
+
+  TypedData_Get_Struct(self, struct WinevtQuery, &rb_winevt_query_type, winevtQuery);
+
+  return winevtQuery->doesRenderHash ? Qtrue : Qfalse;
 }
 
 static VALUE
@@ -629,16 +687,263 @@ static char* render_event(EVT_HANDLE handle, DWORD flags)
   return result;
 }
 
+static VALUE render_values_event(EVT_HANDLE hEvent)
+{
+
+  DWORD status = ERROR_SUCCESS;
+  EVT_HANDLE hContext = NULL;
+  DWORD dwBufferSize = 0;
+  DWORD dwBufferUsed = 0;
+  DWORD dwPropertyCount = 0;
+  PEVT_VARIANT pRenderedValues = NULL;
+  LPWSTR ppValues[] = {L"Event/EventData/Data"};
+  DWORD count = sizeof(ppValues)/sizeof(LPWSTR);
+  char *buffer = NULL;
+  WCHAR *wBuffer = NULL;
+  VALUE ary = rb_ary_new();
+
+  // Identify the components of the event that you want to render. In this case,
+  // render the provider's name and channel from the system section of the event.
+  // To get user data from the event, you can specify an expression such as
+  // L"Event/EventData/Data[@Name=\"<data name goes here>\"]".
+  hContext = EvtCreateRenderContext(0, NULL, EvtRenderContextUser);
+  if (NULL == hContext) {
+    wprintf(L"EvtCreateRenderContext failed with %lu\n", status = GetLastError());
+    goto cleanup;
+  }
+
+  // The function returns an array of variant values for each element or attribute that
+  // you want to retrieve from the event. The values are returned in the same order as
+  // you requested them.
+  if (!EvtRender(hContext, hEvent, EvtRenderEventValues, dwBufferSize, pRenderedValues, &dwBufferUsed, &dwPropertyCount)) {
+    if (ERROR_INSUFFICIENT_BUFFER == (status = GetLastError())) {
+      dwBufferSize = dwBufferUsed;
+      pRenderedValues = (PEVT_VARIANT)malloc(dwBufferSize);
+      if (pRenderedValues) {
+        EvtRender(hContext, hEvent, EvtRenderEventValues, dwBufferSize, pRenderedValues, &dwBufferUsed, &dwPropertyCount);
+      } else {
+        wprintf(L"malloc failed\n");
+        status = ERROR_OUTOFMEMORY;
+        goto cleanup;
+      }
+    }
+
+    if (ERROR_SUCCESS != (status = GetLastError())) {
+      wprintf(L"EvtRender failed with %d\n", GetLastError());
+
+      goto cleanup;
+    }
+  }
+
+  if (dwPropertyCount > 0) {
+    PEVT_VARIANT values = pRenderedValues;
+    for (DWORD i = 0; i < dwPropertyCount; i++) {
+      switch (values[i].Type) {
+      case EvtVarTypeString:
+        buffer = wstr_to_mbstr(CP_ACP, values[i].StringVal, -1);
+        rb_ary_push(ary, rb_str_new2(buffer));
+        break;
+      case EvtVarTypeAnsiString:
+        buffer = wstr_to_mbstr(CP_ACP, values[i].AnsiStringVal, -1);
+        rb_ary_push(ary, rb_str_new2(buffer));
+        break;
+      case EvtVarTypeSByte:
+        rb_ary_push(ary, INT2NUM((INT32)values[i].SByteVal));
+        break;
+      case EvtVarTypeByte:
+        rb_ary_push(ary, INT2NUM((INT32)values[i].ByteVal));
+        break;
+      case EvtVarTypeInt16:
+        rb_ary_push(ary, INT2NUM((INT32)values[i].Int16Val));
+        break;
+      case EvtVarTypeUInt16:
+        rb_ary_push(ary, UINT2NUM((UINT32)values[i].UInt16Val));
+        break;
+      case EvtVarTypeInt32:
+        rb_ary_push(ary, INT2NUM(values[i].Int32Val));
+        break;
+      case EvtVarTypeUInt32:
+        rb_ary_push(ary, UINT2NUM(values[i].UInt32Val));
+        break;
+      case EvtVarTypeInt64:
+        rb_ary_push(ary, LONG2NUM(values[i].Int64Val));
+        break;
+      case EvtVarTypeUInt64:
+        rb_ary_push(ary, ULONG2NUM(values[i].UInt64Val));
+        break;
+      case EvtVarTypeSingle:
+        rb_ary_push(ary, DBL2NUM(values[i].SingleVal));
+        break;
+      case EvtVarTypeDouble:
+        rb_ary_push(ary, DBL2NUM(values[i].DoubleVal));
+        break;
+      case EvtVarTypeBoolean:
+        rb_ary_push(ary, values[i].BooleanVal ? Qtrue : Qfalse);
+        break;
+      case EvtVarTypeBinary:
+        sprintf(wBuffer, "%x", values[i].BinaryVal);
+        buffer = wstr_to_mbstr(CP_ACP, wBuffer, -1);
+        rb_ary_push(ary, rb_str_new2(buffer));
+        break;
+      default:
+        // EvtVarTypeHex32, EvtVarTypeHex64 and so on are not
+        // supported for now.
+        rb_ary_push(ary, rb_str_new2("?"));
+        break;
+      }
+    }
+  }
+cleanup:
+
+  if (hContext)
+    EvtClose(hContext);
+
+  if (pRenderedValues)
+    free(pRenderedValues);
+
+  return ary;
+};
+
+static VALUE render_system_event(EVT_HANDLE hEvent)
+{
+  #include <sddl.h>
+
+  char* result;
+  DWORD status = ERROR_SUCCESS;
+  EVT_HANDLE hContext = NULL;
+  DWORD dwBufferSize = 0;
+  DWORD dwBufferUsed = 0;
+  DWORD dwPropertyCount = 0;
+  PEVT_VARIANT pRenderedValues = NULL;
+  WCHAR wsGuid[50];
+  LPWSTR pwsSid = NULL;
+  ULONGLONG ullTimeStamp = 0;
+  ULONGLONG ullNanoseconds = 0;
+  SYSTEMTIME st;
+  FILETIME ft;
+  char *buffer;
+  VALUE hash = rb_hash_new();
+  ULONG len = 0;
+
+  hContext = EvtCreateRenderContext(0, NULL, EvtRenderContextSystem);
+  if (NULL == hContext) {
+    wprintf(L"EvtCreateRenderContext failed with %lu\n", status = GetLastError());
+    goto cleanup;
+  }
+
+  if (!EvtRender(hContext, hEvent, EvtRenderEventValues, dwBufferSize, pRenderedValues, &dwBufferUsed, &dwPropertyCount)) {
+    if (ERROR_INSUFFICIENT_BUFFER == (status = GetLastError())) {
+      dwBufferSize = dwBufferUsed;
+      pRenderedValues = (PEVT_VARIANT)malloc(dwBufferSize);
+      if (pRenderedValues) {
+        EvtRender(hContext, hEvent, EvtRenderEventValues, dwBufferSize, pRenderedValues, &dwBufferUsed, &dwPropertyCount);
+      } else {
+        wprintf(L"malloc failed\n");
+        status = ERROR_OUTOFMEMORY;
+        goto cleanup;
+      }
+    }
+
+    if (ERROR_SUCCESS != (status = GetLastError())) {
+      wprintf(L"EvtRender failed with %d\n", GetLastError());
+      goto cleanup;
+    }
+  }
+
+  buffer = wstr_to_mbstr(CP_UTF8, pRenderedValues[EvtSystemProviderName].StringVal, -1);
+  rb_hash_aset(hash, ID2SYM(rb_intern("ProviderName")), rb_str_new_cstr(buffer));
+  if (NULL != pRenderedValues[EvtSystemProviderGuid].GuidVal) {
+    const GUID* Guid = pRenderedValues[EvtSystemProviderGuid].GuidVal;
+    StringFromGUID2(Guid, wsGuid, sizeof(wsGuid)/sizeof(WCHAR));
+    buffer = wstr_to_mbstr(CP_UTF8, wsGuid, -1);
+    rb_hash_aset(hash, ID2SYM(rb_intern("ProviderGuid")), rb_str_new_cstr(buffer));
+  } else {
+    rb_hash_aset(hash, ID2SYM(rb_intern("ProviderGuid")), Qnil);
+  }
+
+  DWORD EventID = pRenderedValues[EvtSystemEventID].UInt16Val;
+  if (EvtVarTypeNull != pRenderedValues[EvtSystemQualifiers].Type) {
+    EventID = MAKELONG(pRenderedValues[EvtSystemEventID].UInt16Val, pRenderedValues[EvtSystemQualifiers].UInt16Val);
+  }
+  rb_hash_aset(hash, ID2SYM(rb_intern("EventID")), LONG2NUM(EventID));
+
+  rb_hash_aset(hash, ID2SYM(rb_intern("Version")), (EvtVarTypeNull == pRenderedValues[EvtSystemVersion].Type) ? INT2NUM(0) : INT2NUM(pRenderedValues[EvtSystemVersion].ByteVal));
+  rb_hash_aset(hash, ID2SYM(rb_intern("Level")), (EvtVarTypeNull == pRenderedValues[EvtSystemLevel].Type) ? INT2NUM(0) : INT2NUM(pRenderedValues[EvtSystemLevel].ByteVal));
+  rb_hash_aset(hash, ID2SYM(rb_intern("Task")), (EvtVarTypeNull == pRenderedValues[EvtSystemTask].Type) ? INT2NUM(0) : INT2NUM(pRenderedValues[EvtSystemTask].UInt16Val));
+  rb_hash_aset(hash, ID2SYM(rb_intern("Opcode")), (EvtVarTypeNull == pRenderedValues[EvtSystemOpcode].Type) ? INT2NUM(0) : INT2NUM(pRenderedValues[EvtSystemOpcode].ByteVal));
+  sprintf(buffer, "0x%I64x", pRenderedValues[EvtSystemKeywords].UInt64Val);
+  rb_hash_aset(hash, ID2SYM(rb_intern("Keywords")), (EvtVarTypeNull == pRenderedValues[EvtSystemKeywords].Type) ? Qnil : rb_str_new2(buffer));
+
+  ullTimeStamp = pRenderedValues[EvtSystemTimeCreated].FileTimeVal;
+  ft.dwHighDateTime = (DWORD)((ullTimeStamp >> 32) & 0xFFFFFFFF);
+  ft.dwLowDateTime = (DWORD)(ullTimeStamp & 0xFFFFFFFF);
+
+  FileTimeToSystemTime(&ft, &st);
+  ullNanoseconds = (ullTimeStamp % 10000000) * 100; // Display nanoseconds instead of milliseconds for higher resolution
+  sprintf(buffer, "%02d/%02d/%02d %02d:%02d:%02d.%I64u",
+          st.wYear, st.wMonth, st.wDay, st.wHour, st.wMinute, st.wSecond, ullNanoseconds);
+  rb_hash_aset(hash, ID2SYM(rb_intern("TimeCreated")), (EvtVarTypeNull == pRenderedValues[EvtSystemKeywords].Type) ? Qnil : rb_str_new2(buffer));
+  sprintf(buffer, "%I64u", pRenderedValues[EvtSystemEventRecordId].UInt64Val);
+  rb_hash_aset(hash, ID2SYM(rb_intern("EventRecordID")), (EvtVarTypeNull == pRenderedValues[EvtSystemEventRecordId].UInt64Val) ? Qnil : rb_str_new2(buffer));
+
+  if (EvtVarTypeNull != pRenderedValues[EvtSystemActivityID].Type) {
+    const GUID* Guid = pRenderedValues[EvtSystemActivityID].GuidVal;
+    StringFromGUID2(Guid, wsGuid, sizeof(wsGuid)/sizeof(WCHAR));
+    buffer = wstr_to_mbstr(CP_UTF8, wsGuid, -1);
+    rb_hash_aset(hash, ID2SYM(rb_intern("CorrelationActivityID")), rb_str_new_cstr(buffer));
+  }
+
+  if (EvtVarTypeNull != pRenderedValues[EvtSystemRelatedActivityID].Type) {
+    const GUID* Guid = pRenderedValues[EvtSystemRelatedActivityID].GuidVal;
+    StringFromGUID2(Guid, wsGuid, sizeof(wsGuid)/sizeof(WCHAR));
+    buffer = wstr_to_mbstr(CP_UTF8, wsGuid, -1);
+    rb_hash_aset(hash, ID2SYM(rb_intern("CorrelationRelatedActivityID")), rb_str_new_cstr(buffer));
+  }
+
+  rb_hash_aset(hash, ID2SYM(rb_intern("ProcessID")), UINT2NUM(pRenderedValues[EvtSystemProcessID].UInt32Val));
+  rb_hash_aset(hash, ID2SYM(rb_intern("ThreadID")), UINT2NUM(pRenderedValues[EvtSystemThreadID].UInt32Val));
+  buffer = wstr_to_mbstr(CP_UTF8, pRenderedValues[EvtSystemChannel].StringVal, -1);
+  rb_hash_aset(hash, ID2SYM(rb_intern("Channel")), rb_str_new_cstr(buffer));
+  buffer = wstr_to_mbstr(CP_UTF8, pRenderedValues[EvtSystemComputer].StringVal, -1);
+  rb_hash_aset(hash, ID2SYM(rb_intern("Computer")), rb_str_new_cstr(buffer));
+
+  if (EvtVarTypeNull != pRenderedValues[EvtSystemUserID].Type) {
+    if (ConvertSidToStringSid(pRenderedValues[EvtSystemUserID].SidVal, &pwsSid)) {
+      buffer = wstr_to_mbstr(CP_UTF8, pwsSid, -1);
+      rb_hash_aset(hash, ID2SYM(rb_intern("SecurityUserID")), rb_str_new_cstr(buffer));
+      LocalFree(pwsSid);
+    }
+  }
+
+cleanup:
+
+  if (hContext)
+    EvtClose(hContext);
+
+  if (pRenderedValues)
+    free(pRenderedValues);
+
+  return hash;
+}
+
 static VALUE
 rb_winevt_query_render(VALUE self)
 {
   char* result;
   struct WinevtQuery *winevtQuery;
+  VALUE ary, hash;
 
   TypedData_Get_Struct(self, struct WinevtQuery, &rb_winevt_query_type, winevtQuery);
-  result = render_event(winevtQuery->event, EvtRenderEventXml);
 
-  return rb_str_new2(result);
+  if (winevtQuery->doesRenderHash) {
+    ary = render_values_event(winevtQuery->event);
+    hash = render_system_event(winevtQuery->event);
+    rb_hash_aset(hash, ID2SYM(rb_intern("Data")), ary);
+    return hash;
+  } else {
+    result = render_event(winevtQuery->event, EvtRenderEventXml);
+    return rb_str_new2(result);
+  }
 }
 
 static DWORD
@@ -727,6 +1032,8 @@ Init_winevt(void)
   rb_define_method(rb_cSubscribe, "subscribe", rb_winevt_subscribe_subscribe, -1);
   rb_define_method(rb_cSubscribe, "next", rb_winevt_subscribe_next, 0);
   rb_define_method(rb_cSubscribe, "render", rb_winevt_subscribe_render, 0);
+  rb_define_method(rb_cSubscribe, "render_hash=", rb_winevt_subscribe_set_does_render_hash, 1);
+  rb_define_method(rb_cSubscribe, "render_hash?", rb_winevt_subscribe_get_render_hash_p, 0);
   rb_define_method(rb_cSubscribe, "each", rb_winevt_subscribe_each, 0);
   rb_define_method(rb_cSubscribe, "bookmark", rb_winevt_subscribe_get_bookmark, 0);
   rb_define_method(rb_cSubscribe, "tail?", rb_winevt_subscribe_tail_p, 0);
@@ -744,6 +1051,8 @@ Init_winevt(void)
   rb_define_alloc_func(rb_cQuery, rb_winevt_query_alloc);
   rb_define_method(rb_cQuery, "initialize", rb_winevt_query_initialize, 2);
   rb_define_method(rb_cQuery, "next", rb_winevt_query_next, 0);
+  rb_define_method(rb_cQuery, "render_hash=", rb_winevt_query_set_does_render_hash, 1);
+  rb_define_method(rb_cQuery, "render_hash?", rb_winevt_query_get_render_hash_p, 0);
   rb_define_method(rb_cQuery, "render", rb_winevt_query_render, 0);
   rb_define_method(rb_cQuery, "seek", rb_winevt_query_seek, 1);
   rb_define_method(rb_cQuery, "offset", rb_winevt_query_get_offset, 0);
