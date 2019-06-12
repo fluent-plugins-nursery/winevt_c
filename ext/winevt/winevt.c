@@ -128,7 +128,6 @@ rb_winevt_channel_each(VALUE self)
   DWORD bufferSize = 0;
   DWORD bufferUsed = 0;
   DWORD status = ERROR_SUCCESS;
-  ULONG len;
 
   RETURN_ENUMERATOR(self, 0, 0);
 
@@ -166,9 +165,7 @@ rb_winevt_channel_each(VALUE self)
       }
     }
 
-    len = WideCharToMultiByte(CP_UTF8, 0, buffer, -1, NULL, 0, NULL, NULL);
-    if (!(result = malloc(len))) return "";
-    WideCharToMultiByte(CP_UTF8, 0, buffer, -1, result, len, NULL, NULL);
+    result = wstr_to_mbstr(CP_UTF8, buffer, -1);
 
     rb_yield(rb_str_new2(result));
   }
@@ -580,7 +577,7 @@ static char* render_event(EVT_HANDLE handle, DWORD flags)
   ULONG      bufferSize = 0;
   ULONG      bufferSizeNeeded = 0;
   EVT_HANDLE event;
-  ULONG      len, status, count;
+  ULONG      status, count;
   char*      errBuf;
   char*      result;
   LPTSTR     msgBuf;
@@ -619,16 +616,12 @@ static char* render_event(EVT_HANDLE handle, DWORD flags)
         NULL, status,
         MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
         &msgBuf, 0, NULL);
-    len = WideCharToMultiByte(CP_UTF8, 0, msgBuf, -1, NULL, 0, NULL, NULL);
-    if (!(result = malloc(len))) return "";
-    WideCharToMultiByte(CP_UTF8, 0, msgBuf, -1, result, len, NULL, NULL);
+    result = wstr_to_mbstr(CP_ACP, msgBuf, -1);
 
     rb_raise(rb_eWinevtQueryError, "ErrorCode: %d\nError: %s\n", status, result);
   }
 
-  len = WideCharToMultiByte(CP_UTF8, 0, buffer, -1, NULL, 0, NULL, NULL);
-  if (!(result = malloc(len))) return "";
-  WideCharToMultiByte(CP_UTF8, 0, buffer, -1, result, len, NULL, NULL);
+  result = wstr_to_mbstr(CP_UTF8, buffer, -1);
 
   if (buffer)
     free(buffer);
