@@ -27,6 +27,7 @@ char* render_event(EVT_HANDLE handle, DWORD flags);
 VALUE rb_cQuery;
 VALUE rb_cChannel;
 VALUE rb_cBookmark;
+VALUE rb_cSubscribe;
 VALUE rb_eWinevtQueryError;
 
 struct WinevtChannel {
@@ -46,8 +47,18 @@ struct WinevtQuery {
   LONG       timeout;
 };
 
+struct WinevtSubscribe {
+  HANDLE     signalEvent;
+  EVT_HANDLE subscription;
+  EVT_HANDLE bookmark;
+  EVT_HANDLE event;
+  DWORD      flags;
+  BOOL       tailing;
+};
+
 void Init_winevt_query(VALUE rb_cEventLog);
 void Init_winevt_channel(VALUE rb_cEventLog);
 void Init_winevt_bookmark(VALUE rb_cEventLog);
+void Init_winevt_subscribe(VALUE rb_cEventLog);
 
 #endif // _WINEVT_C_H
