@@ -24,6 +24,7 @@
 char* wstr_to_mbstr(UINT cp, const WCHAR *wstr, int clen);
 char* render_event(EVT_HANDLE handle, DWORD flags);
 
+VALUE rb_cQuery;
 VALUE rb_cChannel;
 VALUE rb_cBookmark;
 VALUE rb_eWinevtQueryError;
@@ -45,6 +46,7 @@ struct WinevtQuery {
   LONG       timeout;
 };
 
+void Init_winevt_query(VALUE rb_cEventLog);
 void Init_winevt_channel(VALUE rb_cEventLog);
 void Init_winevt_bookmark(VALUE rb_cEventLog);
 
