@@ -22,7 +22,30 @@
 #define EventChannel(object) ((struct WinevtChannel *)DATA_PTR(object))
 
 char* wstr_to_mbstr(UINT cp, const WCHAR *wstr, int clen);
+char* render_event(EVT_HANDLE handle, DWORD flags);
+
+VALUE rb_cChannel;
+VALUE rb_cBookmark;
+VALUE rb_eWinevtQueryError;
+
+struct WinevtChannel {
+  EVT_HANDLE channels;
+};
+
+struct WinevtBookmark {
+  EVT_HANDLE bookmark;
+  ULONG      count;
+};
+
+struct WinevtQuery {
+  EVT_HANDLE query;
+  EVT_HANDLE event;
+  ULONG      count;
+  LONG       offset;
+  LONG       timeout;
+};
 
 void Init_winevt_channel(VALUE rb_cEventLog);
+void Init_winevt_bookmark(VALUE rb_cEventLog);
 
 #endif // _WINEVT_C_H

@@ -1,7 +1,5 @@
 #include <winevt_c.h>
 
-VALUE rb_cChannel;
-
 static void channel_free(void *ptr);
 
 static const rb_data_type_t rb_winevt_channel_type = {
@@ -9,10 +7,6 @@ static const rb_data_type_t rb_winevt_channel_type = {
     0, channel_free, 0,
   }, NULL, NULL,
   RUBY_TYPED_FREE_IMMEDIATELY
-};
-
-struct WinevtChannel {
-  EVT_HANDLE channels;
 };
 
 static void
