@@ -36,7 +36,7 @@ class WinevtTest < Test::Unit::TestCase
     def test_each
       @query.offset = 0
       @query.seek(:last)
-      @query.each do |xml|
+      @query.each do |xml, message|
         assert(xml)
       end
     end
