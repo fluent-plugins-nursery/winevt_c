@@ -205,14 +205,14 @@ char* get_description(EVT_HANDLE handle)
     if (FormatMessageW(FORMAT_MESSAGE_FROM_HMODULE | FORMAT_MESSAGE_IGNORE_INSERTS,
                        hModule,
                        eventId,
-                       MAKELANGID(LANG_ENGLISH,SUBLANG_DEFAULT),
+                       0, // Use current code page. Users must specify character encoding in Ruby side.
                        descriptionBuffer,
                        MAX_BUFFER,
                        NULL)) {
     } else if (!FormatMessageW(FORMAT_MESSAGE_FROM_HMODULE | FORMAT_MESSAGE_IGNORE_INSERTS,
                                hModule,
                                0xB0000000 | eventId,
-                               MAKELANGID(LANG_ENGLISH,SUBLANG_DEFAULT),
+                               0, // Use current code page. Users must specify character encoding in Ruby side.
                                descriptionBuffer,
                                MAX_BUFFER,
                                NULL)){
