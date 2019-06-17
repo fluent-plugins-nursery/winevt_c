@@ -23,6 +23,7 @@
 
 char* wstr_to_mbstr(UINT cp, const WCHAR *wstr, int clen);
 char* render_event(EVT_HANDLE handle, DWORD flags);
+char* get_description(EVT_HANDLE handle);
 
 VALUE rb_cQuery;
 VALUE rb_cChannel;
