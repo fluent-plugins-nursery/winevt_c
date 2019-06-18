@@ -144,7 +144,7 @@ rb_winevt_query_render(VALUE self)
   result = render_event(winevtQuery->event, EvtRenderEventXml);
   get_description(winevtQuery->event);
 
-  return rb_str_new2(result);
+  return rb_utf8_str_new_cstr(result);
 }
 
 static VALUE
@@ -156,7 +156,7 @@ rb_winevt_query_message(VALUE self)
   TypedData_Get_Struct(self, struct WinevtQuery, &rb_winevt_query_type, winevtQuery);
   result = get_description(winevtQuery->event);
 
-  return rb_str_new2(result);
+  return rb_utf8_str_new_cstr(result);
 }
 
 static DWORD

@@ -61,7 +61,7 @@ char* render_event(EVT_HANDLE handle, DWORD flags)
     rb_raise(rb_eWinevtQueryError, "ErrorCode: %d\nError: %s\n", status, result);
   }
 
-  result = wstr_to_mbstr(CP_ACP, buffer, -1);
+  result = wstr_to_mbstr(CP_UTF8, buffer, -1);
 
   if (buffer)
     free(buffer);
@@ -220,7 +220,7 @@ char* get_description(EVT_HANDLE handle)
     }
   }
 
-  result = wstr_to_mbstr(CP_ACP, descriptionBuffer, -1);
+  result = wstr_to_mbstr(CP_UTF8, descriptionBuffer, -1);
 
 #undef MAX_BUFFER
 

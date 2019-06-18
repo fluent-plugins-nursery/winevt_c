@@ -159,7 +159,7 @@ rb_winevt_subscribe_render(VALUE self)
   TypedData_Get_Struct(self, struct WinevtSubscribe, &rb_winevt_subscribe_type, winevtSubscribe);
   result = render_event(winevtSubscribe->event, EvtRenderEventXml);
 
-  return rb_str_new2(result);
+  return rb_utf8_str_new_cstr(result);
 }
 
 static VALUE
@@ -171,7 +171,7 @@ rb_winevt_subscribe_message(VALUE self)
   TypedData_Get_Struct(self, struct WinevtSubscribe, &rb_winevt_subscribe_type, winevtSubscribe);
   result = get_description(winevtSubscribe->event);
 
-  return rb_str_new2(result);
+  return rb_utf8_str_new_cstr(result);
 }
 
 static VALUE
