@@ -88,7 +88,7 @@ rb_winevt_channel_each(VALUE self)
 
     result = wstr_to_mbstr(CP_UTF8, buffer, -1);
 
-    rb_yield(rb_str_new2(result));
+    rb_yield(rb_utf8_str_new_cstr(result));
   }
 
   return Qnil;
