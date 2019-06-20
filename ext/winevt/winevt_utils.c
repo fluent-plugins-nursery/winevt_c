@@ -90,8 +90,9 @@ char* get_description(EVT_HANDLE handle)
   TCHAR paramEXE[MAX_PATH], messageEXE[MAX_PATH];
   HMODULE hModule = NULL;
 
-  static PCWSTR eventProperties[] = {L"Event/System/Provider/@Name", L"Event/System/EventID"};
-  EVT_HANDLE renderContext = EvtCreateRenderContext(2, eventProperties, EvtRenderContextValues);
+  static PCWSTR eventProperties[] = {L"Event/System/Provider/@Name", L"Event/System/EventID",
+                                     L"Event/System/EventID/@Qualifiers"};
+  EVT_HANDLE renderContext = EvtCreateRenderContext(3, eventProperties, EvtRenderContextValues);
   if (renderContext == NULL) {
     rb_raise(rb_eWinevtQueryError, "Failed to create renderContext");
   }
@@ -127,9 +128,13 @@ char* get_description(EVT_HANDLE handle)
     WideCharToMultiByte(CP_ACP, WC_COMPOSITECHECK | WC_DEFAULTCHAR, values[0].StringVal, -1, publisherName, MAX_PATH, NULL, NULL);
   }
 
-  DWORD eventId = 0;
+  DWORD eventId = 0, qualifiers = 0;
   if (values[1].Type == EvtVarTypeUInt16) {
     eventId = values[1].UInt16Val;
+  }
+
+  if (values[2].Type == EvtVarTypeUInt16) {
+    qualifiers = values[2].UInt16Val;
   }
 
   // Open publisher metadata
@@ -202,21 +207,25 @@ char* get_description(EVT_HANDLE handle)
     hModule = LoadLibraryEx(messageEXE, NULL,
                             DONT_RESOLVE_DLL_REFERENCES | LOAD_LIBRARY_AS_DATAFILE);
 
-    if(FormatMessageW(FORMAT_MESSAGE_FROM_HMODULE | FORMAT_MESSAGE_IGNORE_INSERTS,
-                      hModule,
-                      eventId,
-                      0, // Use current code page. Users must specify character encoding in Ruby side.
-                      descriptionBuffer,
-                      MAX_BUFFER,
-                      NULL) == 0){
-
-      FormatMessageW(FORMAT_MESSAGE_FROM_HMODULE | FORMAT_MESSAGE_IGNORE_INSERTS,
-                     hModule,
-                     0xB0000000 | eventId,
-                     0, // Use current code page. Users must specify character encoding in Ruby side.
-                     descriptionBuffer,
-                     MAX_BUFFER,
-                     NULL);
+    if(!FormatMessageW(FORMAT_MESSAGE_FROM_HMODULE | FORMAT_MESSAGE_IGNORE_INSERTS,
+                         hModule,
+                         eventId,
+                         0, // Use current code page. Users must specify character encoding in Ruby side.
+                         descriptionBuffer,
+                         MAX_BUFFER,
+                       NULL)) {
+      if (ERROR_MR_MID_NOT_FOUND == GetLastError()) {
+        // clear buffer
+        ZeroMemory(descriptionBuffer, sizeof(descriptionBuffer));
+        eventId = qualifiers << 16 | eventId;
+        FormatMessageW(FORMAT_MESSAGE_FROM_HMODULE | FORMAT_MESSAGE_IGNORE_INSERTS,
+                       hModule,
+                       eventId,
+                       0, // Use current code page. Users must specify character encoding in Ruby side.
+                       descriptionBuffer,
+                       MAX_BUFFER,
+                       NULL);
+      }
     }
   }
 
