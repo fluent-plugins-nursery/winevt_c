@@ -202,21 +202,21 @@ char* get_description(EVT_HANDLE handle)
     hModule = LoadLibraryEx(messageEXE, NULL,
                             DONT_RESOLVE_DLL_REFERENCES | LOAD_LIBRARY_AS_DATAFILE);
 
-    if (FormatMessageW(FORMAT_MESSAGE_FROM_HMODULE | FORMAT_MESSAGE_IGNORE_INSERTS,
-                       hModule,
-                       eventId,
-                       0, // Use current code page. Users must specify character encoding in Ruby side.
-                       descriptionBuffer,
-                       MAX_BUFFER,
-                       NULL)) {
-    } else if (!FormatMessageW(FORMAT_MESSAGE_FROM_HMODULE | FORMAT_MESSAGE_IGNORE_INSERTS,
-                               hModule,
-                               0xB0000000 | eventId,
-                               0, // Use current code page. Users must specify character encoding in Ruby side.
-                               descriptionBuffer,
-                               MAX_BUFFER,
-                               NULL)){
-      goto cleanup;
+    if(FormatMessageW(FORMAT_MESSAGE_FROM_HMODULE | FORMAT_MESSAGE_IGNORE_INSERTS,
+                      hModule,
+                      eventId,
+                      0, // Use current code page. Users must specify character encoding in Ruby side.
+                      descriptionBuffer,
+                      MAX_BUFFER,
+                      NULL) == 0){
+
+      FormatMessageW(FORMAT_MESSAGE_FROM_HMODULE | FORMAT_MESSAGE_IGNORE_INSERTS,
+                     hModule,
+                     0xB0000000 | eventId,
+                     0, // Use current code page. Users must specify character encoding in Ruby side.
+                     descriptionBuffer,
+                     MAX_BUFFER,
+                     NULL);
     }
   }
 
