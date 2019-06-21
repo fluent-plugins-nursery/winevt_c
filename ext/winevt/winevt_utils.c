@@ -235,6 +235,9 @@ char* get_description(EVT_HANDLE handle)
 
 cleanup:
 
+  if (renderContext)
+    EvtClose(renderContext);
+
   if (hMetadata)
     EvtClose(hMetadata);
 
