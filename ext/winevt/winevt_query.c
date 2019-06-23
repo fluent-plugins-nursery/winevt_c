@@ -159,6 +159,15 @@ rb_winevt_query_message(VALUE self)
   return rb_utf8_str_new_cstr(result);
 }
 
+static VALUE
+rb_winevt_query_string_inserts(VALUE self)
+{
+  struct WinevtQuery *winevtQuery;
+
+  TypedData_Get_Struct(self, struct WinevtQuery, &rb_winevt_query_type, winevtQuery);
+  return get_values(winevtQuery->event);
+}
+
 static DWORD
 get_evt_seek_flag_from_cstr(char* flag_str)
 {
@@ -221,7 +230,10 @@ rb_winevt_query_each(VALUE self)
   TypedData_Get_Struct(self, struct WinevtQuery, &rb_winevt_query_type, winevtQuery);
 
   while (rb_winevt_query_next(self)) {
-    rb_yield_values(2, rb_winevt_query_render(self), rb_winevt_query_message(self));
+    rb_yield_values(3,
+                    rb_winevt_query_render(self),
+                    rb_winevt_query_message(self),
+                    rb_winevt_query_string_inserts(self));
   }
 
   return Qnil;
@@ -236,6 +248,7 @@ void Init_winevt_query(VALUE rb_cEventLog)
   rb_define_method(rb_cQuery, "next", rb_winevt_query_next, 0);
   rb_define_method(rb_cQuery, "render", rb_winevt_query_render, 0);
   rb_define_method(rb_cQuery, "message", rb_winevt_query_message, 0);
+  rb_define_method(rb_cQuery, "string_inserts", rb_winevt_query_string_inserts, 0);
   rb_define_method(rb_cQuery, "seek", rb_winevt_query_seek, 1);
   rb_define_method(rb_cQuery, "offset", rb_winevt_query_get_offset, 0);
   rb_define_method(rb_cQuery, "offset=", rb_winevt_query_set_offset, 1);
