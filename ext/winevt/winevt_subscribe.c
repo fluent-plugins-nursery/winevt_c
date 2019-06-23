@@ -175,6 +175,15 @@ rb_winevt_subscribe_message(VALUE self)
 }
 
 static VALUE
+rb_winevt_subscribe_string_inserts(VALUE self)
+{
+  struct WinevtSubscribe *winevtSubscribe;
+
+  TypedData_Get_Struct(self, struct WinevtSubscribe, &rb_winevt_subscribe_type, winevtSubscribe);
+  return get_values(winevtSubscribe->event);
+}
+
+static VALUE
 rb_winevt_subscribe_each(VALUE self)
 {
   struct WinevtSubscribe *winevtSubscribe;
@@ -184,7 +193,10 @@ rb_winevt_subscribe_each(VALUE self)
   TypedData_Get_Struct(self, struct WinevtSubscribe, &rb_winevt_subscribe_type, winevtSubscribe);
 
   while (rb_winevt_subscribe_next(self)) {
-    rb_yield_values(2, rb_winevt_subscribe_render(self), rb_winevt_subscribe_message(self));
+    rb_yield_values(3,
+                    rb_winevt_subscribe_render(self),
+                    rb_winevt_subscribe_message(self),
+                    rb_winevt_subscribe_string_inserts(self));
   }
 
   return Qnil;
@@ -213,6 +225,7 @@ void Init_winevt_subscribe(VALUE rb_cEventLog)
   rb_define_method(rb_cSubscribe, "next", rb_winevt_subscribe_next, 0);
   rb_define_method(rb_cSubscribe, "render", rb_winevt_subscribe_render, 0);
   rb_define_method(rb_cSubscribe, "message", rb_winevt_subscribe_message, 0);
+  rb_define_method(rb_cSubscribe, "string_inserts", rb_winevt_subscribe_string_inserts, 0);
   rb_define_method(rb_cSubscribe, "each", rb_winevt_subscribe_each, 0);
   rb_define_method(rb_cSubscribe, "bookmark", rb_winevt_subscribe_get_bookmark, 0);
   rb_define_method(rb_cSubscribe, "tail?", rb_winevt_subscribe_tail_p, 0);
