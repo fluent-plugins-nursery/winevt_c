@@ -1,5 +1,6 @@
 #include <winevt_c.h>
 #include <Sddl.h>
+#include <stdlib.h>
 
 char*
 wstr_to_mbstr(UINT cp, const WCHAR *wstr, int clen)
@@ -131,30 +132,28 @@ VALUE get_values(EVT_HANDLE handle)
   SYSTEMTIME st;
   FILETIME ft;
   CHAR strTime[128];
-  ULONGLONG qwResult;
   VALUE rbObj;
 
   for (int i = 0; i < propCount; i++) {
     switch (pRenderedValues[i].Type) {
     case EvtVarTypeString:
       if (pRenderedValues[i].StringVal == NULL) {
-        rb_ary_push(userValues, rb_str_new2("(NULL)"));
+        rb_ary_push(userValues, rb_utf8_str_new_cstr("(NULL)"));
       } else {
         result = wstr_to_mbstr(CP_UTF8, pRenderedValues[i].StringVal, -1);
-        rb_ary_push(userValues, rb_str_new2(result));
+        rb_ary_push(userValues, rb_utf8_str_new_cstr(result));
       }
       break;
     case EvtVarTypeAnsiString:
       if (pRenderedValues[i].AnsiStringVal == NULL) {
-        rb_ary_push(userValues, rb_str_new2("(NULL)"));
+        rb_ary_push(userValues, rb_utf8_str_new_cstr("(NULL)"));
       } else {
-        rb_ary_push(userValues, rb_str_new2((char *)pRenderedValues[i].AnsiStringVal));
+        rb_ary_push(userValues, rb_utf8_str_new_cstr((char *)pRenderedValues[i].AnsiStringVal));
       }
       break;
     case EvtVarTypeSByte:
       rbObj = INT2NUM((INT32)pRenderedValues[i].SByteVal);
       rb_ary_push(userValues, rbObj);
-      break;
       break;
     case EvtVarTypeByte:
       rbObj = INT2NUM((UINT32)pRenderedValues[i].ByteVal);
@@ -197,33 +196,45 @@ VALUE get_values(EVT_HANDLE handle)
       rb_ary_push(userValues, rb_str_new2(result));
       break;
     case EvtVarTypeHexInt32:
-      sprintf(result, "%"PRIx32,  pRenderedValues[i].UInt32Val);
-      rb_ary_push(userValues, rb_str_new2(result));
+      rbObj = ULONG2NUM(pRenderedValues[i].UInt32Val);
+      rbObj = rb_sprintf("%#x", rbObj);
+      rb_ary_push(userValues, rbObj);
       break;
     case EvtVarTypeHexInt64:
-      sprintf(result, "%"PRIx64,  pRenderedValues[i].UInt64Val);
-      rb_ary_push(userValues, rb_str_new2(result));
+      rbObj = ULONG2NUM(pRenderedValues[i].UInt64Val);
+      rbObj = rb_sprintf("%#x", rbObj);
+      rb_ary_push(userValues, rbObj);
       break;
     case EvtVarTypeGuid:
-      StringFromCLSID(pRenderedValues[i].GuidVal, &tmpWChar);
-      result = wstr_to_mbstr(CP_UTF8, tmpWChar, -1);
-      rb_ary_push(userValues, rb_str_new2(result));
+      if (pRenderedValues[i].GuidVal != NULL) {
+        StringFromCLSID(pRenderedValues[i].GuidVal, &tmpWChar);
+        result = wstr_to_mbstr(CP_UTF8, tmpWChar, -1);
+        rb_ary_push(userValues, rb_str_new2(result));
+      } else {
+        rb_ary_push(userValues, rb_str_new2("?"));
+      }
       break;
     case EvtVarTypeSid:
-      ConvertSidToStringSidW(pRenderedValues[i].SidVal, &tmpWChar);
-      result = wstr_to_mbstr(CP_UTF8, tmpWChar, -1);
-      rb_ary_push(userValues, rb_str_new2(result));
+      if (ConvertSidToStringSidW(pRenderedValues[i].SidVal, &tmpWChar)) {
+        result = wstr_to_mbstr(CP_UTF8, tmpWChar, -1);
+        rb_ary_push(userValues, rb_str_new2(result));
+      } else {
+        rb_ary_push(userValues, rb_str_new2("?"));
+      }
       break;
     case EvtVarTypeFileTime:
       timestamp.QuadPart = pRenderedValues[i].FileTimeVal;
       ft.dwHighDateTime = timestamp.HighPart;
       ft.dwLowDateTime  = timestamp.LowPart;
-      FileTimeToSystemTime( &ft, &st );
-      sprintf(strTime, "%04d-%02d-%02d %02d:%02d:%02d.%dZ",
-              st.wYear , st.wMonth , st.wDay ,
-              st.wHour , st.wMinute , st.wSecond,
-              st.wMilliseconds);
-      rb_ary_push(userValues, rb_str_new2(strTime));
+      if (FileTimeToSystemTime( &ft, &st )) {
+        sprintf(strTime, "%04d-%02d-%02d %02d:%02d:%02d.%dZ",
+                st.wYear , st.wMonth , st.wDay ,
+                st.wHour , st.wMinute , st.wSecond,
+                st.wMilliseconds);
+        rb_ary_push(userValues, rb_str_new2(strTime));
+      } else {
+        rb_ary_push(userValues, rb_str_new2("?"));
+      }
       break;
     default:
       rb_ary_push(userValues, rb_str_new2("?"));
