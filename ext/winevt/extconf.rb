@@ -13,7 +13,7 @@ dir_config("winevt", includedir, libdir)
 have_library("wevtapi")
 have_func("EvtQuery", "winevt.h")
 
-$LDFLAGS << " -lwevtapi"
+$LDFLAGS << " -lwevtapi -lAdvapi32 -lOle32"
 $CFLAGS << " -std=c99 -fPIC -fms-extensions "
 # $CFLAGS << " -g -O0"
 
