@@ -123,7 +123,7 @@ class WinevtTest < Test::Unit::TestCase
 
     def test_each
       assert do
-        @subscribe.each
+        @subscribe.respond_to?(:each)
       end
     end
   end
