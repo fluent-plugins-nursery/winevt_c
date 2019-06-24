@@ -8,13 +8,9 @@ while (1) do
   if @subscribe.next
     eventlog = @subscribe.render
     message = @subscribe.message
-    doc = REXML::Document.new(eventlog)
-    nodes = []
-    REXML::XPath.each(doc, "/Event/EventData/Data") do |node|
-      nodes << node.text
-    end
+    string_inserts = @subscribe.string_inserts
     message = message.gsub(/(%\d+)/, '\1$s')
-    message = sprintf(message, *nodes)
+    message = sprintf(message, *string_inserts)
 
     puts ({eventlog: eventlog, data: message})
   else
