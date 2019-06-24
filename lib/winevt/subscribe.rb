@@ -1,6 +1,6 @@
 module Winevt
   class EventLog
-    class Query
+    class Subscribe
       alias_method :each_raw, :each
       def each
         each_raw do |xml, message, string_inserts|
