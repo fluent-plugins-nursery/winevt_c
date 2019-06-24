@@ -57,10 +57,9 @@ char* render_event(EVT_HANDLE handle, DWORD flags)
         FORMAT_MESSAGE_IGNORE_INSERTS,
         NULL, status,
         MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-        &msgBuf, 0, NULL);
-    result = wstr_to_mbstr(CP_ACP, msgBuf, -1);
+        msgBuf, 0, NULL);
 
-    rb_raise(rb_eWinevtQueryError, "ErrorCode: %d\nError: %s\n", status, result);
+    rb_raise(rb_eWinevtQueryError, "ErrorCode: %d\nError: %s\n", status, msgBuf);
   }
 
   result = wstr_to_mbstr(CP_UTF8, buffer, -1);
@@ -121,10 +120,9 @@ VALUE get_values(EVT_HANDLE handle)
         FORMAT_MESSAGE_IGNORE_INSERTS,
         NULL, status,
         MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-        &msgBuf, 0, NULL);
-    result = wstr_to_mbstr(CP_ACP, msgBuf, -1);
+        msgBuf, 0, NULL);
 
-    rb_raise(rb_eWinevtQueryError, "ErrorCode: %d\nError: %s\n", status, result);
+    rb_raise(rb_eWinevtQueryError, "ErrorCode: %d\nError: %s\n", status, msgBuf);
   }
 
   PEVT_VARIANT pRenderedValues = (PEVT_VARIANT)buffer;
@@ -295,10 +293,9 @@ char* get_description(EVT_HANDLE handle)
         FORMAT_MESSAGE_IGNORE_INSERTS,
         NULL, status,
         MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-        &msgBuf, 0, NULL);
-    result = wstr_to_mbstr(CP_ACP, msgBuf, -1);
+        msgBuf, 0, NULL);
 
-    rb_raise(rb_eWinevtQueryError, "ErrorCode: %d\nError: %s\n", status, result);
+    rb_raise(rb_eWinevtQueryError, "ErrorCode: %d\nError: %s\n", status, msgBuf);
   }
 
   // Obtain buffer as EVT_VARIANT pointer. To avoid ErrorCide 87 in EvtRender.

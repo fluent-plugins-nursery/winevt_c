@@ -12,7 +12,7 @@
 #endif /* __GNUC__ */
 
 #ifdef _WIN32_WINNT
-#  undef WIN32_WINNT
+#  undef _WIN32_WINNT
 #endif /* WIN32_WINNT */
 #define _WIN32_WINNT MINIMUM_WINDOWS_VERSION
 
