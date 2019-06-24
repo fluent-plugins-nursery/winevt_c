@@ -1,5 +1,5 @@
 #include <winevt_c.h>
-#include <Sddl.h>
+#include <sddl.h>
 #include <stdlib.h>
 
 char*
