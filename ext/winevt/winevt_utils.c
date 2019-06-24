@@ -196,28 +196,6 @@ VALUE get_values(EVT_HANDLE handle)
       result = pRenderedValues[i].BooleanVal ? "true" : "false";
       rb_ary_push(userValues, rb_utf8_str_new_cstr(result));
       break;
-    case EvtVarTypeHexInt32:
-      rbObj = ULONG2NUM(pRenderedValues[i].UInt32Val);
-      rbObj = rb_sprintf("%#x", rbObj);
-      rb_ary_push(userValues, rbObj);
-      break;
-    case EvtVarTypeHexInt64:
-      rbObj = ULONG2NUM(pRenderedValues[i].UInt64Val);
-      rbObj = rb_sprintf("%#x", rbObj);
-      rb_ary_push(userValues, rbObj);
-      break;
-    case EvtVarTypeSizeT:
-      rbObj = SIZET2NUM(pRenderedValues[i].SizeTVal);
-      rb_ary_push(userValues, rbObj);
-      break;
-    case EvtVarTypeEvtXml:
-      if (pRenderedValues[i].XmlVal == NULL) {
-        rb_ary_push(userValues, rb_utf8_str_new_cstr("(NULL)"));
-      } else {
-        result = wstr_to_mbstr(CP_UTF8, pRenderedValues[i].XmlVal, -1);
-        rb_ary_push(userValues, rb_utf8_str_new_cstr(result));
-      }
-      break;
     case EvtVarTypeGuid:
       if (pRenderedValues[i].GuidVal != NULL) {
         StringFromCLSID(pRenderedValues[i].GuidVal, &tmpWChar);
@@ -227,13 +205,9 @@ VALUE get_values(EVT_HANDLE handle)
         rb_ary_push(userValues, rb_utf8_str_new_cstr("?"));
       }
       break;
-    case EvtVarTypeSid:
-      if (ConvertSidToStringSidW(pRenderedValues[i].SidVal, &tmpWChar)) {
-        result = wstr_to_mbstr(CP_UTF8, tmpWChar, -1);
-        rb_ary_push(userValues, rb_utf8_str_new_cstr(result));
-      } else {
-        rb_ary_push(userValues, rb_utf8_str_new_cstr("?"));
-      }
+    case EvtVarTypeSizeT:
+      rbObj = SIZET2NUM(pRenderedValues[i].SizeTVal);
+      rb_ary_push(userValues, rbObj);
       break;
     case EvtVarTypeFileTime:
       timestamp.QuadPart = pRenderedValues[i].FileTimeVal;
@@ -259,6 +233,32 @@ VALUE get_values(EVT_HANDLE handle)
         rb_ary_push(userValues, rb_utf8_str_new_cstr(strTime));
       } else {
         rb_ary_push(userValues, rb_utf8_str_new_cstr("?"));
+      }
+      break;
+    case EvtVarTypeSid:
+      if (ConvertSidToStringSidW(pRenderedValues[i].SidVal, &tmpWChar)) {
+        result = wstr_to_mbstr(CP_UTF8, tmpWChar, -1);
+        rb_ary_push(userValues, rb_utf8_str_new_cstr(result));
+      } else {
+        rb_ary_push(userValues, rb_utf8_str_new_cstr("?"));
+      }
+      break;
+    case EvtVarTypeHexInt32:
+      rbObj = ULONG2NUM(pRenderedValues[i].UInt32Val);
+      rbObj = rb_sprintf("%#x", rbObj);
+      rb_ary_push(userValues, rbObj);
+      break;
+    case EvtVarTypeHexInt64:
+      rbObj = ULONG2NUM(pRenderedValues[i].UInt64Val);
+      rbObj = rb_sprintf("%#x", rbObj);
+      rb_ary_push(userValues, rbObj);
+      break;
+    case EvtVarTypeEvtXml:
+      if (pRenderedValues[i].XmlVal == NULL) {
+        rb_ary_push(userValues, rb_utf8_str_new_cstr("(NULL)"));
+      } else {
+        result = wstr_to_mbstr(CP_UTF8, pRenderedValues[i].XmlVal, -1);
+        rb_ary_push(userValues, rb_utf8_str_new_cstr(result));
       }
       break;
     default:
