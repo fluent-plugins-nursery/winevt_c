@@ -134,6 +134,9 @@ VALUE get_values(EVT_HANDLE handle)
 
   for (int i = 0; i < propCount; i++) {
     switch (pRenderedValues[i].Type) {
+    case EvtVarTypeNull:
+      rb_ary_push(userValues, Qnil);
+      break;
     case EvtVarTypeString:
       if (pRenderedValues[i].StringVal == NULL) {
         rb_ary_push(userValues, rb_utf8_str_new_cstr("(NULL)"));
@@ -203,6 +206,18 @@ VALUE get_values(EVT_HANDLE handle)
       rbObj = rb_sprintf("%#x", rbObj);
       rb_ary_push(userValues, rbObj);
       break;
+    case EvtVarTypeSizeT:
+      rbObj = SIZET2NUM(pRenderedValues[i].SizeTVal);
+      rb_ary_push(userValues, rbObj);
+      break;
+    case EvtVarTypeEvtXml:
+      if (pRenderedValues[i].XmlVal == NULL) {
+        rb_ary_push(userValues, rb_utf8_str_new_cstr("(NULL)"));
+      } else {
+        result = wstr_to_mbstr(CP_UTF8, pRenderedValues[i].XmlVal, -1);
+        rb_ary_push(userValues, rb_utf8_str_new_cstr(result));
+      }
+      break;
     case EvtVarTypeGuid:
       if (pRenderedValues[i].GuidVal != NULL) {
         StringFromCLSID(pRenderedValues[i].GuidVal, &tmpWChar);
@@ -225,6 +240,18 @@ VALUE get_values(EVT_HANDLE handle)
       ft.dwHighDateTime = timestamp.HighPart;
       ft.dwLowDateTime  = timestamp.LowPart;
       if (FileTimeToSystemTime( &ft, &st )) {
+        sprintf(strTime, "%04d-%02d-%02d %02d:%02d:%02d.%dZ",
+                st.wYear , st.wMonth , st.wDay ,
+                st.wHour , st.wMinute , st.wSecond,
+                st.wMilliseconds);
+        rb_ary_push(userValues, rb_utf8_str_new_cstr(strTime));
+      } else {
+        rb_ary_push(userValues, rb_utf8_str_new_cstr("?"));
+      }
+      break;
+    case EvtVarTypeSysTime:
+      if (pRenderedValues[i].SysTimeVal != NULL) {
+        st = *pRenderedValues[i].SysTimeVal;
         sprintf(strTime, "%04d-%02d-%02d %02d:%02d:%02d.%dZ",
                 st.wYear , st.wMonth , st.wDay ,
                 st.wHour , st.wMinute , st.wSecond,
