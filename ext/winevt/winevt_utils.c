@@ -185,15 +185,15 @@ VALUE get_values(EVT_HANDLE handle)
       break;
     case EvtVarTypeSingle:
       sprintf(result, "%f", pRenderedValues[i].SingleVal);
-      rb_ary_push(userValues, rb_str_new2(result));
+      rb_ary_push(userValues, rb_utf8_str_new_cstr(result));
       break;
     case EvtVarTypeDouble:
       sprintf(result, "%lf", pRenderedValues[i].DoubleVal);
-      rb_ary_push(userValues, rb_str_new2(result));
+      rb_ary_push(userValues, rb_utf8_str_new_cstr(result));
       break;
     case EvtVarTypeBoolean:
       result = pRenderedValues[i].BooleanVal ? "true" : "false";
-      rb_ary_push(userValues, rb_str_new2(result));
+      rb_ary_push(userValues, rb_utf8_str_new_cstr(result));
       break;
     case EvtVarTypeHexInt32:
       rbObj = ULONG2NUM(pRenderedValues[i].UInt32Val);
@@ -209,17 +209,17 @@ VALUE get_values(EVT_HANDLE handle)
       if (pRenderedValues[i].GuidVal != NULL) {
         StringFromCLSID(pRenderedValues[i].GuidVal, &tmpWChar);
         result = wstr_to_mbstr(CP_UTF8, tmpWChar, -1);
-        rb_ary_push(userValues, rb_str_new2(result));
+        rb_ary_push(userValues, rb_utf8_str_new_cstr(result));
       } else {
-        rb_ary_push(userValues, rb_str_new2("?"));
+        rb_ary_push(userValues, rb_utf8_str_new_cstr("?"));
       }
       break;
     case EvtVarTypeSid:
       if (ConvertSidToStringSidW(pRenderedValues[i].SidVal, &tmpWChar)) {
         result = wstr_to_mbstr(CP_UTF8, tmpWChar, -1);
-        rb_ary_push(userValues, rb_str_new2(result));
+        rb_ary_push(userValues, rb_utf8_str_new_cstr(result));
       } else {
-        rb_ary_push(userValues, rb_str_new2("?"));
+        rb_ary_push(userValues, rb_utf8_str_new_cstr("?"));
       }
       break;
     case EvtVarTypeFileTime:
@@ -231,13 +231,13 @@ VALUE get_values(EVT_HANDLE handle)
                 st.wYear , st.wMonth , st.wDay ,
                 st.wHour , st.wMinute , st.wSecond,
                 st.wMilliseconds);
-        rb_ary_push(userValues, rb_str_new2(strTime));
+        rb_ary_push(userValues, rb_utf8_str_new_cstr(strTime));
       } else {
-        rb_ary_push(userValues, rb_str_new2("?"));
+        rb_ary_push(userValues, rb_utf8_str_new_cstr("?"));
       }
       break;
     default:
-      rb_ary_push(userValues, rb_str_new2("?"));
+      rb_ary_push(userValues, rb_utf8_str_new_cstr("?"));
       break;
     }
   }
