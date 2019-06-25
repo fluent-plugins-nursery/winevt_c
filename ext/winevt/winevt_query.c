@@ -139,12 +139,16 @@ rb_winevt_query_render(VALUE self)
 {
   char* result;
   struct WinevtQuery *winevtQuery;
+  VALUE utf8str;
 
   TypedData_Get_Struct(self, struct WinevtQuery, &rb_winevt_query_type, winevtQuery);
   result = render_event(winevtQuery->event, EvtRenderEventXml);
   get_description(winevtQuery->event);
 
-  return rb_utf8_str_new_cstr(result);
+  utf8str = rb_utf8_str_new_cstr(result);
+  free(result);
+
+  return utf8str;
 }
 
 static VALUE
@@ -152,11 +156,15 @@ rb_winevt_query_message(VALUE self)
 {
   char* result;
   struct WinevtQuery *winevtQuery;
+  VALUE utf8str;
 
   TypedData_Get_Struct(self, struct WinevtQuery, &rb_winevt_query_type, winevtQuery);
   result = get_description(winevtQuery->event);
 
-  return rb_utf8_str_new_cstr(result);
+  utf8str = rb_utf8_str_new_cstr(result);
+  free(result);
+
+  return utf8str;
 }
 
 static VALUE
