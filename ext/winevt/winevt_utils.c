@@ -59,7 +59,10 @@ char* render_event(EVT_HANDLE handle, DWORD flags)
         MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
         msgBuf, 0, NULL);
 
-    rb_raise(rb_eWinevtQueryError, "ErrorCode: %d\nError: %s\n", status, msgBuf);
+    VALUE errmsg = rb_str_new2(msgBuf);
+    LocalFree(msgBuf);
+
+    rb_raise(rb_eWinevtQueryError, "ErrorCode: %d\nError: %s\n", status, RSTRING_PTR(errmsg));
   }
 
   result = wstr_to_mbstr(CP_UTF8, buffer, -1);
@@ -122,7 +125,10 @@ VALUE get_values(EVT_HANDLE handle)
         MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
         msgBuf, 0, NULL);
 
-    rb_raise(rb_eWinevtQueryError, "ErrorCode: %d\nError: %s\n", status, msgBuf);
+    VALUE errmsg = rb_str_new2(msgBuf);
+    LocalFree(msgBuf);
+
+    rb_raise(rb_eWinevtQueryError, "ErrorCode: %d\nError: %s\n", status, RSTRING_PTR(errmsg));
   }
 
   PEVT_VARIANT pRenderedValues = (PEVT_VARIANT)buffer;
@@ -322,7 +328,10 @@ char* get_description(EVT_HANDLE handle)
         MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
         msgBuf, 0, NULL);
 
-    rb_raise(rb_eWinevtQueryError, "ErrorCode: %d\nError: %s\n", status, msgBuf);
+    VALUE errmsg = rb_str_new2(msgBuf);
+    LocalFree(msgBuf);
+
+    rb_raise(rb_eWinevtQueryError, "ErrorCode: %d\nError: %s\n", status, RSTRING_PTR(errmsg));
   }
 
   // Obtain buffer as EVT_VARIANT pointer. To avoid ErrorCide 87 in EvtRender.
