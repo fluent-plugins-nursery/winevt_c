@@ -155,15 +155,11 @@ rb_winevt_subscribe_render(VALUE self)
 {
   char* result;
   struct WinevtSubscribe *winevtSubscribe;
-  VALUE utf8str;
 
   TypedData_Get_Struct(self, struct WinevtSubscribe, &rb_winevt_subscribe_type, winevtSubscribe);
   result = render_event(winevtSubscribe->event, EvtRenderEventXml);
 
-  utf8str = rb_utf8_str_new_cstr(result);
-  free(result);
-
-  return utf8str;
+  return rb_utf8_str_new_cstr(result);
 }
 
 static VALUE
@@ -171,15 +167,11 @@ rb_winevt_subscribe_message(VALUE self)
 {
   char* result;
   struct WinevtSubscribe *winevtSubscribe;
-  VALUE utf8str;
 
   TypedData_Get_Struct(self, struct WinevtSubscribe, &rb_winevt_subscribe_type, winevtSubscribe);
   result = get_description(winevtSubscribe->event);
 
-  utf8str = rb_utf8_str_new_cstr(result);
-  free(result);
-
-  return utf8str;
+  return rb_utf8_str_new_cstr(result);
 }
 
 static VALUE
