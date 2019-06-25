@@ -71,7 +71,7 @@ rb_winevt_channel_each(VALUE self)
         break;
       } else if (ERROR_INSUFFICIENT_BUFFER == status) {
         bufferSize = bufferUsed;
-        temp = (LPWSTR)realloc(buffer, bufferSize * sizeof(WCHAR));
+        temp = (LPWSTR)xrealloc(buffer, bufferSize * sizeof(WCHAR));
         if (temp) {
           buffer = temp;
           temp = NULL;

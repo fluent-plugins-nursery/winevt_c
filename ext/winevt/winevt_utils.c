@@ -7,7 +7,7 @@ wstr_to_mbstr(UINT cp, const WCHAR *wstr, int clen)
 {
     char *ptr;
     int len = WideCharToMultiByte(cp, 0, wstr, clen, NULL, 0, NULL, NULL);
-    if (!(ptr = malloc(len))) return 0;
+    if (!(ptr = xmalloc(len))) return 0;
     WideCharToMultiByte(cp, 0, wstr, clen, ptr, len, NULL, NULL);
 
     return ptr;
@@ -393,7 +393,7 @@ char* get_description(EVT_HANDLE handle)
     status = GetLastError();
     if (ERROR_INSUFFICIENT_BUFFER == status) {
       bufferSize = count;
-      pTemp = (PEVT_VARIANT)realloc(pProperty, bufferSize);
+      pTemp = (PEVT_VARIANT)xrealloc(pProperty, bufferSize);
       if (pTemp) {
         pProperty = pTemp;
         pTemp = NULL;
