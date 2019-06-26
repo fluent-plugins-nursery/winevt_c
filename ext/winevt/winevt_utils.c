@@ -289,6 +289,7 @@ char* get_description(EVT_HANDLE handle)
   LPTSTR     msgBuf = "";
   EVT_HANDLE hMetadata = NULL;
   PEVT_VARIANT values = NULL;
+  LPVOID lpMsgBuf;
 
   static PCWSTR eventProperties[] = {L"Event/System/Provider/@Name"};
   EVT_HANDLE renderContext = EvtCreateRenderContext(1, eventProperties, EvtRenderContextValues);
@@ -344,8 +345,27 @@ char* get_description(EVT_HANDLE handle)
       case ERROR_EVT_MESSAGE_LOCALE_NOT_FOUND:
       case ERROR_RESOURCE_LANG_NOT_FOUND:
       case ERROR_MUI_FILE_NOT_FOUND:
-      case ERROR_EVT_UNRESOLVED_PARAMETER_INSERT:
-        return "";
+      case ERROR_EVT_UNRESOLVED_PARAMETER_INSERT: {
+        if (FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER |
+                           FORMAT_MESSAGE_FROM_SYSTEM |
+                           FORMAT_MESSAGE_IGNORE_INSERTS,
+                           NULL,
+                           status,
+                           MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+                           (WCHAR *) &lpMsgBuf, 0, NULL) == 0)
+          FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER |
+                         FORMAT_MESSAGE_FROM_SYSTEM |
+                         FORMAT_MESSAGE_IGNORE_INSERTS,
+                         NULL,
+                         status,
+                         MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US),
+                         (WCHAR *) &lpMsgBuf, 0, NULL);
+
+        result = wstr_to_mbstr(CP_UTF8, (WCHAR *)lpMsgBuf, -1);
+
+        goto cleanup;
+      }
+
       }
 
       if (status != ERROR_INSUFFICIENT_BUFFER)
@@ -366,7 +386,24 @@ char* get_description(EVT_HANDLE handle)
           case ERROR_RESOURCE_LANG_NOT_FOUND:
           case ERROR_MUI_FILE_NOT_FOUND:
           case ERROR_EVT_UNRESOLVED_PARAMETER_INSERT:
-            return "";
+            if (FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER |
+                               FORMAT_MESSAGE_FROM_SYSTEM |
+                               FORMAT_MESSAGE_IGNORE_INSERTS,
+                               NULL,
+                               status,
+                               MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+                               (WCHAR *) &lpMsgBuf, 0, NULL) == 0)
+              FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER |
+                             FORMAT_MESSAGE_FROM_SYSTEM |
+                             FORMAT_MESSAGE_IGNORE_INSERTS,
+                             NULL,
+                             status,
+                             MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US),
+                             (WCHAR *) &lpMsgBuf, 0, NULL);
+
+            result = wstr_to_mbstr(CP_UTF8, (WCHAR *)lpMsgBuf, -1);
+
+            goto cleanup;
           }
 
           rb_raise(rb_eWinevtQueryError, "ErrorCode: %d", status);
