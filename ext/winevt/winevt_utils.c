@@ -18,9 +18,7 @@ char* render_event(EVT_HANDLE handle, DWORD flags)
   PWSTR      buffer = NULL;
   ULONG      bufferSize = 0;
   ULONG      bufferSizeNeeded = 0;
-  EVT_HANDLE event;
   ULONG      status, count;
-  char*      errBuf;
   char*      result;
   LPTSTR     msgBuf;
 
@@ -286,13 +284,11 @@ char* get_description(EVT_HANDLE handle)
   WCHAR      descriptionBuffer[MAX_BUFFER];
   ULONG      bufferSize = 0;
   ULONG      bufferSizeNeeded = 0;
-  EVT_HANDLE event;
   ULONG      status, count;
   char*      result = "";
   LPTSTR     msgBuf = "";
   EVT_HANDLE hMetadata = NULL;
   PEVT_VARIANT values = NULL;
-  PWSTR pwBuffer = NULL;
 
   static PCWSTR eventProperties[] = {L"Event/System/Provider/@Name"};
   EVT_HANDLE renderContext = EvtCreateRenderContext(1, eventProperties, EvtRenderContextValues);
