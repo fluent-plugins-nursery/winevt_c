@@ -69,7 +69,7 @@ WCHAR* render_event(EVT_HANDLE handle, DWORD flags)
     rb_raise(rb_eWinevtQueryError, "ErrorCode: %d\nError: %s\n", status, RSTRING_PTR(errmsg));
   }
 
-  result = wcsdup(buffer);
+  result = buffer;
 
   if (buffer)
     xfree(buffer);
@@ -285,6 +285,9 @@ VALUE get_values(EVT_HANDLE handle)
   if (buffer)
     xfree(buffer);
 
+  if (renderContext)
+    EvtClose(renderContext);
+
   return userValues;
 }
 
@@ -325,7 +328,7 @@ static WCHAR* get_message(EVT_HANDLE hMetadata, EVT_HANDLE handle)
                          MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US),
                          (WCHAR *) &lpMsgBuf, 0, NULL);
 
-        result = wcsdup((WCHAR *)lpMsgBuf);
+        result = (WCHAR *)lpMsgBuf;
         LocalFree(lpMsgBuf);
 
         goto cleanup;
@@ -367,7 +370,7 @@ static WCHAR* get_message(EVT_HANDLE hMetadata, EVT_HANDLE handle)
                              MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US),
                              (WCHAR *) &lpMsgBuf, 0, NULL);
 
-            result = wcsdup((WCHAR *)lpMsgBuf);
+            result = (WCHAR *)lpMsgBuf;
             LocalFree(lpMsgBuf);
 
             goto cleanup;
@@ -379,7 +382,7 @@ static WCHAR* get_message(EVT_HANDLE hMetadata, EVT_HANDLE handle)
     }
   }
 
-  result = wcsdup(message);
+  result = message;
 
 cleanup:
 
