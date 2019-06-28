@@ -24,7 +24,7 @@
 char* wstr_to_mbstr(UINT cp, const WCHAR *wstr, int clen);
 void free_allocated_mbstr(const char* str);
 char* render_event(EVT_HANDLE handle, DWORD flags);
-char* get_description(EVT_HANDLE handle);
+WCHAR* get_description(EVT_HANDLE handle);
 VALUE get_values(EVT_HANDLE handle);
 
 VALUE rb_cQuery;

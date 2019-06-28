@@ -288,7 +288,7 @@ VALUE get_values(EVT_HANDLE handle)
   return userValues;
 }
 
-static void get_message(EVT_HANDLE hMetadata, EVT_HANDLE handle, char* result)
+static void get_message(EVT_HANDLE hMetadata, EVT_HANDLE handle, WCHAR* result)
 {
 #define BUFSIZE 4096
   ULONG  status;
@@ -324,7 +324,7 @@ static void get_message(EVT_HANDLE hMetadata, EVT_HANDLE handle, char* result)
                          MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US),
                          (WCHAR *) &lpMsgBuf, 0, NULL);
 
-        result = wstr_to_mbstr(CP_UTF8, (WCHAR *)lpMsgBuf, -1);
+        result = wcsdup((WCHAR *)lpMsgBuf);
         LocalFree(lpMsgBuf);
 
         goto cleanup;
@@ -366,7 +366,7 @@ static void get_message(EVT_HANDLE hMetadata, EVT_HANDLE handle, char* result)
                              MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US),
                              (WCHAR *) &lpMsgBuf, 0, NULL);
 
-            result = wstr_to_mbstr(CP_UTF8, (WCHAR *)lpMsgBuf, -1);
+            result = wcsdup((WCHAR *)lpMsgBuf);
             LocalFree(lpMsgBuf);
 
             goto cleanup;
@@ -378,7 +378,7 @@ static void get_message(EVT_HANDLE hMetadata, EVT_HANDLE handle, char* result)
     }
   }
 
-  result = wstr_to_mbstr(CP_UTF8, message, -1);
+  result = wcsdup(message);
 
 cleanup:
 
@@ -387,14 +387,14 @@ cleanup:
 #undef BUFSIZE
 }
 
-char* get_description(EVT_HANDLE handle)
+WCHAR* get_description(EVT_HANDLE handle)
 {
 #define BUFSIZE 4096
   WCHAR      buffer[BUFSIZE];
   ULONG      bufferSize = 0;
   ULONG      bufferSizeNeeded = 0;
   ULONG      status, count;
-  static char *result = "";
+  static WCHAR *result = L"";
   LPTSTR     msgBuf = "";
   EVT_HANDLE hMetadata = NULL;
   PEVT_VARIANT values = NULL;
