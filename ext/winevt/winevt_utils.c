@@ -288,9 +288,10 @@ VALUE get_values(EVT_HANDLE handle)
   return userValues;
 }
 
-static void get_message(EVT_HANDLE hMetadata, EVT_HANDLE handle, WCHAR* result)
+static WCHAR* get_message(EVT_HANDLE hMetadata, EVT_HANDLE handle)
 {
 #define BUFSIZE 4096
+  static WCHAR* result = L"";
   ULONG  status;
   ULONG bufferSizeNeeded = 0;
   LPVOID lpMsgBuf;
@@ -384,6 +385,9 @@ cleanup:
 
   if (message)
     xfree(message);
+
+  return result;
+
 #undef BUFSIZE
 }
 
@@ -443,7 +447,7 @@ WCHAR* get_description(EVT_HANDLE handle)
     goto cleanup;
   }
 
-  get_message(hMetadata, handle, result);
+  result = get_message(hMetadata, handle);
 
 #undef BUFSIZE
 
