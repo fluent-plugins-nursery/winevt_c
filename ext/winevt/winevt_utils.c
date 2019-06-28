@@ -19,13 +19,13 @@ void free_allocated_mbstr(const char* str)
     xfree((char *)str);
 }
 
-char* render_event(EVT_HANDLE handle, DWORD flags)
+WCHAR* render_event(EVT_HANDLE handle, DWORD flags)
 {
   PWSTR      buffer = NULL;
   ULONG      bufferSize = 0;
   ULONG      bufferSizeNeeded = 0;
   ULONG      status, count;
-  static char* result;
+  static WCHAR* result = L"";
   LPTSTR     msgBuf;
 
   do {
@@ -69,7 +69,7 @@ char* render_event(EVT_HANDLE handle, DWORD flags)
     rb_raise(rb_eWinevtQueryError, "ErrorCode: %d\nError: %s\n", status, RSTRING_PTR(errmsg));
   }
 
-  result = wstr_to_mbstr(CP_UTF8, buffer, -1);
+  result = wcsdup(buffer);
 
   if (buffer)
     free(buffer);

@@ -153,12 +153,14 @@ rb_winevt_subscribe_next(VALUE self)
 static VALUE
 rb_winevt_subscribe_render(VALUE self)
 {
+  WCHAR* wResult;
   char* result;
   struct WinevtSubscribe *winevtSubscribe;
   VALUE utf8str;
 
   TypedData_Get_Struct(self, struct WinevtSubscribe, &rb_winevt_subscribe_type, winevtSubscribe);
-  result = render_event(winevtSubscribe->event, EvtRenderEventXml);
+  wResult = render_event(winevtSubscribe->event, EvtRenderEventXml);
+  result = wstr_to_mbstr(CP_UTF8, wResult, -1);
 
   utf8str = rb_utf8_str_new_cstr(result);
   free_allocated_mbstr(result);
@@ -215,14 +217,20 @@ rb_winevt_subscribe_each(VALUE self)
 static VALUE
 rb_winevt_subscribe_get_bookmark(VALUE self)
 {
+  WCHAR* wResult;
   char* result;
   struct WinevtSubscribe *winevtSubscribe;
+  VALUE utf8str;
 
   TypedData_Get_Struct(self, struct WinevtSubscribe, &rb_winevt_subscribe_type, winevtSubscribe);
 
-  result = render_event(winevtSubscribe->bookmark, EvtRenderBookmark);
+  wResult = render_event(winevtSubscribe->bookmark, EvtRenderBookmark);
+  result = wstr_to_mbstr(CP_UTF8, wResult, -1);
 
-  return rb_str_new2(result);
+  utf8str = rb_utf8_str_new_cstr(result);
+  free_allocated_mbstr(result);
+
+  return utf8str;
 }
 
 void Init_winevt_subscribe(VALUE rb_cEventLog)

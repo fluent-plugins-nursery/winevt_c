@@ -137,12 +137,14 @@ rb_winevt_query_next(VALUE self)
 static VALUE
 rb_winevt_query_render(VALUE self)
 {
+  WCHAR* wResult;
   char* result;
   struct WinevtQuery *winevtQuery;
   VALUE utf8str;
 
   TypedData_Get_Struct(self, struct WinevtQuery, &rb_winevt_query_type, winevtQuery);
-  result = render_event(winevtQuery->event, EvtRenderEventXml);
+  wResult = render_event(winevtQuery->event, EvtRenderEventXml);
+  result = wstr_to_mbstr(CP_UTF8, wResult, -1);
 
   utf8str = rb_utf8_str_new_cstr(result);
   free_allocated_mbstr(result);
