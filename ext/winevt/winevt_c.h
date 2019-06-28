@@ -22,8 +22,9 @@
 #define EventChannel(object) ((struct WinevtChannel *)DATA_PTR(object))
 
 char* wstr_to_mbstr(UINT cp, const WCHAR *wstr, int clen);
-char* render_event(EVT_HANDLE handle, DWORD flags);
-char* get_description(EVT_HANDLE handle);
+void free_allocated_mbstr(const char* str);
+WCHAR* render_event(EVT_HANDLE handle, DWORD flags);
+WCHAR* get_description(EVT_HANDLE handle);
 VALUE get_values(EVT_HANDLE handle);
 
 VALUE rb_cQuery;

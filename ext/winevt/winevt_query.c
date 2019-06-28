@@ -137,25 +137,37 @@ rb_winevt_query_next(VALUE self)
 static VALUE
 rb_winevt_query_render(VALUE self)
 {
+  WCHAR* wResult;
   char* result;
   struct WinevtQuery *winevtQuery;
+  VALUE utf8str;
 
   TypedData_Get_Struct(self, struct WinevtQuery, &rb_winevt_query_type, winevtQuery);
-  result = render_event(winevtQuery->event, EvtRenderEventXml);
+  wResult = render_event(winevtQuery->event, EvtRenderEventXml);
+  result = wstr_to_mbstr(CP_UTF8, wResult, -1);
 
-  return rb_utf8_str_new_cstr(result);
+  utf8str = rb_utf8_str_new_cstr(result);
+  free_allocated_mbstr(result);
+
+  return utf8str;
 }
 
 static VALUE
 rb_winevt_query_message(VALUE self)
 {
+  WCHAR* wResult;
   char* result;
   struct WinevtQuery *winevtQuery;
+  VALUE utf8str;
 
   TypedData_Get_Struct(self, struct WinevtQuery, &rb_winevt_query_type, winevtQuery);
-  result = get_description(winevtQuery->event);
+  wResult = get_description(winevtQuery->event);
+  result = wstr_to_mbstr(CP_UTF8, wResult, -1);
 
-  return rb_utf8_str_new_cstr(result);
+  utf8str = rb_utf8_str_new_cstr(result);
+  free_allocated_mbstr(result);
+
+  return utf8str;
 }
 
 static VALUE

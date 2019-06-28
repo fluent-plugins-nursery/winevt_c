@@ -49,6 +49,7 @@ rb_winevt_channel_each(VALUE self)
   DWORD bufferSize = 0;
   DWORD bufferUsed = 0;
   DWORD status = ERROR_SUCCESS;
+  VALUE utf8str;
 
   RETURN_ENUMERATOR(self, 0, 0);
 
@@ -88,7 +89,10 @@ rb_winevt_channel_each(VALUE self)
 
     result = wstr_to_mbstr(CP_UTF8, buffer, -1);
 
-    rb_yield(rb_utf8_str_new_cstr(result));
+    utf8str = rb_utf8_str_new_cstr(result);
+    free_allocated_mbstr(result);
+
+    rb_yield(utf8str);
   }
 
   return Qnil;

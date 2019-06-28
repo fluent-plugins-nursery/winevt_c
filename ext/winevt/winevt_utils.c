@@ -13,20 +13,26 @@ wstr_to_mbstr(UINT cp, const WCHAR *wstr, int clen)
     return ptr;
 }
 
-char* render_event(EVT_HANDLE handle, DWORD flags)
+void free_allocated_mbstr(const char* str)
+{
+  if (str)
+    xfree((char *)str);
+}
+
+WCHAR* render_event(EVT_HANDLE handle, DWORD flags)
 {
   PWSTR      buffer = NULL;
   ULONG      bufferSize = 0;
   ULONG      bufferSizeNeeded = 0;
   ULONG      status, count;
-  char*      result;
+  static WCHAR* result = L"";
   LPTSTR     msgBuf;
 
   do {
     if (bufferSizeNeeded > bufferSize) {
       free(buffer);
       bufferSize = bufferSizeNeeded;
-      buffer = malloc(bufferSize);
+      buffer = xmalloc(bufferSize);
       if (buffer == NULL) {
         status = ERROR_OUTOFMEMORY;
         bufferSize = 0;
@@ -63,10 +69,10 @@ char* render_event(EVT_HANDLE handle, DWORD flags)
     rb_raise(rb_eWinevtQueryError, "ErrorCode: %d\nError: %s\n", status, RSTRING_PTR(errmsg));
   }
 
-  result = wstr_to_mbstr(CP_UTF8, buffer, -1);
+  result = buffer;
 
   if (buffer)
-    free(buffer);
+    xfree(buffer);
 
   return result;
 }
@@ -92,7 +98,7 @@ VALUE get_values(EVT_HANDLE handle)
     if (bufferSizeNeeded > bufferSize) {
       free(buffer);
       bufferSize = bufferSizeNeeded;
-      buffer = malloc(bufferSize);
+      buffer = xmalloc(bufferSize);
       if (buffer == NULL) {
         status = ERROR_OUTOFMEMORY;
         bufferSize = 0;
@@ -147,6 +153,7 @@ VALUE get_values(EVT_HANDLE handle)
       } else {
         result = wstr_to_mbstr(CP_UTF8, pRenderedValues[i].StringVal, -1);
         rb_ary_push(userValues, rb_utf8_str_new_cstr(result));
+        free_allocated_mbstr(result);
       }
       break;
     case EvtVarTypeAnsiString:
@@ -191,6 +198,7 @@ VALUE get_values(EVT_HANDLE handle)
     case EvtVarTypeSingle:
       sprintf(result, "%f", pRenderedValues[i].SingleVal);
       rb_ary_push(userValues, rb_utf8_str_new_cstr(result));
+      free_allocated_mbstr(result);
       break;
     case EvtVarTypeDouble:
       sprintf(result, "%lf", pRenderedValues[i].DoubleVal);
@@ -205,6 +213,7 @@ VALUE get_values(EVT_HANDLE handle)
         StringFromCLSID(pRenderedValues[i].GuidVal, &tmpWChar);
         result = wstr_to_mbstr(CP_UTF8, tmpWChar, -1);
         rb_ary_push(userValues, rb_utf8_str_new_cstr(result));
+        free_allocated_mbstr(result);
       } else {
         rb_ary_push(userValues, rb_utf8_str_new_cstr("?"));
       }
@@ -243,6 +252,7 @@ VALUE get_values(EVT_HANDLE handle)
       if (ConvertSidToStringSidW(pRenderedValues[i].SidVal, &tmpWChar)) {
         result = wstr_to_mbstr(CP_UTF8, tmpWChar, -1);
         rb_ary_push(userValues, rb_utf8_str_new_cstr(result));
+        free_allocated_mbstr(result);
       } else {
         rb_ary_push(userValues, rb_utf8_str_new_cstr("?"));
       }
@@ -263,6 +273,7 @@ VALUE get_values(EVT_HANDLE handle)
       } else {
         result = wstr_to_mbstr(CP_UTF8, pRenderedValues[i].XmlVal, -1);
         rb_ary_push(userValues, rb_utf8_str_new_cstr(result));
+        free_allocated_mbstr(result);
       }
       break;
     default:
@@ -272,24 +283,128 @@ VALUE get_values(EVT_HANDLE handle)
   }
 
   if (buffer)
-    free(buffer);
+    xfree(buffer);
+
+  if (renderContext)
+    EvtClose(renderContext);
 
   return userValues;
 }
 
-char* get_description(EVT_HANDLE handle)
+static WCHAR* get_message(EVT_HANDLE hMetadata, EVT_HANDLE handle)
 {
-#define MAX_BUFFER 65535
-  WCHAR      buffer[4096], *msg = buffer;
-  WCHAR      descriptionBuffer[MAX_BUFFER];
+#define BUFSIZE 4096
+  static WCHAR* result = L"";
+  ULONG  status;
+  ULONG bufferSizeNeeded = 0;
+  LPVOID lpMsgBuf;
+  WCHAR*     prevBuffer;
+  WCHAR     *message;
+
+  message = (WCHAR *)xmalloc(sizeof(WCHAR) * BUFSIZE);
+  if (!EvtFormatMessage(hMetadata, handle, 0xffffffff, 0, NULL, EvtFormatMessageEvent, BUFSIZE, message, &bufferSizeNeeded)) {
+    status = GetLastError();
+
+    if (status != ERROR_EVT_UNRESOLVED_VALUE_INSERT) {
+      switch (status) {
+      case ERROR_EVT_MESSAGE_NOT_FOUND:
+      case ERROR_EVT_MESSAGE_ID_NOT_FOUND:
+      case ERROR_EVT_MESSAGE_LOCALE_NOT_FOUND:
+      case ERROR_RESOURCE_LANG_NOT_FOUND:
+      case ERROR_MUI_FILE_NOT_FOUND:
+      case ERROR_EVT_UNRESOLVED_PARAMETER_INSERT: {
+        if (FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER |
+                           FORMAT_MESSAGE_FROM_SYSTEM |
+                           FORMAT_MESSAGE_IGNORE_INSERTS,
+                           NULL,
+                           status,
+                           MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+                           (WCHAR *) &lpMsgBuf, 0, NULL) == 0)
+          FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER |
+                         FORMAT_MESSAGE_FROM_SYSTEM |
+                         FORMAT_MESSAGE_IGNORE_INSERTS,
+                         NULL,
+                         status,
+                         MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US),
+                         (WCHAR *) &lpMsgBuf, 0, NULL);
+
+        result = (WCHAR *)lpMsgBuf;
+        LocalFree(lpMsgBuf);
+
+        goto cleanup;
+      }
+
+      }
+
+      if (status != ERROR_INSUFFICIENT_BUFFER)
+        rb_raise(rb_eWinevtQueryError, "ErrorCode: %d", status);
+    }
+
+    if (status == ERROR_INSUFFICIENT_BUFFER) {
+      prevBuffer = message;
+      message = (WCHAR *)realloc(prevBuffer, sizeof(WCHAR) * bufferSizeNeeded);
+
+      if(!EvtFormatMessage(hMetadata, handle, 0xffffffff, 0, NULL, EvtFormatMessageEvent, bufferSizeNeeded, message, &bufferSizeNeeded)) {
+        status = GetLastError();
+
+        if (status != ERROR_EVT_UNRESOLVED_VALUE_INSERT) {
+          switch (status) {
+          case ERROR_EVT_MESSAGE_NOT_FOUND:
+          case ERROR_EVT_MESSAGE_ID_NOT_FOUND:
+          case ERROR_EVT_MESSAGE_LOCALE_NOT_FOUND:
+          case ERROR_RESOURCE_LANG_NOT_FOUND:
+          case ERROR_MUI_FILE_NOT_FOUND:
+          case ERROR_EVT_UNRESOLVED_PARAMETER_INSERT:
+            if (FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER |
+                               FORMAT_MESSAGE_FROM_SYSTEM |
+                               FORMAT_MESSAGE_IGNORE_INSERTS,
+                               NULL,
+                               status,
+                               MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+                               (WCHAR *) &lpMsgBuf, 0, NULL) == 0)
+              FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER |
+                             FORMAT_MESSAGE_FROM_SYSTEM |
+                             FORMAT_MESSAGE_IGNORE_INSERTS,
+                             NULL,
+                             status,
+                             MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US),
+                             (WCHAR *) &lpMsgBuf, 0, NULL);
+
+            result = (WCHAR *)lpMsgBuf;
+            LocalFree(lpMsgBuf);
+
+            goto cleanup;
+          }
+
+          rb_raise(rb_eWinevtQueryError, "ErrorCode: %d", status);
+        }
+      }
+    }
+  }
+
+  result = message;
+
+cleanup:
+
+  if (message)
+    xfree(message);
+
+  return result;
+
+#undef BUFSIZE
+}
+
+WCHAR* get_description(EVT_HANDLE handle)
+{
+#define BUFSIZE 4096
+  WCHAR      buffer[BUFSIZE];
   ULONG      bufferSize = 0;
   ULONG      bufferSizeNeeded = 0;
   ULONG      status, count;
-  char*      result = "";
+  static WCHAR *result = L"";
   LPTSTR     msgBuf = "";
   EVT_HANDLE hMetadata = NULL;
   PEVT_VARIANT values = NULL;
-  LPVOID lpMsgBuf;
 
   static PCWSTR eventProperties[] = {L"Event/System/Provider/@Name"};
   EVT_HANDLE renderContext = EvtCreateRenderContext(1, eventProperties, EvtRenderContextValues);
@@ -335,85 +450,9 @@ char* get_description(EVT_HANDLE handle)
     goto cleanup;
   }
 
-  if (!EvtFormatMessage(hMetadata, handle, 0xffffffff, 0, NULL, EvtFormatMessageEvent, 4096, buffer, &bufferSizeNeeded)) {
-    status = GetLastError();
+  result = get_message(hMetadata, handle);
 
-    if (status != ERROR_EVT_UNRESOLVED_VALUE_INSERT) {
-      switch (status) {
-      case ERROR_EVT_MESSAGE_NOT_FOUND:
-      case ERROR_EVT_MESSAGE_ID_NOT_FOUND:
-      case ERROR_EVT_MESSAGE_LOCALE_NOT_FOUND:
-      case ERROR_RESOURCE_LANG_NOT_FOUND:
-      case ERROR_MUI_FILE_NOT_FOUND:
-      case ERROR_EVT_UNRESOLVED_PARAMETER_INSERT: {
-        if (FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER |
-                           FORMAT_MESSAGE_FROM_SYSTEM |
-                           FORMAT_MESSAGE_IGNORE_INSERTS,
-                           NULL,
-                           status,
-                           MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-                           (WCHAR *) &lpMsgBuf, 0, NULL) == 0)
-          FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER |
-                         FORMAT_MESSAGE_FROM_SYSTEM |
-                         FORMAT_MESSAGE_IGNORE_INSERTS,
-                         NULL,
-                         status,
-                         MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US),
-                         (WCHAR *) &lpMsgBuf, 0, NULL);
-
-        result = wstr_to_mbstr(CP_UTF8, (WCHAR *)lpMsgBuf, -1);
-
-        goto cleanup;
-      }
-
-      }
-
-      if (status != ERROR_INSUFFICIENT_BUFFER)
-        rb_raise(rb_eWinevtQueryError, "ErrorCode: %d", status);
-    }
-
-    if (status == ERROR_INSUFFICIENT_BUFFER) {
-      msg = (WCHAR *)malloc(sizeof(WCHAR) * bufferSizeNeeded);
-
-      if(!EvtFormatMessage(hMetadata, handle, 0xffffffff, 0, NULL, EvtFormatMessageEvent, bufferSizeNeeded, msg, &bufferSizeNeeded)) {
-        status = GetLastError();
-
-        if (status != ERROR_EVT_UNRESOLVED_VALUE_INSERT) {
-          switch (status) {
-          case ERROR_EVT_MESSAGE_NOT_FOUND:
-          case ERROR_EVT_MESSAGE_ID_NOT_FOUND:
-          case ERROR_EVT_MESSAGE_LOCALE_NOT_FOUND:
-          case ERROR_RESOURCE_LANG_NOT_FOUND:
-          case ERROR_MUI_FILE_NOT_FOUND:
-          case ERROR_EVT_UNRESOLVED_PARAMETER_INSERT:
-            if (FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER |
-                               FORMAT_MESSAGE_FROM_SYSTEM |
-                               FORMAT_MESSAGE_IGNORE_INSERTS,
-                               NULL,
-                               status,
-                               MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-                               (WCHAR *) &lpMsgBuf, 0, NULL) == 0)
-              FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER |
-                             FORMAT_MESSAGE_FROM_SYSTEM |
-                             FORMAT_MESSAGE_IGNORE_INSERTS,
-                             NULL,
-                             status,
-                             MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US),
-                             (WCHAR *) &lpMsgBuf, 0, NULL);
-
-            result = wstr_to_mbstr(CP_UTF8, (WCHAR *)lpMsgBuf, -1);
-
-            goto cleanup;
-          }
-
-          rb_raise(rb_eWinevtQueryError, "ErrorCode: %d", status);
-        }
-      }
-    }
-  }
-  result = wstr_to_mbstr(CP_UTF8, msg, -1);
-
-#undef MAX_BUFFER
+#undef BUFSIZE
 
 cleanup:
 

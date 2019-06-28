@@ -79,14 +79,19 @@ rb_winevt_bookmark_update(VALUE self, VALUE event)
 static VALUE
 rb_winevt_bookmark_render(VALUE self)
 {
+  WCHAR* wResult;
   char* result;
   struct WinevtBookmark *winevtBookmark;
+  VALUE utf8str;
 
   TypedData_Get_Struct(self, struct WinevtBookmark, &rb_winevt_bookmark_type, winevtBookmark);
+  wResult = render_event(winevtBookmark->bookmark, EvtRenderBookmark);
+  result = wstr_to_mbstr(CP_UTF8, wResult, -1);
 
-  result = render_event(winevtBookmark->bookmark, EvtRenderBookmark);
+  utf8str = rb_utf8_str_new_cstr(result);
+  free_allocated_mbstr(result);
 
-  return rb_str_new2(result);
+  return utf8str;
 }
 
 void Init_winevt_bookmark(VALUE rb_cEventLog)
