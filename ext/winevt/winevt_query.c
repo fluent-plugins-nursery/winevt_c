@@ -139,11 +139,15 @@ rb_winevt_query_render(VALUE self)
 {
   char* result;
   struct WinevtQuery *winevtQuery;
+  VALUE utf8str;
 
   TypedData_Get_Struct(self, struct WinevtQuery, &rb_winevt_query_type, winevtQuery);
   result = render_event(winevtQuery->event, EvtRenderEventXml);
 
-  return rb_utf8_str_new_cstr(result);
+  utf8str = rb_utf8_str_new_cstr(result);
+  free_allocated_mbstr(result);
+
+  return utf8str;
 }
 
 static VALUE

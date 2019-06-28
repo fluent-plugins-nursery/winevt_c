@@ -155,11 +155,15 @@ rb_winevt_subscribe_render(VALUE self)
 {
   char* result;
   struct WinevtSubscribe *winevtSubscribe;
+  VALUE utf8str;
 
   TypedData_Get_Struct(self, struct WinevtSubscribe, &rb_winevt_subscribe_type, winevtSubscribe);
   result = render_event(winevtSubscribe->event, EvtRenderEventXml);
 
-  return rb_utf8_str_new_cstr(result);
+  utf8str = rb_utf8_str_new_cstr(result);
+  free_allocated_mbstr(result);
+
+  return utf8str;
 }
 
 static VALUE

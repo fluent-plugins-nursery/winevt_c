@@ -13,13 +13,19 @@ wstr_to_mbstr(UINT cp, const WCHAR *wstr, int clen)
     return ptr;
 }
 
+void free_allocated_mbstr(const char* str)
+{
+  if (str)
+    xfree((char *)str);
+}
+
 char* render_event(EVT_HANDLE handle, DWORD flags)
 {
   PWSTR      buffer = NULL;
   ULONG      bufferSize = 0;
   ULONG      bufferSizeNeeded = 0;
   ULONG      status, count;
-  char*      result;
+  static char* result;
   LPTSTR     msgBuf;
 
   do {
@@ -147,6 +153,7 @@ VALUE get_values(EVT_HANDLE handle)
       } else {
         result = wstr_to_mbstr(CP_UTF8, pRenderedValues[i].StringVal, -1);
         rb_ary_push(userValues, rb_utf8_str_new_cstr(result));
+        free_allocated_mbstr(result);
       }
       break;
     case EvtVarTypeAnsiString:
@@ -191,6 +198,7 @@ VALUE get_values(EVT_HANDLE handle)
     case EvtVarTypeSingle:
       sprintf(result, "%f", pRenderedValues[i].SingleVal);
       rb_ary_push(userValues, rb_utf8_str_new_cstr(result));
+      free_allocated_mbstr(result);
       break;
     case EvtVarTypeDouble:
       sprintf(result, "%lf", pRenderedValues[i].DoubleVal);
@@ -205,6 +213,7 @@ VALUE get_values(EVT_HANDLE handle)
         StringFromCLSID(pRenderedValues[i].GuidVal, &tmpWChar);
         result = wstr_to_mbstr(CP_UTF8, tmpWChar, -1);
         rb_ary_push(userValues, rb_utf8_str_new_cstr(result));
+        free_allocated_mbstr(result);
       } else {
         rb_ary_push(userValues, rb_utf8_str_new_cstr("?"));
       }
@@ -243,6 +252,7 @@ VALUE get_values(EVT_HANDLE handle)
       if (ConvertSidToStringSidW(pRenderedValues[i].SidVal, &tmpWChar)) {
         result = wstr_to_mbstr(CP_UTF8, tmpWChar, -1);
         rb_ary_push(userValues, rb_utf8_str_new_cstr(result));
+        free_allocated_mbstr(result);
       } else {
         rb_ary_push(userValues, rb_utf8_str_new_cstr("?"));
       }
@@ -263,6 +273,7 @@ VALUE get_values(EVT_HANDLE handle)
       } else {
         result = wstr_to_mbstr(CP_UTF8, pRenderedValues[i].XmlVal, -1);
         rb_ary_push(userValues, rb_utf8_str_new_cstr(result));
+        free_allocated_mbstr(result);
       }
       break;
     default:
@@ -279,17 +290,18 @@ VALUE get_values(EVT_HANDLE handle)
 
 char* get_description(EVT_HANDLE handle)
 {
-#define MAX_BUFFER 65535
-  WCHAR      buffer[4096], *msg = buffer;
-  WCHAR      descriptionBuffer[MAX_BUFFER];
+#define BUFSIZE 4096
+  WCHAR      buffer[BUFSIZE];
+  WCHAR     *message;
   ULONG      bufferSize = 0;
   ULONG      bufferSizeNeeded = 0;
   ULONG      status, count;
-  char*      result = "";
+  static char *result = "";
   LPTSTR     msgBuf = "";
   EVT_HANDLE hMetadata = NULL;
   PEVT_VARIANT values = NULL;
   LPVOID lpMsgBuf;
+  WCHAR*     prevBuffer;
 
   static PCWSTR eventProperties[] = {L"Event/System/Provider/@Name"};
   EVT_HANDLE renderContext = EvtCreateRenderContext(1, eventProperties, EvtRenderContextValues);
@@ -335,7 +347,8 @@ char* get_description(EVT_HANDLE handle)
     goto cleanup;
   }
 
-  if (!EvtFormatMessage(hMetadata, handle, 0xffffffff, 0, NULL, EvtFormatMessageEvent, 4096, buffer, &bufferSizeNeeded)) {
+  message = (WCHAR *)malloc(sizeof(WCHAR) * BUFSIZE);
+  if (!EvtFormatMessage(hMetadata, handle, 0xffffffff, 0, NULL, EvtFormatMessageEvent, BUFSIZE, message, &bufferSizeNeeded)) {
     status = GetLastError();
 
     if (status != ERROR_EVT_UNRESOLVED_VALUE_INSERT) {
@@ -362,6 +375,7 @@ char* get_description(EVT_HANDLE handle)
                          (WCHAR *) &lpMsgBuf, 0, NULL);
 
         result = wstr_to_mbstr(CP_UTF8, (WCHAR *)lpMsgBuf, -1);
+        LocalFree(lpMsgBuf);
 
         goto cleanup;
       }
@@ -373,9 +387,10 @@ char* get_description(EVT_HANDLE handle)
     }
 
     if (status == ERROR_INSUFFICIENT_BUFFER) {
-      msg = (WCHAR *)malloc(sizeof(WCHAR) * bufferSizeNeeded);
+      prevBuffer = message;
+      message = (WCHAR *)realloc(prevBuffer, sizeof(WCHAR) * bufferSizeNeeded);
 
-      if(!EvtFormatMessage(hMetadata, handle, 0xffffffff, 0, NULL, EvtFormatMessageEvent, bufferSizeNeeded, msg, &bufferSizeNeeded)) {
+      if(!EvtFormatMessage(hMetadata, handle, 0xffffffff, 0, NULL, EvtFormatMessageEvent, bufferSizeNeeded, message, &bufferSizeNeeded)) {
         status = GetLastError();
 
         if (status != ERROR_EVT_UNRESOLVED_VALUE_INSERT) {
@@ -402,6 +417,7 @@ char* get_description(EVT_HANDLE handle)
                              (WCHAR *) &lpMsgBuf, 0, NULL);
 
             result = wstr_to_mbstr(CP_UTF8, (WCHAR *)lpMsgBuf, -1);
+            LocalFree(lpMsgBuf);
 
             goto cleanup;
           }
@@ -411,9 +427,12 @@ char* get_description(EVT_HANDLE handle)
       }
     }
   }
-  result = wstr_to_mbstr(CP_UTF8, msg, -1);
+  result = wstr_to_mbstr(CP_UTF8, message, -1);
 
-#undef MAX_BUFFER
+  if (message)
+    free(message);
+
+#undef BUFSIZE
 
 cleanup:
 
