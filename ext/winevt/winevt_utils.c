@@ -288,64 +288,14 @@ VALUE get_values(EVT_HANDLE handle)
   return userValues;
 }
 
-char* get_description(EVT_HANDLE handle)
+static void get_message(EVT_HANDLE hMetadata, EVT_HANDLE handle, char* result)
 {
 #define BUFSIZE 4096
-  WCHAR      buffer[BUFSIZE];
-  WCHAR     *message;
-  ULONG      bufferSize = 0;
-  ULONG      bufferSizeNeeded = 0;
-  ULONG      status, count;
-  static char *result = "";
-  LPTSTR     msgBuf = "";
-  EVT_HANDLE hMetadata = NULL;
-  PEVT_VARIANT values = NULL;
+  ULONG  status;
+  ULONG bufferSizeNeeded = 0;
   LPVOID lpMsgBuf;
   WCHAR*     prevBuffer;
-
-  static PCWSTR eventProperties[] = {L"Event/System/Provider/@Name"};
-  EVT_HANDLE renderContext = EvtCreateRenderContext(1, eventProperties, EvtRenderContextValues);
-  if (renderContext == NULL) {
-    rb_raise(rb_eWinevtQueryError, "Failed to create renderContext");
-  }
-
-  if (EvtRender(renderContext,
-                handle,
-                EvtRenderEventValues,
-                _countof(buffer),
-                buffer,
-                &bufferSizeNeeded,
-                &count) != FALSE) {
-    status = ERROR_SUCCESS;
-  } else {
-    status = GetLastError();
-  }
-
-  if (status != ERROR_SUCCESS) {
-    FormatMessage(
-        FORMAT_MESSAGE_ALLOCATE_BUFFER |
-        FORMAT_MESSAGE_FROM_SYSTEM |
-        FORMAT_MESSAGE_IGNORE_INSERTS,
-        NULL, status,
-        MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-        msgBuf, 0, NULL);
-
-    VALUE errmsg = rb_str_new2(msgBuf);
-    LocalFree(msgBuf);
-
-    rb_raise(rb_eWinevtQueryError, "ErrorCode: %d\nError: %s\n", status, RSTRING_PTR(errmsg));
-  }
-
-  // Obtain buffer as EVT_VARIANT pointer. To avoid ErrorCide 87 in EvtRender.
-  values = (PEVT_VARIANT)buffer;
-
-  // Open publisher metadata
-  hMetadata = EvtOpenPublisherMetadata(NULL, values[0].StringVal, NULL, MAKELCID(MAKELANGID(LANG_NEUTRAL, SUBLANG_NEUTRAL), SORT_DEFAULT), 0);
-  if (hMetadata == NULL) {
-    // When winevt_c cannot open metadata, then give up to obtain
-    // message file and clean up immediately.
-    goto cleanup;
-  }
+  WCHAR     *message;
 
   message = (WCHAR *)malloc(sizeof(WCHAR) * BUFSIZE);
   if (!EvtFormatMessage(hMetadata, handle, 0xffffffff, 0, NULL, EvtFormatMessageEvent, BUFSIZE, message, &bufferSizeNeeded)) {
@@ -427,10 +377,73 @@ char* get_description(EVT_HANDLE handle)
       }
     }
   }
+
   result = wstr_to_mbstr(CP_UTF8, message, -1);
+
+cleanup:
 
   if (message)
     free(message);
+#undef BUFSIZE
+}
+
+char* get_description(EVT_HANDLE handle)
+{
+#define BUFSIZE 4096
+  WCHAR      buffer[BUFSIZE];
+  ULONG      bufferSize = 0;
+  ULONG      bufferSizeNeeded = 0;
+  ULONG      status, count;
+  static char *result = "";
+  LPTSTR     msgBuf = "";
+  EVT_HANDLE hMetadata = NULL;
+  PEVT_VARIANT values = NULL;
+
+  static PCWSTR eventProperties[] = {L"Event/System/Provider/@Name"};
+  EVT_HANDLE renderContext = EvtCreateRenderContext(1, eventProperties, EvtRenderContextValues);
+  if (renderContext == NULL) {
+    rb_raise(rb_eWinevtQueryError, "Failed to create renderContext");
+  }
+
+  if (EvtRender(renderContext,
+                handle,
+                EvtRenderEventValues,
+                _countof(buffer),
+                buffer,
+                &bufferSizeNeeded,
+                &count) != FALSE) {
+    status = ERROR_SUCCESS;
+  } else {
+    status = GetLastError();
+  }
+
+  if (status != ERROR_SUCCESS) {
+    FormatMessage(
+        FORMAT_MESSAGE_ALLOCATE_BUFFER |
+        FORMAT_MESSAGE_FROM_SYSTEM |
+        FORMAT_MESSAGE_IGNORE_INSERTS,
+        NULL, status,
+        MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+        msgBuf, 0, NULL);
+
+    VALUE errmsg = rb_str_new2(msgBuf);
+    LocalFree(msgBuf);
+
+    rb_raise(rb_eWinevtQueryError, "ErrorCode: %d\nError: %s\n", status, RSTRING_PTR(errmsg));
+  }
+
+  // Obtain buffer as EVT_VARIANT pointer. To avoid ErrorCide 87 in EvtRender.
+  values = (PEVT_VARIANT)buffer;
+
+  // Open publisher metadata
+  hMetadata = EvtOpenPublisherMetadata(NULL, values[0].StringVal, NULL, MAKELCID(MAKELANGID(LANG_NEUTRAL, SUBLANG_NEUTRAL), SORT_DEFAULT), 0);
+  if (hMetadata == NULL) {
+    // When winevt_c cannot open metadata, then give up to obtain
+    // message file and clean up immediately.
+    goto cleanup;
+  }
+
+  get_message(hMetadata, handle, result);
 
 #undef BUFSIZE
 
