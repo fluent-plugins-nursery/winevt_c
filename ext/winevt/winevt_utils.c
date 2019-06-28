@@ -32,7 +32,7 @@ WCHAR* render_event(EVT_HANDLE handle, DWORD flags)
     if (bufferSizeNeeded > bufferSize) {
       free(buffer);
       bufferSize = bufferSizeNeeded;
-      buffer = malloc(bufferSize);
+      buffer = xmalloc(bufferSize);
       if (buffer == NULL) {
         status = ERROR_OUTOFMEMORY;
         bufferSize = 0;
@@ -72,7 +72,7 @@ WCHAR* render_event(EVT_HANDLE handle, DWORD flags)
   result = wcsdup(buffer);
 
   if (buffer)
-    free(buffer);
+    xfree(buffer);
 
   return result;
 }
@@ -98,7 +98,7 @@ VALUE get_values(EVT_HANDLE handle)
     if (bufferSizeNeeded > bufferSize) {
       free(buffer);
       bufferSize = bufferSizeNeeded;
-      buffer = malloc(bufferSize);
+      buffer = xmalloc(bufferSize);
       if (buffer == NULL) {
         status = ERROR_OUTOFMEMORY;
         bufferSize = 0;
@@ -283,7 +283,7 @@ VALUE get_values(EVT_HANDLE handle)
   }
 
   if (buffer)
-    free(buffer);
+    xfree(buffer);
 
   return userValues;
 }
@@ -297,7 +297,7 @@ static void get_message(EVT_HANDLE hMetadata, EVT_HANDLE handle, WCHAR* result)
   WCHAR*     prevBuffer;
   WCHAR     *message;
 
-  message = (WCHAR *)malloc(sizeof(WCHAR) * BUFSIZE);
+  message = (WCHAR *)xmalloc(sizeof(WCHAR) * BUFSIZE);
   if (!EvtFormatMessage(hMetadata, handle, 0xffffffff, 0, NULL, EvtFormatMessageEvent, BUFSIZE, message, &bufferSizeNeeded)) {
     status = GetLastError();
 
@@ -383,7 +383,7 @@ static void get_message(EVT_HANDLE hMetadata, EVT_HANDLE handle, WCHAR* result)
 cleanup:
 
   if (message)
-    free(message);
+    xfree(message);
 #undef BUFSIZE
 }
 
