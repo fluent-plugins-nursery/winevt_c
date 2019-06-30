@@ -214,6 +214,7 @@ VALUE get_values(EVT_HANDLE handle)
         result = wstr_to_mbstr(CP_UTF8, tmpWChar, -1);
         rb_ary_push(userValues, rb_utf8_str_new_cstr(result));
         free_allocated_mbstr(result);
+        CoTaskMemFree(tmpWChar);
       } else {
         rb_ary_push(userValues, rb_utf8_str_new_cstr("?"));
       }
@@ -253,6 +254,7 @@ VALUE get_values(EVT_HANDLE handle)
         result = wstr_to_mbstr(CP_UTF8, tmpWChar, -1);
         rb_ary_push(userValues, rb_utf8_str_new_cstr(result));
         free_allocated_mbstr(result);
+        LocalFree(tmpWChar);
       } else {
         rb_ary_push(userValues, rb_utf8_str_new_cstr("?"));
       }
@@ -300,6 +302,7 @@ static WCHAR* get_message(EVT_HANDLE hMetadata, EVT_HANDLE handle)
   LPVOID lpMsgBuf;
   WCHAR*     prevBuffer;
   WCHAR     *message;
+  WCHAR     *reallocatedMessage;
 
   message = (WCHAR *)xmalloc(sizeof(WCHAR) * BUFSIZE);
   if (!EvtFormatMessage(hMetadata, handle, 0xffffffff, 0, NULL, EvtFormatMessageEvent, BUFSIZE, message, &bufferSizeNeeded)) {
@@ -342,7 +345,11 @@ static WCHAR* get_message(EVT_HANDLE hMetadata, EVT_HANDLE handle)
 
     if (status == ERROR_INSUFFICIENT_BUFFER) {
       prevBuffer = message;
-      message = (WCHAR *)realloc(prevBuffer, sizeof(WCHAR) * bufferSizeNeeded);
+      reallocatedMessage = (WCHAR *)realloc(prevBuffer, sizeof(WCHAR) * bufferSizeNeeded);
+      if (reallocatedMessage == NULL) {
+        rb_raise(rb_eWinevtQueryError, "Reallocation failed.");
+      }
+      message = reallocatedMessage;
 
       if(!EvtFormatMessage(hMetadata, handle, 0xffffffff, 0, NULL, EvtFormatMessageEvent, bufferSizeNeeded, message, &bufferSizeNeeded)) {
         status = GetLastError();
