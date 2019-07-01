@@ -303,7 +303,7 @@ VALUE get_values(EVT_HANDLE handle)
 static std::wstring get_message(EVT_HANDLE hMetadata, EVT_HANDLE handle)
 {
 #define BUFSIZE 4096
-  WCHAR *result;
+  std::wstring result;
   ULONG  status;
   ULONG bufferSizeNeeded = 0;
   LPVOID lpMsgBuf;
@@ -388,9 +388,11 @@ static std::wstring get_message(EVT_HANDLE hMetadata, EVT_HANDLE handle)
     }
   }
 
+  result = message;
+
 cleanup:
 
-  return std::wstring(message);
+  return std::wstring(result);
 
 #undef BUFSIZE
 }
