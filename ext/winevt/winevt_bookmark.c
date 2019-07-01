@@ -90,6 +90,8 @@ rb_winevt_bookmark_render(VALUE self)
 
   utf8str = rb_utf8_str_new_cstr(result);
   free_allocated_mbstr(result);
+  if (wResult != NULL)
+    free(wResult);
 
   return utf8str;
 }

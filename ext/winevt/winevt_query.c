@@ -203,7 +203,6 @@ rb_winevt_query_seek(VALUE self, VALUE bookmark_or_flag)
 {
   struct WinevtQuery *winevtQuery;
   struct WinevtBookmark *winevtBookmark = NULL;
-  DWORD status;
   DWORD flag;
 
   switch (TYPE(bookmark_or_flag)) {
