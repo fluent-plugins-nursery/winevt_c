@@ -307,9 +307,7 @@ static std::wstring get_message(EVT_HANDLE hMetadata, EVT_HANDLE handle)
   ULONG  status;
   ULONG bufferSizeNeeded = 0;
   LPVOID lpMsgBuf;
-  WCHAR*     prevBuffer;
   std::wstring message(BUFSIZE, '\0');
-  WCHAR     *reallocatedMessage;
 
   if (!EvtFormatMessage(hMetadata, handle, 0xffffffff, 0, NULL, EvtFormatMessageEvent, message.size(), &message[0], &bufferSizeNeeded)) {
     status = GetLastError();

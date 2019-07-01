@@ -78,7 +78,6 @@ rb_winevt_subscribe_subscribe(int argc, VALUE *argv, VALUE self)
   VALUE wpathBuf, wqueryBuf;
   PWSTR path, query;
   DWORD status = ERROR_SUCCESS;
-  struct WinevtBookmark *winevtBookmark;
   struct WinevtSubscribe *winevtSubscribe;
 
   hSignalEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
