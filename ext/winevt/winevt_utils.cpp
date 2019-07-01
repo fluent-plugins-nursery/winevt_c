@@ -67,7 +67,7 @@ WCHAR* render_event(EVT_HANDLE handle, DWORD flags)
     VALUE errmsg = rb_str_new2(msgBuf);
     LocalFree(msgBuf);
 
-    rb_raise(rb_eWinevtQueryError, "ErrorCode: %d\nError: %s\n", status, RSTRING_PTR(errmsg));
+    rb_raise(rb_eWinevtQueryError, "ErrorCode: %ld\nError: %s\n", status, RSTRING_PTR(errmsg));
   }
 
   result = _wcsdup(buffer);
@@ -142,7 +142,7 @@ VALUE get_values(EVT_HANDLE handle)
     VALUE errmsg = rb_str_new2(msgBuf);
     LocalFree(msgBuf);
 
-    rb_raise(rb_eWinevtQueryError, "ErrorCode: %d\nError: %s\n", status, RSTRING_PTR(errmsg));
+    rb_raise(rb_eWinevtQueryError, "ErrorCode: %lu\nError: %s\n", status, RSTRING_PTR(errmsg));
   }
 
   PEVT_VARIANT pRenderedValues = (PEVT_VARIANT)buffer.c_str();
@@ -344,7 +344,7 @@ static std::wstring get_message(EVT_HANDLE hMetadata, EVT_HANDLE handle)
       }
 
       if (status != ERROR_INSUFFICIENT_BUFFER)
-        rb_raise(rb_eWinevtQueryError, "ErrorCode: %d", status);
+        rb_raise(rb_eWinevtQueryError, "ErrorCode: %lu", status);
     }
 
     if (status == ERROR_INSUFFICIENT_BUFFER) {
@@ -382,7 +382,7 @@ static std::wstring get_message(EVT_HANDLE hMetadata, EVT_HANDLE handle)
             goto cleanup;
           }
 
-          rb_raise(rb_eWinevtQueryError, "ErrorCode: %d", status);
+          rb_raise(rb_eWinevtQueryError, "ErrorCode: %lu", status);
         }
       }
     }
@@ -438,7 +438,7 @@ WCHAR* get_description(EVT_HANDLE handle)
     VALUE errmsg = rb_str_new2(msgBuf);
     LocalFree(msgBuf);
 
-    rb_raise(rb_eWinevtQueryError, "ErrorCode: %d\nError: %s\n", status, RSTRING_PTR(errmsg));
+    rb_raise(rb_eWinevtQueryError, "ErrorCode: %lu\nError: %s\n", status, RSTRING_PTR(errmsg));
   }
 
   // Obtain buffer as EVT_VARIANT pointer. To avoid ErrorCide 87 in EvtRender.
