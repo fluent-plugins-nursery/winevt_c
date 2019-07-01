@@ -74,7 +74,7 @@ rb_winevt_subscribe_subscribe(int argc, VALUE *argv, VALUE self)
   VALUE rb_path, rb_query, rb_bookmark;
   EVT_HANDLE hSubscription = NULL, hBookmark = NULL;
   HANDLE hSignalEvent;
-  DWORD len, flags;
+  DWORD len, flags = 0L;
   VALUE wpathBuf, wqueryBuf;
   PWSTR path, query;
   DWORD status = ERROR_SUCCESS;

@@ -42,7 +42,7 @@ rb_winevt_channel_each(VALUE self)
 {
   EVT_HANDLE hChannels;
   struct WinevtChannel *winevtChannel;
-  char *errBuf;
+  char *errBuf = NULL;
   char * result;
   LPWSTR buffer = NULL;
   LPWSTR temp = NULL;
