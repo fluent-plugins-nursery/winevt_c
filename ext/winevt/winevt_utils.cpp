@@ -1,13 +1,14 @@
 #include <winevt_c.h>
 #include <sddl.h>
 #include <stdlib.h>
+#include <string>
 
 char*
 wstr_to_mbstr(UINT cp, const WCHAR *wstr, int clen)
 {
     char *ptr;
     int len = WideCharToMultiByte(cp, 0, wstr, clen, NULL, 0, NULL, NULL);
-    if (!(ptr = xmalloc(len))) return 0;
+    if (!(ptr = static_cast<char *>(xmalloc(len)))) return 0;
     WideCharToMultiByte(cp, 0, wstr, clen, ptr, len, NULL, NULL);
 
     return ptr;
@@ -25,14 +26,14 @@ WCHAR* render_event(EVT_HANDLE handle, DWORD flags)
   ULONG      bufferSize = 0;
   ULONG      bufferSizeNeeded = 0;
   ULONG      status, count;
-  static WCHAR* result = L"";
+  static WCHAR* result;
   LPTSTR     msgBuf;
 
   do {
     if (bufferSizeNeeded > bufferSize) {
       free(buffer);
       bufferSize = bufferSizeNeeded;
-      buffer = xmalloc(bufferSize);
+      buffer = static_cast<WCHAR *>(xmalloc(bufferSize));
       if (buffer == NULL) {
         status = ERROR_OUTOFMEMORY;
         bufferSize = 0;
@@ -77,13 +78,23 @@ WCHAR* render_event(EVT_HANDLE handle, DWORD flags)
   return result;
 }
 
+static std::wstring guid_to_wstr(const GUID& guid) {
+  LPOLESTR p = NULL;
+  if (FAILED(StringFromCLSID(guid, &p))) {
+    return NULL;
+  }
+  std::wstring s(p);
+  CoTaskMemFree(p);
+  return s;
+}
+
 VALUE get_values(EVT_HANDLE handle)
 {
-  PWSTR buffer = NULL;
+  std::wstring buffer;
   ULONG bufferSize = 0;
   ULONG bufferSizeNeeded = 0;
   DWORD status, propCount = 0;
-  char *result = "";
+  char *result;
   LPTSTR msgBuf;
   WCHAR* tmpWChar = NULL;
   VALUE userValues = rb_ary_new();
@@ -96,10 +107,9 @@ VALUE get_values(EVT_HANDLE handle)
 
   do {
     if (bufferSizeNeeded > bufferSize) {
-      free(buffer);
       bufferSize = bufferSizeNeeded;
-      buffer = xmalloc(bufferSize);
-      if (buffer == NULL) {
+      buffer.resize(bufferSize);
+      if (buffer.c_str() == NULL) {
         status = ERROR_OUTOFMEMORY;
         bufferSize = 0;
         rb_raise(rb_eWinevtQueryError, "Out of memory");
@@ -110,8 +120,8 @@ VALUE get_values(EVT_HANDLE handle)
     if (EvtRender(renderContext,
                   handle,
                   EvtRenderEventValues,
-                  bufferSize,
-                  buffer,
+                  buffer.size(),
+                  &buffer[0],
                   &bufferSizeNeeded,
                   &propCount) != FALSE) {
       status = ERROR_SUCCESS;
@@ -135,7 +145,7 @@ VALUE get_values(EVT_HANDLE handle)
     rb_raise(rb_eWinevtQueryError, "ErrorCode: %d\nError: %s\n", status, RSTRING_PTR(errmsg));
   }
 
-  PEVT_VARIANT pRenderedValues = (PEVT_VARIANT)buffer;
+  PEVT_VARIANT pRenderedValues = (PEVT_VARIANT)buffer.c_str();
   LARGE_INTEGER timestamp;
   SYSTEMTIME st;
   FILETIME ft;
@@ -205,16 +215,16 @@ VALUE get_values(EVT_HANDLE handle)
       rb_ary_push(userValues, rb_utf8_str_new_cstr(result));
       break;
     case EvtVarTypeBoolean:
-      result = pRenderedValues[i].BooleanVal ? "true" : "false";
+      result = const_cast<char *>(pRenderedValues[i].BooleanVal ? "true" : "false");
       rb_ary_push(userValues, rb_utf8_str_new_cstr(result));
       break;
     case EvtVarTypeGuid:
       if (pRenderedValues[i].GuidVal != NULL) {
-        StringFromCLSID(pRenderedValues[i].GuidVal, &tmpWChar);
-        result = wstr_to_mbstr(CP_UTF8, tmpWChar, -1);
+        const GUID guid = *pRenderedValues[i].GuidVal;
+        std::wstring wstr = guid_to_wstr(guid);
+        result = wstr_to_mbstr(CP_UTF8, wstr.c_str(), -1);
         rb_ary_push(userValues, rb_utf8_str_new_cstr(result));
         free_allocated_mbstr(result);
-        CoTaskMemFree(tmpWChar);
       } else {
         rb_ary_push(userValues, rb_utf8_str_new_cstr("?"));
       }
@@ -284,28 +294,24 @@ VALUE get_values(EVT_HANDLE handle)
     }
   }
 
-  if (buffer)
-    xfree(buffer);
-
   if (renderContext)
     EvtClose(renderContext);
 
   return userValues;
 }
 
-static WCHAR* get_message(EVT_HANDLE hMetadata, EVT_HANDLE handle)
+static std::wstring get_message(EVT_HANDLE hMetadata, EVT_HANDLE handle)
 {
 #define BUFSIZE 4096
-  static WCHAR* result = L"";
+  WCHAR *result;
   ULONG  status;
   ULONG bufferSizeNeeded = 0;
   LPVOID lpMsgBuf;
   WCHAR*     prevBuffer;
-  WCHAR     *message;
+  std::wstring message(BUFSIZE, '\0');
   WCHAR     *reallocatedMessage;
 
-  message = (WCHAR *)xmalloc(sizeof(WCHAR) * BUFSIZE);
-  if (!EvtFormatMessage(hMetadata, handle, 0xffffffff, 0, NULL, EvtFormatMessageEvent, BUFSIZE, message, &bufferSizeNeeded)) {
+  if (!EvtFormatMessage(hMetadata, handle, 0xffffffff, 0, NULL, EvtFormatMessageEvent, message.size(), &message[0], &bufferSizeNeeded)) {
     status = GetLastError();
 
     if (status != ERROR_EVT_UNRESOLVED_VALUE_INSERT) {
@@ -331,7 +337,7 @@ static WCHAR* get_message(EVT_HANDLE hMetadata, EVT_HANDLE handle)
                          MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US),
                          (WCHAR *) &lpMsgBuf, 0, NULL);
 
-        result = _wcsdup((WCHAR *)lpMsgBuf);
+        result = (WCHAR *)lpMsgBuf;
         LocalFree(lpMsgBuf);
 
         goto cleanup;
@@ -344,14 +350,9 @@ static WCHAR* get_message(EVT_HANDLE hMetadata, EVT_HANDLE handle)
     }
 
     if (status == ERROR_INSUFFICIENT_BUFFER) {
-      prevBuffer = message;
-      reallocatedMessage = (WCHAR *)realloc(prevBuffer, sizeof(WCHAR) * bufferSizeNeeded);
-      if (reallocatedMessage == NULL) {
-        rb_raise(rb_eWinevtQueryError, "Reallocation failed.");
-      }
-      message = reallocatedMessage;
+      message.resize(bufferSizeNeeded);
 
-      if(!EvtFormatMessage(hMetadata, handle, 0xffffffff, 0, NULL, EvtFormatMessageEvent, bufferSizeNeeded, message, &bufferSizeNeeded)) {
+      if(!EvtFormatMessage(hMetadata, handle, 0xffffffff, 0, NULL, EvtFormatMessageEvent, message.size(), &message[0], &bufferSizeNeeded)) {
         status = GetLastError();
 
         if (status != ERROR_EVT_UNRESOLVED_VALUE_INSERT) {
@@ -377,7 +378,7 @@ static WCHAR* get_message(EVT_HANDLE hMetadata, EVT_HANDLE handle)
                              MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US),
                              (WCHAR *) &lpMsgBuf, 0, NULL);
 
-            result = _wcsdup((WCHAR *)lpMsgBuf);
+            result = (WCHAR *)lpMsgBuf;
             LocalFree(lpMsgBuf);
 
             goto cleanup;
@@ -389,14 +390,9 @@ static WCHAR* get_message(EVT_HANDLE hMetadata, EVT_HANDLE handle)
     }
   }
 
-  result = _wcsdup(message);
-
 cleanup:
 
-  if (message)
-    xfree(message);
-
-  return result;
+  return std::wstring(message);
 
 #undef BUFSIZE
 }
@@ -404,14 +400,13 @@ cleanup:
 WCHAR* get_description(EVT_HANDLE handle)
 {
 #define BUFSIZE 4096
-  WCHAR      buffer[BUFSIZE];
+  std::wstring buffer(BUFSIZE, '\0');
   ULONG      bufferSize = 0;
   ULONG      bufferSizeNeeded = 0;
   ULONG      status, count;
-  static WCHAR *result = L"";
-  LPTSTR     msgBuf = "";
+  std::wstring result;
+  LPTSTR     msgBuf;
   EVT_HANDLE hMetadata = NULL;
-  PEVT_VARIANT values = NULL;
 
   static PCWSTR eventProperties[] = {L"Event/System/Provider/@Name"};
   EVT_HANDLE renderContext = EvtCreateRenderContext(1, eventProperties, EvtRenderContextValues);
@@ -422,8 +417,8 @@ WCHAR* get_description(EVT_HANDLE handle)
   if (EvtRender(renderContext,
                 handle,
                 EvtRenderEventValues,
-                _countof(buffer),
-                buffer,
+                buffer.size(),
+                &buffer[0],
                 &bufferSizeNeeded,
                 &count) != FALSE) {
     status = ERROR_SUCCESS;
@@ -447,7 +442,7 @@ WCHAR* get_description(EVT_HANDLE handle)
   }
 
   // Obtain buffer as EVT_VARIANT pointer. To avoid ErrorCide 87 in EvtRender.
-  values = (PEVT_VARIANT)buffer;
+  const PEVT_VARIANT values = reinterpret_cast<PEVT_VARIANT>(const_cast<WCHAR *>(buffer.c_str()));
 
   // Open publisher metadata
   hMetadata = EvtOpenPublisherMetadata(NULL, values[0].StringVal, NULL, MAKELCID(MAKELANGID(LANG_NEUTRAL, SUBLANG_NEUTRAL), SORT_DEFAULT), 0);
@@ -457,7 +452,7 @@ WCHAR* get_description(EVT_HANDLE handle)
     goto cleanup;
   }
 
-  result = _wcsdup(get_message(hMetadata, handle));
+  result = get_message(hMetadata, handle);
 
 #undef BUFSIZE
 
@@ -469,5 +464,5 @@ cleanup:
   if (hMetadata)
     EvtClose(hMetadata);
 
-  return result;
+  return const_cast<WCHAR *>(result.c_str());
 }

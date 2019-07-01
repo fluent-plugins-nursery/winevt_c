@@ -21,11 +21,19 @@
 #define EventBookMark(object) ((struct WinevtBookmark *)DATA_PTR(object))
 #define EventChannel(object) ((struct WinevtChannel *)DATA_PTR(object))
 
+#ifdef __cplusplus
+extern "C" {
+#endif /* __cplusplus */
+
 char* wstr_to_mbstr(UINT cp, const WCHAR *wstr, int clen);
 void free_allocated_mbstr(const char* str);
 WCHAR* render_event(EVT_HANDLE handle, DWORD flags);
 WCHAR* get_description(EVT_HANDLE handle);
 VALUE get_values(EVT_HANDLE handle);
+
+#ifdef __cplusplus
+}
+#endif /* __cplusplus */
 
 VALUE rb_cQuery;
 VALUE rb_cChannel;
