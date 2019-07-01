@@ -69,7 +69,7 @@ WCHAR* render_event(EVT_HANDLE handle, DWORD flags)
     rb_raise(rb_eWinevtQueryError, "ErrorCode: %d\nError: %s\n", status, RSTRING_PTR(errmsg));
   }
 
-  result = buffer;
+  result = _wcsdup(buffer);
 
   if (buffer)
     xfree(buffer);
@@ -331,7 +331,7 @@ static WCHAR* get_message(EVT_HANDLE hMetadata, EVT_HANDLE handle)
                          MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US),
                          (WCHAR *) &lpMsgBuf, 0, NULL);
 
-        result = (WCHAR *)lpMsgBuf;
+        result = _wcsdup((WCHAR *)lpMsgBuf);
         LocalFree(lpMsgBuf);
 
         goto cleanup;
@@ -377,7 +377,7 @@ static WCHAR* get_message(EVT_HANDLE hMetadata, EVT_HANDLE handle)
                              MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US),
                              (WCHAR *) &lpMsgBuf, 0, NULL);
 
-            result = (WCHAR *)lpMsgBuf;
+            result = _wcsdup((WCHAR *)lpMsgBuf);
             LocalFree(lpMsgBuf);
 
             goto cleanup;
@@ -389,7 +389,7 @@ static WCHAR* get_message(EVT_HANDLE hMetadata, EVT_HANDLE handle)
     }
   }
 
-  result = message;
+  result = _wcsdup(message);
 
 cleanup:
 
@@ -457,7 +457,7 @@ WCHAR* get_description(EVT_HANDLE handle)
     goto cleanup;
   }
 
-  result = get_message(hMetadata, handle);
+  result = _wcsdup(get_message(hMetadata, handle));
 
 #undef BUFSIZE
 
