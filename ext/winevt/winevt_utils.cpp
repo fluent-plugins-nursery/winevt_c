@@ -7,9 +7,9 @@ char*
 wstr_to_mbstr(UINT cp, const WCHAR *wstr, int clen)
 {
     char *ptr;
-    int len = WideCharToMultiByte(cp, 0, wstr, clen, NULL, 0, NULL, NULL);
-    if (!(ptr = static_cast<char *>(xmalloc(len)))) return 0;
-    WideCharToMultiByte(cp, 0, wstr, clen, ptr, len, NULL, NULL);
+    int len = WideCharToMultiByte(cp, 0, wstr, clen, nullptr, 0, nullptr, nullptr);
+    if (!(ptr = static_cast<char *>(xmalloc(len)))) return nullptr;
+    WideCharToMultiByte(cp, 0, wstr, clen, ptr, len, nullptr, nullptr);
 
     return ptr;
 }
@@ -22,7 +22,7 @@ void free_allocated_mbstr(const char* str)
 
 WCHAR* render_event(EVT_HANDLE handle, DWORD flags)
 {
-  PWSTR      buffer = NULL;
+  PWSTR      buffer = nullptr;
   ULONG      bufferSize = 0;
   ULONG      bufferSizeNeeded = 0;
   ULONG      status, count;
@@ -34,7 +34,7 @@ WCHAR* render_event(EVT_HANDLE handle, DWORD flags)
       free(buffer);
       bufferSize = bufferSizeNeeded;
       buffer = static_cast<WCHAR *>(xmalloc(bufferSize));
-      if (buffer == NULL) {
+      if (buffer == nullptr) {
         status = ERROR_OUTOFMEMORY;
         bufferSize = 0;
         rb_raise(rb_eWinevtQueryError, "Out of memory");
@@ -42,7 +42,7 @@ WCHAR* render_event(EVT_HANDLE handle, DWORD flags)
       }
     }
 
-    if (EvtRender(NULL,
+    if (EvtRender(nullptr,
                   handle,
                   flags,
                   bufferSize,
@@ -60,9 +60,9 @@ WCHAR* render_event(EVT_HANDLE handle, DWORD flags)
         FORMAT_MESSAGE_ALLOCATE_BUFFER |
         FORMAT_MESSAGE_FROM_SYSTEM |
         FORMAT_MESSAGE_IGNORE_INSERTS,
-        NULL, status,
+        nullptr, status,
         MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-        msgBuf, 0, NULL);
+        msgBuf, 0, nullptr);
 
     VALUE errmsg = rb_str_new2(msgBuf);
     LocalFree(msgBuf);
@@ -79,9 +79,9 @@ WCHAR* render_event(EVT_HANDLE handle, DWORD flags)
 }
 
 static std::wstring guid_to_wstr(const GUID& guid) {
-  LPOLESTR p = NULL;
+  LPOLESTR p = nullptr;
   if (FAILED(StringFromCLSID(guid, &p))) {
-    return NULL;
+    return nullptr;
   }
   std::wstring s(p);
   CoTaskMemFree(p);
@@ -96,12 +96,12 @@ VALUE get_values(EVT_HANDLE handle)
   DWORD status, propCount = 0;
   char *result;
   LPTSTR msgBuf;
-  WCHAR* tmpWChar = NULL;
+  WCHAR* tmpWChar = nullptr;
   VALUE userValues = rb_ary_new();
 
   static PCWSTR eventProperties[] = { L"Event/EventData/Data[1]" };
-  EVT_HANDLE renderContext = EvtCreateRenderContext(0, NULL, EvtRenderContextUser);
-  if (renderContext == NULL) {
+  EVT_HANDLE renderContext = EvtCreateRenderContext(0, nullptr, EvtRenderContextUser);
+  if (renderContext == nullptr) {
     rb_raise(rb_eWinevtQueryError, "Failed to create renderContext");
   }
 
@@ -136,9 +136,9 @@ VALUE get_values(EVT_HANDLE handle)
         FORMAT_MESSAGE_ALLOCATE_BUFFER |
         FORMAT_MESSAGE_FROM_SYSTEM |
         FORMAT_MESSAGE_IGNORE_INSERTS,
-        NULL, status,
+        nullptr, status,
         MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-        msgBuf, 0, NULL);
+        msgBuf, 0, nullptr);
 
     VALUE errmsg = rb_str_new2(msgBuf);
     LocalFree(msgBuf);
@@ -159,7 +159,7 @@ VALUE get_values(EVT_HANDLE handle)
       rb_ary_push(userValues, Qnil);
       break;
     case EvtVarTypeString:
-      if (pRenderedValues[i].StringVal == NULL) {
+      if (pRenderedValues[i].StringVal == nullptr) {
         rb_ary_push(userValues, rb_utf8_str_new_cstr("(NULL)"));
       } else {
         result = wstr_to_mbstr(CP_UTF8, pRenderedValues[i].StringVal, -1);
@@ -168,7 +168,7 @@ VALUE get_values(EVT_HANDLE handle)
       }
       break;
     case EvtVarTypeAnsiString:
-      if (pRenderedValues[i].AnsiStringVal == NULL) {
+      if (pRenderedValues[i].AnsiStringVal == nullptr) {
         rb_ary_push(userValues, rb_utf8_str_new_cstr("(NULL)"));
       } else {
         rb_ary_push(userValues, rb_utf8_str_new_cstr((char *)pRenderedValues[i].AnsiStringVal));
@@ -220,7 +220,7 @@ VALUE get_values(EVT_HANDLE handle)
       rb_ary_push(userValues, rb_utf8_str_new_cstr(result));
       break;
     case EvtVarTypeGuid:
-      if (pRenderedValues[i].GuidVal != NULL) {
+      if (pRenderedValues[i].GuidVal != nullptr) {
         const GUID guid = *pRenderedValues[i].GuidVal;
         std::wstring wstr = guid_to_wstr(guid);
         result = wstr_to_mbstr(CP_UTF8, wstr.c_str(), -1);
@@ -249,7 +249,7 @@ VALUE get_values(EVT_HANDLE handle)
       }
       break;
     case EvtVarTypeSysTime:
-      if (pRenderedValues[i].SysTimeVal != NULL) {
+      if (pRenderedValues[i].SysTimeVal != nullptr) {
         st = *pRenderedValues[i].SysTimeVal;
         sprintf(strTime, "%04d-%02d-%02d %02d:%02d:%02d.%dZ",
                 st.wYear , st.wMonth , st.wDay ,
@@ -281,7 +281,7 @@ VALUE get_values(EVT_HANDLE handle)
       rb_ary_push(userValues, rbObj);
       break;
     case EvtVarTypeEvtXml:
-      if (pRenderedValues[i].XmlVal == NULL) {
+      if (pRenderedValues[i].XmlVal == nullptr) {
         rb_ary_push(userValues, rb_utf8_str_new_cstr("(NULL)"));
       } else {
         result = wstr_to_mbstr(CP_UTF8, pRenderedValues[i].XmlVal, -1);
@@ -310,7 +310,7 @@ static std::wstring get_message(EVT_HANDLE hMetadata, EVT_HANDLE handle)
   LPVOID lpMsgBuf;
   std::wstring message(BUFSIZE, '\0');
 
-  if (!EvtFormatMessage(hMetadata, handle, 0xffffffff, 0, NULL, EvtFormatMessageEvent, message.size(), &message[0], &bufferSizeNeeded)) {
+  if (!EvtFormatMessage(hMetadata, handle, 0xffffffff, 0, nullptr, EvtFormatMessageEvent, message.size(), &message[0], &bufferSizeNeeded)) {
     status = GetLastError();
 
     if (status != ERROR_EVT_UNRESOLVED_VALUE_INSERT) {
@@ -324,17 +324,17 @@ static std::wstring get_message(EVT_HANDLE hMetadata, EVT_HANDLE handle)
         if (FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER |
                            FORMAT_MESSAGE_FROM_SYSTEM |
                            FORMAT_MESSAGE_IGNORE_INSERTS,
-                           NULL,
+                           nullptr,
                            status,
                            MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-                           reinterpret_cast<WCHAR *>(&lpMsgBuf), 0, NULL) == 0)
+                           reinterpret_cast<WCHAR *>(&lpMsgBuf), 0, nullptr) == 0)
           FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER |
                          FORMAT_MESSAGE_FROM_SYSTEM |
                          FORMAT_MESSAGE_IGNORE_INSERTS,
-                         NULL,
+                         nullptr,
                          status,
                          MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US),
-                         reinterpret_cast<WCHAR *>(&lpMsgBuf), 0, NULL);
+                         reinterpret_cast<WCHAR *>(&lpMsgBuf), 0, nullptr);
 
         result = reinterpret_cast<WCHAR *>(lpMsgBuf);
         LocalFree(lpMsgBuf);
@@ -351,7 +351,7 @@ static std::wstring get_message(EVT_HANDLE hMetadata, EVT_HANDLE handle)
     if (status == ERROR_INSUFFICIENT_BUFFER) {
       message.resize(bufferSizeNeeded);
 
-      if(!EvtFormatMessage(hMetadata, handle, 0xffffffff, 0, NULL, EvtFormatMessageEvent, message.size(), &message[0], &bufferSizeNeeded)) {
+      if(!EvtFormatMessage(hMetadata, handle, 0xffffffff, 0, nullptr, EvtFormatMessageEvent, message.size(), &message[0], &bufferSizeNeeded)) {
         status = GetLastError();
 
         if (status != ERROR_EVT_UNRESOLVED_VALUE_INSERT) {
@@ -365,17 +365,17 @@ static std::wstring get_message(EVT_HANDLE hMetadata, EVT_HANDLE handle)
             if (FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER |
                                FORMAT_MESSAGE_FROM_SYSTEM |
                                FORMAT_MESSAGE_IGNORE_INSERTS,
-                               NULL,
+                               nullptr,
                                status,
                                MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-                               reinterpret_cast<WCHAR *>(&lpMsgBuf), 0, NULL) == 0)
+                               reinterpret_cast<WCHAR *>(&lpMsgBuf), 0, nullptr) == 0)
               FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER |
                              FORMAT_MESSAGE_FROM_SYSTEM |
                              FORMAT_MESSAGE_IGNORE_INSERTS,
-                             NULL,
+                             nullptr,
                              status,
                              MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US),
-                             reinterpret_cast<WCHAR *>(&lpMsgBuf), 0, NULL);
+                             reinterpret_cast<WCHAR *>(&lpMsgBuf), 0, nullptr);
 
             result = reinterpret_cast<WCHAR *>(lpMsgBuf);
             LocalFree(lpMsgBuf);
@@ -407,11 +407,11 @@ WCHAR* get_description(EVT_HANDLE handle)
   ULONG      status, count;
   std::wstring result;
   LPTSTR     msgBuf;
-  EVT_HANDLE hMetadata = NULL;
+  EVT_HANDLE hMetadata = nullptr;
 
   static PCWSTR eventProperties[] = {L"Event/System/Provider/@Name"};
   EVT_HANDLE renderContext = EvtCreateRenderContext(1, eventProperties, EvtRenderContextValues);
-  if (renderContext == NULL) {
+  if (renderContext == nullptr) {
     rb_raise(rb_eWinevtQueryError, "Failed to create renderContext");
   }
 
@@ -432,9 +432,9 @@ WCHAR* get_description(EVT_HANDLE handle)
         FORMAT_MESSAGE_ALLOCATE_BUFFER |
         FORMAT_MESSAGE_FROM_SYSTEM |
         FORMAT_MESSAGE_IGNORE_INSERTS,
-        NULL, status,
+        nullptr, status,
         MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-        msgBuf, 0, NULL);
+        msgBuf, 0, nullptr);
 
     VALUE errmsg = rb_str_new2(msgBuf);
     LocalFree(msgBuf);
@@ -446,8 +446,8 @@ WCHAR* get_description(EVT_HANDLE handle)
   const PEVT_VARIANT values = reinterpret_cast<PEVT_VARIANT>(const_cast<WCHAR *>(buffer.c_str()));
 
   // Open publisher metadata
-  hMetadata = EvtOpenPublisherMetadata(NULL, values[0].StringVal, NULL, MAKELCID(MAKELANGID(LANG_NEUTRAL, SUBLANG_NEUTRAL), SORT_DEFAULT), 0);
-  if (hMetadata == NULL) {
+  hMetadata = EvtOpenPublisherMetadata(nullptr, values[0].StringVal, nullptr, MAKELCID(MAKELANGID(LANG_NEUTRAL, SUBLANG_NEUTRAL), SORT_DEFAULT), 0);
+  if (hMetadata == nullptr) {
     // When winevt_c cannot open metadata, then give up to obtain
     // message file and clean up immediately.
     goto cleanup;
