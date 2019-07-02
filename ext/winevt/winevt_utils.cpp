@@ -146,7 +146,7 @@ VALUE get_values(EVT_HANDLE handle)
     rb_raise(rb_eWinevtQueryError, "ErrorCode: %lu\nError: %s\n", status, RSTRING_PTR(errmsg));
   }
 
-  PEVT_VARIANT pRenderedValues = (PEVT_VARIANT)buffer.c_str();
+  PEVT_VARIANT pRenderedValues = reinterpret_cast<PEVT_VARIANT>(const_cast<WCHAR *>(buffer.c_str()));
   LARGE_INTEGER timestamp;
   SYSTEMTIME st;
   FILETIME ft;
@@ -175,19 +175,19 @@ VALUE get_values(EVT_HANDLE handle)
       }
       break;
     case EvtVarTypeSByte:
-      rbObj = INT2NUM((INT32)pRenderedValues[i].SByteVal);
+      rbObj = INT2NUM(static_cast<UINT32>(pRenderedValues[i].SByteVal));
       rb_ary_push(userValues, rbObj);
       break;
     case EvtVarTypeByte:
-      rbObj = INT2NUM((UINT32)pRenderedValues[i].ByteVal);
+      rbObj = INT2NUM(static_cast<UINT32>(pRenderedValues[i].ByteVal));
       rb_ary_push(userValues, rbObj);
       break;
     case EvtVarTypeInt16:
-      rbObj = INT2NUM((INT32)pRenderedValues[i].Int16Val);
+      rbObj = INT2NUM(static_cast<INT32>(pRenderedValues[i].Int16Val));
       rb_ary_push(userValues, rbObj);
       break;
     case EvtVarTypeUInt16:
-      rbObj = UINT2NUM((UINT32)pRenderedValues[i].UInt16Val);
+      rbObj = UINT2NUM(static_cast<UINT32>(pRenderedValues[i].UInt16Val));
       rb_ary_push(userValues, rbObj);
       break;
     case EvtVarTypeInt32:
@@ -327,16 +327,16 @@ static std::wstring get_message(EVT_HANDLE hMetadata, EVT_HANDLE handle)
                            NULL,
                            status,
                            MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-                           (WCHAR *) &lpMsgBuf, 0, NULL) == 0)
+                           reinterpret_cast<WCHAR *>(&lpMsgBuf), 0, NULL) == 0)
           FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER |
                          FORMAT_MESSAGE_FROM_SYSTEM |
                          FORMAT_MESSAGE_IGNORE_INSERTS,
                          NULL,
                          status,
                          MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US),
-                         (WCHAR *) &lpMsgBuf, 0, NULL);
+                         reinterpret_cast<WCHAR *>(&lpMsgBuf), 0, NULL);
 
-        result = (WCHAR *)lpMsgBuf;
+        result = reinterpret_cast<WCHAR *>(lpMsgBuf);
         LocalFree(lpMsgBuf);
 
         goto cleanup;
@@ -368,16 +368,16 @@ static std::wstring get_message(EVT_HANDLE hMetadata, EVT_HANDLE handle)
                                NULL,
                                status,
                                MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-                               (WCHAR *) &lpMsgBuf, 0, NULL) == 0)
+                               reinterpret_cast<WCHAR *>(&lpMsgBuf), 0, NULL) == 0)
               FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER |
                              FORMAT_MESSAGE_FROM_SYSTEM |
                              FORMAT_MESSAGE_IGNORE_INSERTS,
                              NULL,
                              status,
                              MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US),
-                             (WCHAR *) &lpMsgBuf, 0, NULL);
+                             reinterpret_cast<WCHAR *>(&lpMsgBuf), 0, NULL);
 
-            result = (WCHAR *)lpMsgBuf;
+            result = reinterpret_cast<WCHAR *>(lpMsgBuf);
             LocalFree(lpMsgBuf);
 
             goto cleanup;
