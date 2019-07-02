@@ -108,8 +108,9 @@ VALUE get_values(EVT_HANDLE handle)
   do {
     if (bufferSizeNeeded > bufferSize) {
       bufferSize = bufferSizeNeeded;
-      buffer.resize(bufferSize);
-      if (buffer.c_str() == NULL) {
+      try {
+        buffer.resize(bufferSize);
+      } catch (std::bad_alloc e) {
         status = ERROR_OUTOFMEMORY;
         bufferSize = 0;
         rb_raise(rb_eWinevtQueryError, "Out of memory");
