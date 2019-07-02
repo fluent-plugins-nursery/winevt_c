@@ -2,6 +2,12 @@
 
 [![Build status](https://ci.appveyor.com/api/projects/status/hr3phv8ihvgc68oj/branch/master?svg=true)](https://ci.appveyor.com/project/cosmo0920/winevt-c/branch/master)
 
+## Prerequisites
+
+* Windows Vista/Windows Server 2008 or later.
+* gcc and g++ from MSYS2 for building C/C++ extension.
+* Ruby 2.4 or later with MSYS2.
+
 ## Installation
 
 Add this line to your application's Gemfile:
@@ -12,11 +18,11 @@ gem 'winevt_c'
 
 And then execute:
 
-    $ bundle
+    $ ridk exec bundle
 
 Or install it yourself as:
 
-    $ gem install winevt_c
+    $ ridk exec gem install winevt_c
 
 ## Usage
 
