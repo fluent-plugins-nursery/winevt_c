@@ -20,6 +20,16 @@ void free_allocated_mbstr(const char* str)
     xfree((char *)str);
 }
 
+static VALUE
+wstr_to_rb_str(UINT cp, const WCHAR *wstr, int clen)
+{
+    int len = WideCharToMultiByte(cp, 0, wstr, clen, nullptr, 0, nullptr, nullptr);
+    VALUE str = rb_utf8_str_new(0, len);
+    WideCharToMultiByte(cp, 0, wstr, clen, RSTRING_PTR(str), len, nullptr, nullptr);
+
+    return str;
+}
+
 WCHAR* render_event(EVT_HANDLE handle, DWORD flags)
 {
   PWSTR      buffer = nullptr;
@@ -162,9 +172,8 @@ VALUE get_values(EVT_HANDLE handle)
       if (pRenderedValues[i].StringVal == nullptr) {
         rb_ary_push(userValues, rb_utf8_str_new_cstr("(NULL)"));
       } else {
-        result = wstr_to_mbstr(CP_UTF8, pRenderedValues[i].StringVal, -1);
-        rb_ary_push(userValues, rb_utf8_str_new_cstr(result));
-        free_allocated_mbstr(result);
+        rbObj = wstr_to_rb_str(CP_UTF8, pRenderedValues[i].StringVal, -1);
+        rb_ary_push(userValues, rbObj);
       }
       break;
     case EvtVarTypeAnsiString:
@@ -223,9 +232,8 @@ VALUE get_values(EVT_HANDLE handle)
       if (pRenderedValues[i].GuidVal != nullptr) {
         const GUID guid = *pRenderedValues[i].GuidVal;
         std::wstring wstr = guid_to_wstr(guid);
-        result = wstr_to_mbstr(CP_UTF8, wstr.c_str(), -1);
-        rb_ary_push(userValues, rb_utf8_str_new_cstr(result));
-        free_allocated_mbstr(result);
+        rbObj = wstr_to_rb_str(CP_UTF8, wstr.c_str(), -1);
+        rb_ary_push(userValues, rbObj);
       } else {
         rb_ary_push(userValues, rb_utf8_str_new_cstr("?"));
       }
@@ -262,9 +270,8 @@ VALUE get_values(EVT_HANDLE handle)
       break;
     case EvtVarTypeSid:
       if (ConvertSidToStringSidW(pRenderedValues[i].SidVal, &tmpWChar)) {
-        result = wstr_to_mbstr(CP_UTF8, tmpWChar, -1);
-        rb_ary_push(userValues, rb_utf8_str_new_cstr(result));
-        free_allocated_mbstr(result);
+        rbObj = wstr_to_rb_str(CP_UTF8, tmpWChar, -1);
+        rb_ary_push(userValues, rbObj);
         LocalFree(tmpWChar);
       } else {
         rb_ary_push(userValues, rb_utf8_str_new_cstr("?"));
@@ -284,9 +291,8 @@ VALUE get_values(EVT_HANDLE handle)
       if (pRenderedValues[i].XmlVal == nullptr) {
         rb_ary_push(userValues, rb_utf8_str_new_cstr("(NULL)"));
       } else {
-        result = wstr_to_mbstr(CP_UTF8, pRenderedValues[i].XmlVal, -1);
-        rb_ary_push(userValues, rb_utf8_str_new_cstr(result));
-        free_allocated_mbstr(result);
+        rbObj = wstr_to_rb_str(CP_UTF8, pRenderedValues[i].XmlVal, -1);
+        rb_ary_push(userValues, rbObj);
       }
       break;
     default:
