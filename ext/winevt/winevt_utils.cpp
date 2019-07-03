@@ -171,7 +171,7 @@ VALUE get_values(EVT_HANDLE handle)
       if (pRenderedValues[i].AnsiStringVal == nullptr) {
         rb_ary_push(userValues, rb_utf8_str_new_cstr("(NULL)"));
       } else {
-        rb_ary_push(userValues, rb_utf8_str_new_cstr((char *)pRenderedValues[i].AnsiStringVal));
+        rb_ary_push(userValues, rb_utf8_str_new_cstr(const_cast<char *>(pRenderedValues[i].AnsiStringVal)));
       }
       break;
     case EvtVarTypeSByte:
