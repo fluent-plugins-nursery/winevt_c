@@ -43,7 +43,6 @@ rb_winevt_channel_each(VALUE self)
   EVT_HANDLE hChannels;
   struct WinevtChannel *winevtChannel;
   char *errBuf = NULL;
-  char * result;
   LPWSTR buffer = NULL;
   LPWSTR temp = NULL;
   DWORD bufferSize = 0;
@@ -87,10 +86,7 @@ rb_winevt_channel_each(VALUE self)
       }
     }
 
-    result = wstr_to_mbstr(CP_UTF8, buffer, -1);
-
-    utf8str = rb_utf8_str_new_cstr(result);
-    free_allocated_mbstr(result);
+    utf8str = wstr_to_rb_str(CP_UTF8, buffer, -1);
 
     rb_yield(utf8str);
   }

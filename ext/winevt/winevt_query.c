@@ -138,16 +138,13 @@ static VALUE
 rb_winevt_query_render(VALUE self)
 {
   WCHAR* wResult;
-  char* result;
   struct WinevtQuery *winevtQuery;
   VALUE utf8str;
 
   TypedData_Get_Struct(self, struct WinevtQuery, &rb_winevt_query_type, winevtQuery);
   wResult = render_event(winevtQuery->event, EvtRenderEventXml);
-  result = wstr_to_mbstr(CP_UTF8, wResult, -1);
+  utf8str = wstr_to_rb_str(CP_UTF8, wResult, -1);
 
-  utf8str = rb_utf8_str_new_cstr(result);
-  free_allocated_mbstr(result);
   if (wResult != NULL)
     free(wResult);
 
@@ -158,16 +155,12 @@ static VALUE
 rb_winevt_query_message(VALUE self)
 {
   WCHAR* wResult;
-  char* result;
   struct WinevtQuery *winevtQuery;
   VALUE utf8str;
 
   TypedData_Get_Struct(self, struct WinevtQuery, &rb_winevt_query_type, winevtQuery);
   wResult = get_description(winevtQuery->event);
-  result = wstr_to_mbstr(CP_UTF8, wResult, -1);
-
-  utf8str = rb_utf8_str_new_cstr(result);
-  free_allocated_mbstr(result);
+  utf8str = wstr_to_rb_str(CP_UTF8, wResult, -1);
 
   return utf8str;
 }
