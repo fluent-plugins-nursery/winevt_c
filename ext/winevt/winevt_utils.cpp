@@ -20,7 +20,7 @@ void free_allocated_mbstr(const char* str)
     xfree((char *)str);
 }
 
-static VALUE
+VALUE
 wstr_to_rb_str(UINT cp, const WCHAR *wstr, int clen)
 {
     int len = WideCharToMultiByte(cp, 0, wstr, clen, nullptr, 0, nullptr, nullptr);

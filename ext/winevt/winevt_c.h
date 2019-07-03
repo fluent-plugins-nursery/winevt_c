@@ -27,6 +27,7 @@ extern "C" {
 
 char* wstr_to_mbstr(UINT cp, const WCHAR *wstr, int clen);
 void free_allocated_mbstr(const char* str);
+VALUE wstr_to_rb_str(UINT cp, const WCHAR *wstr, int clen);
 WCHAR* render_event(EVT_HANDLE handle, DWORD flags);
 WCHAR* get_description(EVT_HANDLE handle);
 VALUE get_values(EVT_HANDLE handle);
