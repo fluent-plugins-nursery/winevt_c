@@ -471,5 +471,5 @@ cleanup:
   if (hMetadata)
     EvtClose(hMetadata);
 
-  return const_cast<WCHAR *>(result.c_str());
+  return _wcsdup(result.c_str());
 }

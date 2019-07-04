@@ -162,6 +162,9 @@ rb_winevt_query_message(VALUE self)
   wResult = get_description(winevtQuery->event);
   utf8str = wstr_to_rb_str(CP_UTF8, wResult, -1);
 
+  if (wResult != NULL)
+    free(wResult);
+
   return utf8str;
 }
 
