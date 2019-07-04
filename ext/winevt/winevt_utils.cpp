@@ -223,7 +223,6 @@ VALUE get_values(EVT_HANDLE handle)
     case EvtVarTypeDouble:
       sprintf(result, "%lf", pRenderedValues[i].DoubleVal);
       rb_ary_push(userValues, rb_utf8_str_new_cstr(result));
-      free_allocated_mbstr(result);
       break;
     case EvtVarTypeBoolean:
       result = const_cast<char *>(pRenderedValues[i].BooleanVal ? "true" : "false");
@@ -253,7 +252,6 @@ VALUE get_values(EVT_HANDLE handle)
                 st.wHour , st.wMinute , st.wSecond,
                 st.wMilliseconds);
         rb_ary_push(userValues, rb_utf8_str_new_cstr(strTime));
-        free_allocated_mbstr(strTime);
       } else {
         rb_ary_push(userValues, rb_utf8_str_new_cstr("?"));
       }
@@ -266,7 +264,6 @@ VALUE get_values(EVT_HANDLE handle)
                 st.wHour , st.wMinute , st.wSecond,
                 st.wMilliseconds);
         rb_ary_push(userValues, rb_utf8_str_new_cstr(strTime));
-        free_allocated_mbstr(strTime);
       } else {
         rb_ary_push(userValues, rb_utf8_str_new_cstr("?"));
       }
