@@ -161,6 +161,7 @@ VALUE get_values(EVT_HANDLE handle)
   SYSTEMTIME st;
   FILETIME ft;
   CHAR strTime[128];
+  std::string sResult;
   VALUE rbObj;
 
   for (int i = 0; i < propCount; i++) {
@@ -216,13 +217,12 @@ VALUE get_values(EVT_HANDLE handle)
       rb_ary_push(userValues, rbObj);
       break;
     case EvtVarTypeSingle:
-      sprintf(result, "%f", pRenderedValues[i].SingleVal);
-      rb_ary_push(userValues, rb_utf8_str_new_cstr(result));
-      free_allocated_mbstr(result);
+      sprintf(&sResult[0], "%f", pRenderedValues[i].SingleVal);
+      rb_ary_push(userValues, rb_utf8_str_new_cstr(sResult.c_str()));
       break;
     case EvtVarTypeDouble:
-      sprintf(result, "%lf", pRenderedValues[i].DoubleVal);
-      rb_ary_push(userValues, rb_utf8_str_new_cstr(result));
+      sprintf(&sResult[0], "%lf", pRenderedValues[i].DoubleVal);
+      rb_ary_push(userValues, rb_utf8_str_new_cstr(sResult.c_str()));
       break;
     case EvtVarTypeBoolean:
       result = const_cast<char *>(pRenderedValues[i].BooleanVal ? "true" : "false");
