@@ -23,9 +23,13 @@ void free_allocated_mbstr(const char* str)
 VALUE
 wstr_to_rb_str(UINT cp, const WCHAR *wstr, int clen)
 {
+    char *ptr;
     int len = WideCharToMultiByte(cp, 0, wstr, clen, nullptr, 0, nullptr, nullptr);
-    VALUE str = rb_utf8_str_new(0, len);
-    WideCharToMultiByte(cp, 0, wstr, clen, RSTRING_PTR(str), len, nullptr, nullptr);
+    if (!(ptr = static_cast<char *>(xmalloc(len)))) return rb_utf8_str_new_cstr("");
+    WideCharToMultiByte(cp, 0, wstr, clen, ptr, len, nullptr, nullptr);
+
+    VALUE str = rb_utf8_str_new_cstr(ptr);
+    xfree(ptr);
 
     return str;
 }
