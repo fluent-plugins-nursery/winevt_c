@@ -2,6 +2,7 @@
 #include <sddl.h>
 #include <stdlib.h>
 #include <string>
+#include <memory>
 
 char*
 wstr_to_mbstr(UINT cp, const WCHAR *wstr, int clen)
@@ -23,20 +24,17 @@ void free_allocated_mbstr(const char* str)
 VALUE
 wstr_to_rb_str(UINT cp, const WCHAR *wstr, int clen)
 {
-    char *ptr;
     int len = WideCharToMultiByte(cp, 0, wstr, clen, nullptr, 0, nullptr, nullptr);
-    if (!(ptr = static_cast<char *>(xmalloc(len)))) return rb_utf8_str_new_cstr("");
-    WideCharToMultiByte(cp, 0, wstr, clen, ptr, len, nullptr, nullptr);
-
-    VALUE str = rb_utf8_str_new_cstr(ptr);
-    xfree(ptr);
+    std::unique_ptr<char[]> ptr(new char[len]);
+    WideCharToMultiByte(cp, 0, wstr, clen, ptr.get(), len, nullptr, nullptr);
+    VALUE str = rb_utf8_str_new_cstr(ptr.get());
 
     return str;
 }
 
 WCHAR* render_event(EVT_HANDLE handle, DWORD flags)
 {
-  PWSTR      buffer = nullptr;
+  std::unique_ptr<WCHAR[]> buffer(new WCHAR[0]);
   ULONG      bufferSize = 0;
   ULONG      bufferSizeNeeded = 0;
   ULONG      status, count;
@@ -45,9 +43,8 @@ WCHAR* render_event(EVT_HANDLE handle, DWORD flags)
 
   do {
     if (bufferSizeNeeded > bufferSize) {
-      free(buffer);
       bufferSize = bufferSizeNeeded;
-      buffer = static_cast<WCHAR *>(xmalloc(bufferSize));
+      buffer.reset(new WCHAR[bufferSize]);
       if (buffer == nullptr) {
         status = ERROR_OUTOFMEMORY;
         bufferSize = 0;
@@ -60,7 +57,7 @@ WCHAR* render_event(EVT_HANDLE handle, DWORD flags)
                   handle,
                   flags,
                   bufferSize,
-                  buffer,
+                  buffer.get(),
                   &bufferSizeNeeded,
                   &count) != FALSE) {
       status = ERROR_SUCCESS;
@@ -84,10 +81,7 @@ WCHAR* render_event(EVT_HANDLE handle, DWORD flags)
     rb_raise(rb_eWinevtQueryError, "ErrorCode: %ld\nError: %s\n", status, RSTRING_PTR(errmsg));
   }
 
-  result = _wcsdup(buffer);
-
-  if (buffer)
-    xfree(buffer);
+  result = _wcsdup(buffer.get());
 
   return result;
 }
