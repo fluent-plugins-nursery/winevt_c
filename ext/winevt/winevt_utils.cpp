@@ -160,7 +160,8 @@ VALUE get_values(EVT_HANDLE handle)
   LARGE_INTEGER timestamp;
   SYSTEMTIME st;
   FILETIME ft;
-  CHAR strTime[128];
+  std::string strTime;
+  std::string sResult;
   VALUE rbObj;
 
   for (int i = 0; i < propCount; i++) {
@@ -216,14 +217,12 @@ VALUE get_values(EVT_HANDLE handle)
       rb_ary_push(userValues, rbObj);
       break;
     case EvtVarTypeSingle:
-      sprintf(result, "%f", pRenderedValues[i].SingleVal);
-      rb_ary_push(userValues, rb_utf8_str_new_cstr(result));
-      free_allocated_mbstr(result);
+      sprintf(&sResult[0], "%f", pRenderedValues[i].SingleVal);
+      rb_ary_push(userValues, rb_utf8_str_new_cstr(sResult.c_str()));
       break;
     case EvtVarTypeDouble:
-      sprintf(result, "%lf", pRenderedValues[i].DoubleVal);
-      rb_ary_push(userValues, rb_utf8_str_new_cstr(result));
-      free_allocated_mbstr(result);
+      sprintf(&sResult[0], "%lf", pRenderedValues[i].DoubleVal);
+      rb_ary_push(userValues, rb_utf8_str_new_cstr(sResult.c_str()));
       break;
     case EvtVarTypeBoolean:
       result = const_cast<char *>(pRenderedValues[i].BooleanVal ? "true" : "false");
@@ -248,12 +247,11 @@ VALUE get_values(EVT_HANDLE handle)
       ft.dwHighDateTime = timestamp.HighPart;
       ft.dwLowDateTime  = timestamp.LowPart;
       if (FileTimeToSystemTime( &ft, &st )) {
-        sprintf(strTime, "%04d-%02d-%02d %02d:%02d:%02d.%dZ",
+        sprintf(&strTime[0], "%04d-%02d-%02d %02d:%02d:%02d.%dZ",
                 st.wYear , st.wMonth , st.wDay ,
                 st.wHour , st.wMinute , st.wSecond,
                 st.wMilliseconds);
-        rb_ary_push(userValues, rb_utf8_str_new_cstr(strTime));
-        free_allocated_mbstr(strTime);
+        rb_ary_push(userValues, rb_utf8_str_new_cstr(strTime.c_str()));
       } else {
         rb_ary_push(userValues, rb_utf8_str_new_cstr("?"));
       }
@@ -261,12 +259,11 @@ VALUE get_values(EVT_HANDLE handle)
     case EvtVarTypeSysTime:
       if (pRenderedValues[i].SysTimeVal != nullptr) {
         st = *pRenderedValues[i].SysTimeVal;
-        sprintf(strTime, "%04d-%02d-%02d %02d:%02d:%02d.%dZ",
+        sprintf(&strTime[0], "%04d-%02d-%02d %02d:%02d:%02d.%dZ",
                 st.wYear , st.wMonth , st.wDay ,
                 st.wHour , st.wMinute , st.wSecond,
                 st.wMilliseconds);
-        rb_ary_push(userValues, rb_utf8_str_new_cstr(strTime));
-        free_allocated_mbstr(strTime);
+        rb_ary_push(userValues, rb_utf8_str_new_cstr(strTime.c_str()));
       } else {
         rb_ary_push(userValues, rb_utf8_str_new_cstr("?"));
       }
