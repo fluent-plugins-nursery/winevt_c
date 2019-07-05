@@ -114,6 +114,9 @@ rb_winevt_subscribe_subscribe(int argc, VALUE *argv, VALUE self)
 
   hSubscription = EvtSubscribe(NULL, hSignalEvent, path, query, hBookmark, NULL, NULL, flags);
 
+  ALLOCV_END(wpathBuf);
+  ALLOCV_END(wqueryBuf);
+
   winevtSubscribe->signalEvent = hSignalEvent;
   winevtSubscribe->subscription = hSubscription;
   if (hBookmark) {
