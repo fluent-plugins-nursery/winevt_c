@@ -18,6 +18,7 @@ have_library("ole32")
 $LDFLAGS << " -lwevtapi -ladvapi32 -lole32"
 $CFLAGS << " -std=c99 -fPIC -fms-extensions "
 $CXXFLAGS << " -std=c++11 -fPIC -fms-extensions "
-# $CFLAGS << " -g -O0"
+# $CFLAGS << " -g -O0 -ggdb"
+# $CXXFLAGS << " -g -O0 -ggdb"
 
 create_makefile("winevt/winevt")
