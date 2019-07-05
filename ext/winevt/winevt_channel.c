@@ -71,7 +71,7 @@ rb_winevt_channel_each(VALUE self)
         break;
       } else if (ERROR_INSUFFICIENT_BUFFER == status) {
         bufferSize = bufferUsed;
-        temp = (LPWSTR)xrealloc(buffer, bufferSize * sizeof(WCHAR));
+        temp = (LPWSTR)realloc(buffer, bufferSize * sizeof(WCHAR));
         if (temp) {
           buffer = temp;
           temp = NULL;
@@ -90,6 +90,12 @@ rb_winevt_channel_each(VALUE self)
 
     rb_yield(utf8str);
   }
+
+  if (hChannels)
+    EvtClose(hChannels);
+
+  if (buffer)
+    free(buffer);
 
   return Qnil;
 }
