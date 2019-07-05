@@ -2,7 +2,7 @@
 #include <sddl.h>
 #include <stdlib.h>
 #include <string>
-#include <memory>
+#include <vector>
 
 char*
 wstr_to_mbstr(UINT cp, const WCHAR *wstr, int clen)
@@ -37,7 +37,7 @@ wstr_to_rb_str(UINT cp, const WCHAR *wstr, int clen)
 
 WCHAR* render_event(EVT_HANDLE handle, DWORD flags)
 {
-  std::unique_ptr<WCHAR[]> buffer(new WCHAR[0]);
+  std::vector<WCHAR> buffer(4096);
   ULONG      bufferSize = 0;
   ULONG      bufferSizeNeeded = 0;
   ULONG      status, count;
@@ -49,7 +49,7 @@ WCHAR* render_event(EVT_HANDLE handle, DWORD flags)
       bufferSize = bufferSizeNeeded;
       try {
 
-        buffer.reset(new WCHAR[bufferSize]);
+        buffer.resize(bufferSize);
       } catch (std::bad_alloc e) {
         status = ERROR_OUTOFMEMORY;
         bufferSize = 0;
@@ -62,7 +62,7 @@ WCHAR* render_event(EVT_HANDLE handle, DWORD flags)
                   handle,
                   flags,
                   bufferSize,
-                  buffer.get(),
+                  &buffer.front(),
                   &bufferSizeNeeded,
                   &count) != FALSE) {
       status = ERROR_SUCCESS;
@@ -86,7 +86,7 @@ WCHAR* render_event(EVT_HANDLE handle, DWORD flags)
     rb_raise(rb_eWinevtQueryError, "ErrorCode: %ld\nError: %s\n", status, RSTRING_PTR(errmsg));
   }
 
-  result = _wcsdup(buffer.get());
+  result = _wcsdup(&buffer.front());
 
   return result;
 }
@@ -103,7 +103,7 @@ static std::wstring guid_to_wstr(const GUID& guid) {
 
 VALUE get_values(EVT_HANDLE handle)
 {
-  std::wstring buffer;
+  std::vector<WCHAR> buffer;
   ULONG bufferSize = 0;
   ULONG bufferSizeNeeded = 0;
   DWORD status, propCount = 0;
@@ -135,7 +135,7 @@ VALUE get_values(EVT_HANDLE handle)
                   handle,
                   EvtRenderEventValues,
                   buffer.size(),
-                  &buffer[0],
+                  &buffer.front(),
                   &bufferSizeNeeded,
                   &propCount) != FALSE) {
       status = ERROR_SUCCESS;
@@ -159,12 +159,12 @@ VALUE get_values(EVT_HANDLE handle)
     rb_raise(rb_eWinevtQueryError, "ErrorCode: %lu\nError: %s\n", status, RSTRING_PTR(errmsg));
   }
 
-  PEVT_VARIANT pRenderedValues = reinterpret_cast<PEVT_VARIANT>(const_cast<WCHAR *>(buffer.c_str()));
+  PEVT_VARIANT pRenderedValues = reinterpret_cast<PEVT_VARIANT>(&buffer.front());
   LARGE_INTEGER timestamp;
   SYSTEMTIME st;
   FILETIME ft;
-  CHAR strTime[128];
-  std::unique_ptr<CHAR[]> sResult(new CHAR[256]);
+  std::vector<CHAR> strTime(128);
+  std::vector<CHAR> sResult(256);
   VALUE rbObj;
 
   for (int i = 0; i < propCount; i++) {
@@ -221,12 +221,12 @@ VALUE get_values(EVT_HANDLE handle)
       rb_ary_push(userValues, rbObj);
       break;
     case EvtVarTypeSingle:
-      _snprintf_s(sResult.get(), 256, _TRUNCATE, "%f", pRenderedValues[i].SingleVal);
-      rb_ary_push(userValues, rb_utf8_str_new_cstr(sResult.get()));
+      _snprintf_s(&sResult.front(), sResult.size(), _TRUNCATE, "%f", pRenderedValues[i].SingleVal);
+      rb_ary_push(userValues, rb_utf8_str_new_cstr(&sResult.front()));
       break;
     case EvtVarTypeDouble:
-      _snprintf_s(sResult.get(), 256, _TRUNCATE, "%lf", pRenderedValues[i].DoubleVal);
-      rb_ary_push(userValues, rb_utf8_str_new_cstr(sResult.get()));
+      _snprintf_s(&sResult.front(), sResult.size(), _TRUNCATE, "%lf", pRenderedValues[i].DoubleVal);
+      rb_ary_push(userValues, rb_utf8_str_new_cstr(&sResult.front()));
       break;
     case EvtVarTypeBoolean:
       result = const_cast<char *>(pRenderedValues[i].BooleanVal ? "true" : "false");
@@ -251,11 +251,11 @@ VALUE get_values(EVT_HANDLE handle)
       ft.dwHighDateTime = timestamp.HighPart;
       ft.dwLowDateTime  = timestamp.LowPart;
       if (FileTimeToSystemTime( &ft, &st )) {
-        _snprintf_s(strTime, 128, _TRUNCATE, "%04d-%02d-%02d %02d:%02d:%02d.%dZ",
+        _snprintf_s(&strTime.front(), strTime.size(), _TRUNCATE, "%04d-%02d-%02d %02d:%02d:%02d.%dZ",
                     st.wYear , st.wMonth , st.wDay ,
                     st.wHour , st.wMinute , st.wSecond,
                     st.wMilliseconds);
-        rb_ary_push(userValues, rb_utf8_str_new_cstr(strTime));
+        rb_ary_push(userValues, rb_utf8_str_new_cstr(&strTime.front()));
       } else {
         rb_ary_push(userValues, rb_utf8_str_new_cstr("?"));
       }
@@ -263,11 +263,11 @@ VALUE get_values(EVT_HANDLE handle)
     case EvtVarTypeSysTime:
       if (pRenderedValues[i].SysTimeVal != nullptr) {
         st = *pRenderedValues[i].SysTimeVal;
-        _snprintf_s(strTime, 128, _TRUNCATE, "%04d-%02d-%02d %02d:%02d:%02d.%dZ",
+        _snprintf_s(&strTime.front(), strTime.size(), _TRUNCATE, "%04d-%02d-%02d %02d:%02d:%02d.%dZ",
                     st.wYear , st.wMonth , st.wDay ,
                     st.wHour , st.wMinute , st.wSecond,
                     st.wMilliseconds);
-        rb_ary_push(userValues, rb_utf8_str_new_cstr(strTime));
+        rb_ary_push(userValues, rb_utf8_str_new_cstr(&strTime.front()));
       } else {
         rb_ary_push(userValues, rb_utf8_str_new_cstr("?"));
       }
@@ -411,7 +411,7 @@ cleanup:
 WCHAR* get_description(EVT_HANDLE handle)
 {
 #define BUFSIZE 4096
-  std::wstring buffer(BUFSIZE, '\0');
+  std::vector<WCHAR> buffer(BUFSIZE);
   ULONG      bufferSize = 0;
   ULONG      bufferSizeNeeded = 0;
   ULONG      status, count;
@@ -429,7 +429,7 @@ WCHAR* get_description(EVT_HANDLE handle)
                 handle,
                 EvtRenderEventValues,
                 buffer.size(),
-                &buffer[0],
+                &buffer.front(),
                 &bufferSizeNeeded,
                 &count) != FALSE) {
     status = ERROR_SUCCESS;
@@ -453,7 +453,7 @@ WCHAR* get_description(EVT_HANDLE handle)
   }
 
   // Obtain buffer as EVT_VARIANT pointer. To avoid ErrorCide 87 in EvtRender.
-  const PEVT_VARIANT values = reinterpret_cast<PEVT_VARIANT>(const_cast<WCHAR *>(buffer.c_str()));
+  const PEVT_VARIANT values = reinterpret_cast<PEVT_VARIANT>(&buffer.front());
 
   // Open publisher metadata
   hMetadata = EvtOpenPublisherMetadata(nullptr, values[0].StringVal, nullptr, MAKELCID(MAKELANGID(LANG_NEUTRAL, SUBLANG_NEUTRAL), SORT_DEFAULT), 0);
