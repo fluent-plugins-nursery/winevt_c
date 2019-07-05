@@ -48,8 +48,8 @@ WCHAR* render_event(EVT_HANDLE handle, DWORD flags)
     if (bufferSizeNeeded > bufferSize) {
       bufferSize = bufferSizeNeeded;
       try {
-
         buffer.resize(bufferSize);
+        buffer.shrink_to_fit();
       } catch (std::bad_alloc e) {
         status = ERROR_OUTOFMEMORY;
         bufferSize = 0;
@@ -123,6 +123,7 @@ VALUE get_values(EVT_HANDLE handle)
       bufferSize = bufferSizeNeeded;
       try {
         buffer.resize(bufferSize);
+        buffer.shrink_to_fit();
       } catch (std::bad_alloc e) {
         status = ERROR_OUTOFMEMORY;
         bufferSize = 0;
@@ -177,7 +178,7 @@ VALUE get_values(EVT_HANDLE handle)
         rb_ary_push(userValues, rb_utf8_str_new_cstr("(NULL)"));
       } else {
         std::wstring wStr(pRenderedValues[i].StringVal);
-        rbObj = wstr_to_rb_str(CP_UTF8, wStr.c_str(), -1);
+        rbObj = wstr_to_rb_str(CP_UTF8, &wStr[0], -1);
         rb_ary_push(userValues, rbObj);
       }
       break;
@@ -311,14 +312,14 @@ VALUE get_values(EVT_HANDLE handle)
   return userValues;
 }
 
-static std::wstring get_message(EVT_HANDLE hMetadata, EVT_HANDLE handle)
+static std::vector<WCHAR> get_message(EVT_HANDLE hMetadata, EVT_HANDLE handle)
 {
 #define BUFSIZE 4096
-  std::wstring result;
+  std::vector<WCHAR> result;
   ULONG  status;
   ULONG bufferSizeNeeded = 0;
   LPVOID lpMsgBuf;
-  std::wstring message(BUFSIZE, '\0');
+  std::vector<WCHAR> message(BUFSIZE);
 
   if (!EvtFormatMessage(hMetadata, handle, 0xffffffff, 0, nullptr, EvtFormatMessageEvent, message.size(), &message[0], &bufferSizeNeeded)) {
     status = GetLastError();
@@ -346,7 +347,8 @@ static std::wstring get_message(EVT_HANDLE hMetadata, EVT_HANDLE handle)
                          MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US),
                          reinterpret_cast<WCHAR *>(&lpMsgBuf), 0, nullptr);
 
-        result = reinterpret_cast<WCHAR *>(lpMsgBuf);
+        std::wstring ret(reinterpret_cast<WCHAR *>(lpMsgBuf));
+        std::copy( ret.begin(), ret.end(), std::back_inserter(result));
         LocalFree(lpMsgBuf);
 
         goto cleanup;
@@ -360,8 +362,9 @@ static std::wstring get_message(EVT_HANDLE hMetadata, EVT_HANDLE handle)
 
     if (status == ERROR_INSUFFICIENT_BUFFER) {
       message.resize(bufferSizeNeeded);
+      message.shrink_to_fit();
 
-      if(!EvtFormatMessage(hMetadata, handle, 0xffffffff, 0, nullptr, EvtFormatMessageEvent, message.size(), &message[0], &bufferSizeNeeded)) {
+      if(!EvtFormatMessage(hMetadata, handle, 0xffffffff, 0, nullptr, EvtFormatMessageEvent, message.size(), &message.front(), &bufferSizeNeeded)) {
         status = GetLastError();
 
         if (status != ERROR_EVT_UNRESOLVED_VALUE_INSERT) {
@@ -387,7 +390,8 @@ static std::wstring get_message(EVT_HANDLE hMetadata, EVT_HANDLE handle)
                              MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US),
                              reinterpret_cast<WCHAR *>(&lpMsgBuf), 0, nullptr);
 
-            result = reinterpret_cast<WCHAR *>(lpMsgBuf);
+            std::wstring ret(reinterpret_cast<WCHAR *>(lpMsgBuf));
+            std::copy( ret.begin(), ret.end(), std::back_inserter(result));
             LocalFree(lpMsgBuf);
 
             goto cleanup;
@@ -403,7 +407,7 @@ static std::wstring get_message(EVT_HANDLE hMetadata, EVT_HANDLE handle)
 
 cleanup:
 
-  return std::wstring(result);
+  return result;
 
 #undef BUFSIZE
 }
@@ -415,7 +419,7 @@ WCHAR* get_description(EVT_HANDLE handle)
   ULONG      bufferSize = 0;
   ULONG      bufferSizeNeeded = 0;
   ULONG      status, count;
-  std::wstring result;
+  std::vector<WCHAR> result;
   LPTSTR     msgBuf;
   EVT_HANDLE hMetadata = nullptr;
 
@@ -475,5 +479,5 @@ cleanup:
   if (hMetadata)
     EvtClose(hMetadata);
 
-  return _wcsdup(result.c_str());
+  return _wcsdup(result.data());
 }
