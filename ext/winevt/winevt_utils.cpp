@@ -171,7 +171,8 @@ VALUE get_values(EVT_HANDLE handle)
       if (pRenderedValues[i].StringVal == nullptr) {
         rb_ary_push(userValues, rb_utf8_str_new_cstr("(NULL)"));
       } else {
-        rbObj = wstr_to_rb_str(CP_UTF8, pRenderedValues[i].StringVal, -1);
+        std::wstring wStr(pRenderedValues[i].StringVal);
+        rbObj = wstr_to_rb_str(CP_UTF8, wStr.c_str(), -1);
         rb_ary_push(userValues, rbObj);
       }
       break;
