@@ -47,8 +47,10 @@ WCHAR* render_event(EVT_HANDLE handle, DWORD flags)
   do {
     if (bufferSizeNeeded > bufferSize) {
       bufferSize = bufferSizeNeeded;
-      buffer.reset(new WCHAR[bufferSize]);
-      if (buffer == nullptr) {
+      try {
+
+        buffer.reset(new WCHAR[bufferSize]);
+      } catch (std::bad_alloc e) {
         status = ERROR_OUTOFMEMORY;
         bufferSize = 0;
         rb_raise(rb_eWinevtQueryError, "Out of memory");
