@@ -24,10 +24,13 @@ void free_allocated_mbstr(const char* str)
 VALUE
 wstr_to_rb_str(UINT cp, const WCHAR *wstr, int clen)
 {
+    VALUE vstr;
+    CHAR *ptr;
     int len = WideCharToMultiByte(cp, 0, wstr, clen, nullptr, 0, nullptr, nullptr);
-    std::unique_ptr<char[]> ptr(new char[len]);
-    WideCharToMultiByte(cp, 0, wstr, clen, ptr.get(), len, nullptr, nullptr);
-    VALUE str = rb_utf8_str_new_cstr(ptr.get());
+    ptr = (CHAR*)ALLOCV_N(CHAR, vstr, len);
+    WideCharToMultiByte(cp, 0, wstr, clen, ptr, len, nullptr, nullptr);
+    VALUE str = rb_utf8_str_new_cstr(ptr);
+    ALLOCV_END(vstr);
 
     return str;
 }
