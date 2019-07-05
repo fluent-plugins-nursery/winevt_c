@@ -159,7 +159,7 @@ VALUE get_values(EVT_HANDLE handle)
   SYSTEMTIME st;
   FILETIME ft;
   CHAR strTime[128];
-  std::unique_ptr<CHAR> sResult(new CHAR[256]);
+  std::unique_ptr<CHAR[]> sResult(new CHAR[256]);
   VALUE rbObj;
 
   for (int i = 0; i < propCount; i++) {
