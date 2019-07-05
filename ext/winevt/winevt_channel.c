@@ -59,7 +59,7 @@ rb_winevt_channel_each(VALUE self)
   if (hChannels) {
     winevtChannel->channels = hChannels;
   } else {
-    sprintf(errBuf, "Failed to enumerate channels with %s\n", GetLastError());
+    _snprintf_s(errBuf, 256, _TRUNCATE, "Failed to enumerate channels with %s\n", GetLastError());
     rb_raise(rb_eRuntimeError, errBuf);
   }
 
@@ -81,7 +81,7 @@ rb_winevt_channel_each(VALUE self)
           rb_raise(rb_eRuntimeError, "realloc failed");
         }
       } else {
-        sprintf(errBuf, "EvtNextChannelPath failed with %lu.\n", status);
+        _snprintf_s(errBuf, 256, _TRUNCATE, "EvtNextChannelPath failed with %lu.\n", status);
         rb_raise(rb_eRuntimeError, errBuf);
       }
     }

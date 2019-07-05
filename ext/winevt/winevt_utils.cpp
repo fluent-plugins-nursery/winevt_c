@@ -216,11 +216,11 @@ VALUE get_values(EVT_HANDLE handle)
       rb_ary_push(userValues, rbObj);
       break;
     case EvtVarTypeSingle:
-      sprintf(sResult.get(), "%f", pRenderedValues[i].SingleVal);
+      _snprintf_s(sResult.get(), 256, _TRUNCATE, "%f", pRenderedValues[i].SingleVal);
       rb_ary_push(userValues, rb_utf8_str_new_cstr(sResult.get()));
       break;
     case EvtVarTypeDouble:
-      sprintf(sResult.get(), "%lf", pRenderedValues[i].DoubleVal);
+      _snprintf_s(sResult.get(), 256, _TRUNCATE, "%lf", pRenderedValues[i].DoubleVal);
       rb_ary_push(userValues, rb_utf8_str_new_cstr(sResult.get()));
       break;
     case EvtVarTypeBoolean:
@@ -246,10 +246,10 @@ VALUE get_values(EVT_HANDLE handle)
       ft.dwHighDateTime = timestamp.HighPart;
       ft.dwLowDateTime  = timestamp.LowPart;
       if (FileTimeToSystemTime( &ft, &st )) {
-        sprintf(strTime, "%04d-%02d-%02d %02d:%02d:%02d.%dZ",
-                st.wYear , st.wMonth , st.wDay ,
-                st.wHour , st.wMinute , st.wSecond,
-                st.wMilliseconds);
+        _snprintf_s(strTime, 128, _TRUNCATE, "%04d-%02d-%02d %02d:%02d:%02d.%dZ",
+                    st.wYear , st.wMonth , st.wDay ,
+                    st.wHour , st.wMinute , st.wSecond,
+                    st.wMilliseconds);
         rb_ary_push(userValues, rb_utf8_str_new_cstr(strTime));
       } else {
         rb_ary_push(userValues, rb_utf8_str_new_cstr("?"));
@@ -258,10 +258,10 @@ VALUE get_values(EVT_HANDLE handle)
     case EvtVarTypeSysTime:
       if (pRenderedValues[i].SysTimeVal != nullptr) {
         st = *pRenderedValues[i].SysTimeVal;
-        sprintf(strTime, "%04d-%02d-%02d %02d:%02d:%02d.%dZ",
-                st.wYear , st.wMonth , st.wDay ,
-                st.wHour , st.wMinute , st.wSecond,
-                st.wMilliseconds);
+        _snprintf_s(strTime, 128, _TRUNCATE, "%04d-%02d-%02d %02d:%02d:%02d.%dZ",
+                    st.wYear , st.wMonth , st.wDay ,
+                    st.wHour , st.wMinute , st.wSecond,
+                    st.wMilliseconds);
         rb_ary_push(userValues, rb_utf8_str_new_cstr(strTime));
       } else {
         rb_ary_push(userValues, rb_utf8_str_new_cstr("?"));
