@@ -86,7 +86,7 @@ rb_winevt_channel_each(VALUE self)
       }
     }
 
-    utf8str = wstr_to_rb_str(CP_UTF8, buffer, -1);
+    utf8str = wstr_to_rb_str(CP_UTF8, buffer, bufferSize * sizeof(WCHAR));
 
     rb_yield(utf8str);
   }
