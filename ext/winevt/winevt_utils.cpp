@@ -37,7 +37,7 @@ wstr_to_rb_str(UINT cp, const WCHAR *wstr, int clen)
 
 WCHAR* render_event(EVT_HANDLE handle, DWORD flags)
 {
-  std::vector<WCHAR> buffer(4096);
+  std::vector<WCHAR> buffer(1);
   ULONG      bufferSize = 0;
   ULONG      bufferSizeNeeded = 0;
   ULONG      status, count;
@@ -61,7 +61,7 @@ WCHAR* render_event(EVT_HANDLE handle, DWORD flags)
     if (EvtRender(nullptr,
                   handle,
                   flags,
-                  bufferSize,
+                  buffer.size(),
                   &buffer.front(),
                   &bufferSizeNeeded,
                   &count) != FALSE) {
