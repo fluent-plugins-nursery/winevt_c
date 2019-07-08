@@ -28,8 +28,8 @@ wstr_to_rb_str(UINT cp, const WCHAR *wstr, int clen)
     CHAR *ptr;
     int len = WideCharToMultiByte(cp, 0, wstr, clen, nullptr, 0, nullptr, nullptr);
     ptr = (CHAR*)ALLOCV_N(CHAR, vstr, len);
-    len = WideCharToMultiByte(cp, 0, wstr, clen, ptr, len, nullptr, nullptr);
-    VALUE str = rb_utf8_str_new(ptr, len);
+    WideCharToMultiByte(cp, 0, wstr, clen, ptr, len, nullptr, nullptr);
+    VALUE str = rb_utf8_str_new_cstr(ptr);
     ALLOCV_END(vstr);
 
     return str;
