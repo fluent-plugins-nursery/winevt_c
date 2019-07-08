@@ -229,6 +229,20 @@ rb_winevt_query_seek(VALUE self, VALUE bookmark_or_flag)
 }
 
 static VALUE
+rb_winevt_query_close_handle(VALUE self)
+{
+  struct WinevtQuery *winevtQuery;
+
+  TypedData_Get_Struct(self, struct WinevtQuery, &rb_winevt_query_type, winevtQuery);
+
+  if (winevtQuery->event != NULL) {
+    EvtClose(winevtQuery->event);
+  }
+
+  return Qnil;
+}
+
+static VALUE
 rb_winevt_query_each(VALUE self)
 {
   struct WinevtQuery *winevtQuery;
@@ -262,5 +276,6 @@ void Init_winevt_query(VALUE rb_cEventLog)
   rb_define_method(rb_cQuery, "offset=", rb_winevt_query_set_offset, 1);
   rb_define_method(rb_cQuery, "timeout", rb_winevt_query_get_timeout, 0);
   rb_define_method(rb_cQuery, "timeout=", rb_winevt_query_set_timeout, 1);
+  rb_define_method(rb_cQuery, "close_handle", rb_winevt_query_close_handle, 0);
   rb_define_method(rb_cQuery, "each", rb_winevt_query_each, 0);
 }
