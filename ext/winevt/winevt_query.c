@@ -256,6 +256,7 @@ rb_winevt_query_each(VALUE self)
                     rb_winevt_query_render(self),
                     rb_winevt_query_message(self),
                     rb_winevt_query_string_inserts(self));
+    rb_winevt_query_close_handle(self);
   }
 
   return Qnil;

@@ -223,6 +223,7 @@ rb_winevt_subscribe_each(VALUE self)
                     rb_winevt_subscribe_render(self),
                     rb_winevt_subscribe_message(self),
                     rb_winevt_subscribe_string_inserts(self));
+    rb_winevt_subscribe_close_handle(self);
   }
 
   return Qnil;
