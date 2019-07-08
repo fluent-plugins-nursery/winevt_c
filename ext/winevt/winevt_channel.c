@@ -49,6 +49,7 @@ rb_winevt_channel_each(VALUE self)
   DWORD bufferUsed = 0;
   DWORD status = ERROR_SUCCESS;
   VALUE utf8str;
+  CHAR* str;
 
   RETURN_ENUMERATOR(self, 0, 0);
 
@@ -71,28 +72,34 @@ rb_winevt_channel_each(VALUE self)
         break;
       } else if (ERROR_INSUFFICIENT_BUFFER == status) {
         bufferSize = bufferUsed;
-        temp = (LPWSTR)realloc(buffer, bufferSize * sizeof(WCHAR));
+        temp = (LPWSTR)malloc(bufferSize * sizeof(WCHAR));
         if (temp) {
           buffer = temp;
           temp = NULL;
-          EvtNextChannelPath(winevtChannel->channels, bufferSize, buffer, &bufferUsed);
+          continue;
         } else {
+          free(buffer);
+          EvtClose(winevtChannel->channels);
           status = ERROR_OUTOFMEMORY;
           rb_raise(rb_eRuntimeError, "realloc failed");
         }
       } else {
+        free(buffer);
+        EvtClose(winevtChannel->channels);
         _snprintf_s(errBuf, 256, _TRUNCATE, "EvtNextChannelPath failed with %lu.\n", status);
         rb_raise(rb_eRuntimeError, errBuf);
       }
     }
 
-    utf8str = wstr_to_rb_str(CP_UTF8, buffer, bufferSize * sizeof(WCHAR));
+    str = wstr_to_mbstr(CP_UTF8, buffer, -1);
+    utf8str = rb_utf8_str_new_cstr(str);
+    xfree(str);
 
     rb_yield(utf8str);
   }
 
-  if (hChannels)
-    EvtClose(hChannels);
+  if (winevtChannel->channels)
+    EvtClose(winevtChannel->channels);
 
   if (buffer)
     free(buffer);
