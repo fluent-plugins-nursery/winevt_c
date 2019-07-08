@@ -210,6 +210,23 @@ rb_winevt_subscribe_close_handle(VALUE self)
 }
 
 static VALUE
+rb_winevt_subscribe_each_yield(VALUE self)
+{
+  struct WinevtSubscribe *winevtSubscribe;
+
+  RETURN_ENUMERATOR(self, 0, 0);
+
+  TypedData_Get_Struct(self, struct WinevtSubscribe, &rb_winevt_subscribe_type, winevtSubscribe);
+
+  rb_yield_values(3,
+                  rb_winevt_subscribe_render(self),
+                  rb_winevt_subscribe_message(self),
+                  rb_winevt_subscribe_string_inserts(self));
+
+  return Qnil;
+}
+
+static VALUE
 rb_winevt_subscribe_each(VALUE self)
 {
   struct WinevtSubscribe *winevtSubscribe;
@@ -219,11 +236,7 @@ rb_winevt_subscribe_each(VALUE self)
   TypedData_Get_Struct(self, struct WinevtSubscribe, &rb_winevt_subscribe_type, winevtSubscribe);
 
   while (rb_winevt_subscribe_next(self)) {
-    rb_yield_values(3,
-                    rb_winevt_subscribe_render(self),
-                    rb_winevt_subscribe_message(self),
-                    rb_winevt_subscribe_string_inserts(self));
-    rb_winevt_subscribe_close_handle(self);
+    rb_ensure(rb_winevt_subscribe_each_yield, self, rb_winevt_subscribe_close_handle, self);
   }
 
   return Qnil;

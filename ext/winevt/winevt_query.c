@@ -243,7 +243,7 @@ rb_winevt_query_close_handle(VALUE self)
 }
 
 static VALUE
-rb_winevt_query_each(VALUE self)
+rb_winevt_query_each_yield(VALUE self)
 {
   struct WinevtQuery *winevtQuery;
 
@@ -251,12 +251,24 @@ rb_winevt_query_each(VALUE self)
 
   TypedData_Get_Struct(self, struct WinevtQuery, &rb_winevt_query_type, winevtQuery);
 
+  rb_yield_values(3,
+                  rb_winevt_query_render(self),
+                  rb_winevt_query_message(self),
+                  rb_winevt_query_string_inserts(self));
+
+  return Qnil;
+}
+
+static VALUE
+rb_winevt_query_each(VALUE self)
+{
+  struct WinevtQuery *winevtQuery;
+
+  RETURN_ENUMERATOR(self, 0, 0);
+
+  TypedData_Get_Struct(self, struct WinevtQuery, &rb_winevt_query_type, winevtQuery);
   while (rb_winevt_query_next(self)) {
-    rb_yield_values(3,
-                    rb_winevt_query_render(self),
-                    rb_winevt_query_message(self),
-                    rb_winevt_query_string_inserts(self));
-    rb_winevt_query_close_handle(self);
+    rb_ensure(rb_winevt_query_each_yield, self, rb_winevt_query_close_handle, self);
   }
 
   return Qnil;
