@@ -9,8 +9,6 @@ while (1) do
     eventlog = @subscribe.render
     message = @subscribe.message
     string_inserts = @subscribe.string_inserts
-    message = message.gsub(/(%\d+)/, '\1$s')
-    message = sprintf(message, *string_inserts)
 
     puts ({eventlog: eventlog, data: message})
   else
