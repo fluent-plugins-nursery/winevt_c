@@ -13,10 +13,10 @@ while (1) do
     message = sprintf(message, *string_inserts)
 
     puts ({eventlog: eventlog, data: message})
-    @subscribe.close_handle # Dispose EVT_HANDLE variable which is allocated in EvtNext
   else
     printf(".")
     sleep(1)
   end
+  @subscribe.close_handle # Dispose EVT_HANDLE variable which is allocated in EvtNext
 end
 puts @subscribe.bookmark
