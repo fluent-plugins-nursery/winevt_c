@@ -1,5 +1,4 @@
 require 'winevt'
-require 'rexml/document'
 
 @subscribe = Winevt::EventLog::Subscribe.new
 @subscribe.tail = true

@@ -1,5 +1,4 @@
 require 'winevt'
-require 'rexml/document'
 
 @query = Winevt::EventLog::Query.new("Application", "*[System[(Level <= 3) and TimeCreated[timediff(@SystemTime) <= 86400000]]]")
 
