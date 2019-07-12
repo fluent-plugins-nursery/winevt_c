@@ -2,21 +2,12 @@ require 'winevt'
 
 @subscribe = Winevt::EventLog::Subscribe.new
 @subscribe.tail = true
-@subscribe.subscribe("Security", "*[System[(Level <= 4) and TimeCreated[timediff(@SystemTime) <= 86400000]]]")
-while (1) do
-  begin
-    if @subscribe.next
-      eventlog = @subscribe.render
-      message = @subscribe.message
-      string_inserts = @subscribe.string_inserts
-
-      puts ({eventlog: eventlog, data: message})
-    else
-      printf(".")
-      sleep(1)
-    end
-  ensure
-    @subscribe.close_handle # Dispose EVT_HANDLE variable which is allocated in EvtNext
+@subscribe.subscribe(
+  "Security", "*[System[(Level <= 4) and TimeCreated[timediff(@SystemTime) <= 86400000]]]"
+)
+while true do
+  @subscribe.each do |eventlog, message, string_inserts|
+    puts ({eventlog: eventlog, data: message})
   end
+  sleep(1)
 end
-puts @subscribe.bookmark
