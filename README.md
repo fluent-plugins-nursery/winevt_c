@@ -1,6 +1,6 @@
 # winevt_c
 
-[![Build status](https://ci.appveyor.com/api/projects/status/hr3phv8ihvgc68oj/branch/master?svg=true)](https://ci.appveyor.com/project/cosmo0920/winevt-c/branch/master)
+[![Build status](https://ci.appveyor.com/api/projects/status/o5771b3cb6x3acq0/branch/master?svg=true)](https://ci.appveyor.com/project/cosmo0920/winevt-c-6145k/branch/master)
 
 ## Prerequisites
 
@@ -35,4 +35,4 @@ To install this gem onto your local machine, run `bundle exec rake install`. To 
 
 ## Contributing
 
-Bug reports and pull requests are welcome on GitHub at https://github.com/cosmo0920/winevt_c.
+Bug reports and pull requests are welcome on GitHub at https://github.com/fluent-plugins-nursery/winevt_c.
