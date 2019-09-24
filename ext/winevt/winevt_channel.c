@@ -1,18 +1,22 @@
 #include <winevt_c.h>
 
-static void channel_free(void *ptr);
+static void
+channel_free(void* ptr);
 
-static const rb_data_type_t rb_winevt_channel_type = {
-  "winevt/channel", {
-    0, channel_free, 0,
-  }, NULL, NULL,
-  RUBY_TYPED_FREE_IMMEDIATELY
-};
+static const rb_data_type_t rb_winevt_channel_type = { "winevt/channel",
+                                                       {
+                                                         0,
+                                                         channel_free,
+                                                         0,
+                                                       },
+                                                       NULL,
+                                                       NULL,
+                                                       RUBY_TYPED_FREE_IMMEDIATELY };
 
 static void
-channel_free(void *ptr)
+channel_free(void* ptr)
 {
-  struct WinevtChannel *winevtChannel = (struct WinevtChannel *)ptr;
+  struct WinevtChannel* winevtChannel = (struct WinevtChannel*)ptr;
   if (winevtChannel->channels)
     EvtClose(winevtChannel->channels);
 
@@ -23,11 +27,9 @@ static VALUE
 rb_winevt_channel_alloc(VALUE klass)
 {
   VALUE obj;
-  struct WinevtChannel *winevtChannel;
-  obj = TypedData_Make_Struct(klass,
-                              struct WinevtChannel,
-                              &rb_winevt_channel_type,
-                              winevtChannel);
+  struct WinevtChannel* winevtChannel;
+  obj = TypedData_Make_Struct(
+    klass, struct WinevtChannel, &rb_winevt_channel_type, winevtChannel);
   return obj;
 }
 
@@ -41,7 +43,7 @@ static VALUE
 rb_winevt_channel_each(VALUE self)
 {
   EVT_HANDLE hChannels;
-  struct WinevtChannel *winevtChannel;
+  struct WinevtChannel* winevtChannel;
   char errBuf[256];
   LPWSTR buffer = NULL;
   LPWSTR temp = NULL;
@@ -52,14 +54,16 @@ rb_winevt_channel_each(VALUE self)
 
   RETURN_ENUMERATOR(self, 0, 0);
 
-  TypedData_Get_Struct(self, struct WinevtChannel, &rb_winevt_channel_type, winevtChannel);
+  TypedData_Get_Struct(
+    self, struct WinevtChannel, &rb_winevt_channel_type, winevtChannel);
 
   hChannels = EvtOpenChannelEnum(NULL, 0);
 
   if (hChannels) {
     winevtChannel->channels = hChannels;
   } else {
-    _snprintf_s(errBuf, 256, _TRUNCATE, "Failed to enumerate channels with %s\n", GetLastError());
+    _snprintf_s(
+      errBuf, 256, _TRUNCATE, "Failed to enumerate channels with %s\n", GetLastError());
     rb_raise(rb_eRuntimeError, errBuf);
   }
 
@@ -85,7 +89,8 @@ rb_winevt_channel_each(VALUE self)
       } else {
         free(buffer);
         EvtClose(winevtChannel->channels);
-        _snprintf_s(errBuf, 256, _TRUNCATE, "EvtNextChannelPath failed with %lu.\n", status);
+        _snprintf_s(
+          errBuf, 256, _TRUNCATE, "EvtNextChannelPath failed with %lu.\n", status);
         rb_raise(rb_eRuntimeError, errBuf);
       }
     }
@@ -104,7 +109,8 @@ rb_winevt_channel_each(VALUE self)
   return Qnil;
 }
 
-void Init_winevt_channel(VALUE rb_cEventLog)
+void
+Init_winevt_channel(VALUE rb_cEventLog)
 {
   rb_cChannel = rb_define_class_under(rb_cEventLog, "Channel", rb_cObject);
   rb_define_alloc_func(rb_cChannel, rb_winevt_channel_alloc);

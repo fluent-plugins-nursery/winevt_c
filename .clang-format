@@ -1,0 +1,5 @@
+BasedOnStyle: Mozilla
+ColumnLimit: 90
+BinPackParameters: true
+BinPackArguments: false
+AllowShortCaseLabelsOnASingleLine: false
