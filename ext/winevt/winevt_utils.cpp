@@ -35,7 +35,7 @@ render_event(EVT_HANDLE handle, DWORD flags)
       try {
         buffer.resize(bufferSize);
         buffer.shrink_to_fit();
-      } catch (std::bad_alloc e) {
+      } catch (std::bad_alloc &e) {
         status = ERROR_OUTOFMEMORY;
         bufferSize = 0;
         rb_raise(rb_eWinevtQueryError, "Out of memory");
@@ -112,7 +112,7 @@ get_values(EVT_HANDLE handle)
       try {
         buffer.resize(bufferSize);
         buffer.shrink_to_fit();
-      } catch (std::bad_alloc e) {
+      } catch (std::bad_alloc &e) {
         status = ERROR_OUTOFMEMORY;
         bufferSize = 0;
         rb_raise(rb_eWinevtQueryError, "Out of memory");
