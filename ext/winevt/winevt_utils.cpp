@@ -287,13 +287,11 @@ get_values(EVT_HANDLE handle)
         }
         break;
       case EvtVarTypeHexInt32:
-        rbObj = ULONG2NUM(pRenderedValues[i].UInt32Val);
-        rbObj = rb_sprintf("%#x", rbObj);
+        rbObj = rb_sprintf("%#x", pRenderedValues[i].UInt32Val);
         rb_ary_push(userValues, rbObj);
         break;
       case EvtVarTypeHexInt64:
-        rbObj = ULONG2NUM(pRenderedValues[i].UInt64Val);
-        rbObj = rb_sprintf("%#x", rbObj);
+        rbObj = rb_sprintf("%#I64x", pRenderedValues[i].UInt64Val);
         rb_ary_push(userValues, rbObj);
         break;
       case EvtVarTypeEvtXml:
