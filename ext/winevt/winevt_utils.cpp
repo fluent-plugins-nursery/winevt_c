@@ -5,25 +5,6 @@
 #include <string>
 #include <vector>
 
-char*
-wstr_to_mbstr(UINT cp, const WCHAR* wstr, int clen)
-{
-  char* ptr;
-  int len = WideCharToMultiByte(cp, 0, wstr, clen, nullptr, 0, nullptr, nullptr);
-  if (!(ptr = static_cast<char*>(xmalloc(len))))
-    return nullptr;
-  WideCharToMultiByte(cp, 0, wstr, clen, ptr, len, nullptr, nullptr);
-
-  return ptr;
-}
-
-void
-free_allocated_mbstr(const char* str)
-{
-  if (str)
-    xfree((char*)str);
-}
-
 VALUE
 wstr_to_rb_str(UINT cp, const WCHAR* wstr, int clen)
 {
