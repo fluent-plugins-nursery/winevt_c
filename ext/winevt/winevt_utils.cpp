@@ -97,12 +97,10 @@ get_values(EVT_HANDLE handle)
   ULONG bufferSize = 0;
   ULONG bufferSizeNeeded = 0;
   DWORD status, propCount = 0;
-  char* result;
   LPTSTR msgBuf;
   WCHAR* tmpWChar = nullptr;
   VALUE userValues = rb_ary_new();
 
-  static PCWSTR eventProperties[] = { L"Event/EventData/Data[1]" };
   EVT_HANDLE renderContext = EvtCreateRenderContext(0, nullptr, EvtRenderContextUser);
   if (renderContext == nullptr) {
     rb_raise(rb_eWinevtQueryError, "Failed to create renderContext");
@@ -455,7 +453,6 @@ get_description(EVT_HANDLE handle)
 {
 #define BUFSIZE 4096
   std::vector<WCHAR> buffer(BUFSIZE);
-  ULONG bufferSize = 0;
   ULONG bufferSizeNeeded = 0;
   ULONG status, count;
   std::vector<WCHAR> result;
