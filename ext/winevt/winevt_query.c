@@ -195,6 +195,10 @@ get_evt_seek_flag_from_cstr(char* flag_str)
     return EvtSeekOriginMask;
   else if (strcmp(flag_str, "strict") == 0)
     return EvtSeekStrict;
+  else
+    rb_raise(rb_eArgError, "Unknown seek flag: %s", flag_str);
+
+  return 0;
 }
 
 static VALUE
@@ -202,7 +206,7 @@ rb_winevt_query_seek(VALUE self, VALUE bookmark_or_flag)
 {
   struct WinevtQuery* winevtQuery;
   struct WinevtBookmark* winevtBookmark = NULL;
-  DWORD flag;
+  DWORD flag = 0;
 
   switch (TYPE(bookmark_or_flag)) {
     case T_SYMBOL:
