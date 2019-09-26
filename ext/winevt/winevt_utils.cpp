@@ -148,7 +148,7 @@ get_values(EVT_HANDLE handle)
   std::vector<CHAR> sResult(256);
   VALUE rbObj;
 
-  for (int i = 0; i < propCount; i++) {
+  for (DWORD i = 0; i < propCount; i++) {
     switch (pRenderedValues[i].Type) {
       case EvtVarTypeNull:
         rb_ary_push(userValues, Qnil);
