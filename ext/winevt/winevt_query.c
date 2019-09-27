@@ -249,6 +249,7 @@ rb_winevt_query_close_handle(VALUE self)
 
   if (winevtQuery->event != NULL) {
     EvtClose(winevtQuery->event);
+    winevtQuery->event = NULL;
   }
 
   return Qnil;

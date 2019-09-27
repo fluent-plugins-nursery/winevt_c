@@ -85,12 +85,14 @@ rb_winevt_channel_each(VALUE self)
         } else {
           free(buffer);
           EvtClose(winevtChannel->channels);
+          winevtChannel->channels = NULL;
           status = ERROR_OUTOFMEMORY;
           rb_raise(rb_eRuntimeError, "realloc failed");
         }
       } else {
         free(buffer);
         EvtClose(winevtChannel->channels);
+        winevtChannel->channels = NULL;
         _snprintf_s(errBuf,
                     _countof(errBuf),
                     _TRUNCATE,
@@ -105,8 +107,10 @@ rb_winevt_channel_each(VALUE self)
     rb_yield(utf8str);
   }
 
-  if (winevtChannel->channels)
+  if (winevtChannel->channels) {
     EvtClose(winevtChannel->channels);
+    winevtChannel->channels = NULL;
+  }
 
   if (buffer)
     free(buffer);

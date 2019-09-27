@@ -218,6 +218,7 @@ rb_winevt_subscribe_close_handle(VALUE self)
 
   if (winevtSubscribe->event != NULL) {
     EvtClose(winevtSubscribe->event);
+    winevtSubscribe->event = NULL;
   }
 
   return Qnil;
