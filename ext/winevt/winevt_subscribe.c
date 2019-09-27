@@ -262,6 +262,7 @@ rb_winevt_subscribe_get_bookmark(VALUE self)
 
   wResult = render_event(winevtSubscribe->bookmark, EvtRenderBookmark);
   utf8str = wstr_to_rb_str(CP_UTF8, wResult, -1);
+  free(wResult);
 
   return utf8str;
 }
