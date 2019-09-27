@@ -45,7 +45,6 @@ rb_winevt_channel_each(VALUE self)
   struct WinevtChannel* winevtChannel;
   char errBuf[256];
   LPWSTR buffer = NULL;
-  LPWSTR temp = NULL;
   DWORD bufferSize = 0;
   DWORD bufferUsed = 0;
   DWORD status = ERROR_SUCCESS;
@@ -77,10 +76,8 @@ rb_winevt_channel_each(VALUE self)
         break;
       } else if (ERROR_INSUFFICIENT_BUFFER == status) {
         bufferSize = bufferUsed;
-        temp = (LPWSTR)malloc(bufferSize * sizeof(WCHAR));
-        if (temp) {
-          buffer = temp;
-          temp = NULL;
+        buffer = (LPWSTR)malloc(bufferSize * sizeof(WCHAR));
+        if (buffer) {
           continue;
         } else {
           free(buffer);
@@ -103,6 +100,10 @@ rb_winevt_channel_each(VALUE self)
     }
 
     utf8str = wstr_to_rb_str(CP_UTF8, buffer, -1);
+
+    free(buffer);
+    buffer = NULL;
+    bufferSize = 0;
 
     rb_yield(utf8str);
   }
