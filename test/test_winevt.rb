@@ -47,6 +47,13 @@ class WinevtTest < Test::Unit::TestCase
       assert_true(@query.seek(:last))
       assert_true(@query.seek("last"))
     end
+
+    def test_seek_with_invalid_flag
+      error = assert_raises ArgumentError do
+        @query.seek("hoge");
+      end
+      assert_equal("Unknown seek flag: hoge", error.message)
+    end
   end
 
   class BookmarkTest < self

@@ -63,7 +63,7 @@ rb_winevt_channel_each(VALUE self)
     winevtChannel->channels = hChannels;
   } else {
     _snprintf_s(
-      errBuf, 256, _TRUNCATE, "Failed to enumerate channels with %s\n", GetLastError());
+      errBuf, 256, _TRUNCATE, "Failed to enumerate channels with %lu\n", GetLastError());
     rb_raise(rb_eRuntimeError, errBuf);
   }
 

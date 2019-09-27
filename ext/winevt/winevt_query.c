@@ -195,6 +195,10 @@ get_evt_seek_flag_from_cstr(char* flag_str)
     return EvtSeekOriginMask;
   else if (strcmp(flag_str, "strict") == 0)
     return EvtSeekStrict;
+  else
+    rb_raise(rb_eArgError, "Unknown seek flag: %s", flag_str);
+
+  return 0;
 }
 
 static VALUE
@@ -202,7 +206,7 @@ rb_winevt_query_seek(VALUE self, VALUE bookmark_or_flag)
 {
   struct WinevtQuery* winevtQuery;
   struct WinevtBookmark* winevtBookmark = NULL;
-  DWORD flag;
+  DWORD flag = 0;
 
   switch (TYPE(bookmark_or_flag)) {
     case T_SYMBOL:
@@ -253,11 +257,7 @@ rb_winevt_query_close_handle(VALUE self)
 static VALUE
 rb_winevt_query_each_yield(VALUE self)
 {
-  struct WinevtQuery* winevtQuery;
-
   RETURN_ENUMERATOR(self, 0, 0);
-
-  TypedData_Get_Struct(self, struct WinevtQuery, &rb_winevt_query_type, winevtQuery);
 
   rb_yield_values(3,
                   rb_winevt_query_render(self),
@@ -270,11 +270,8 @@ rb_winevt_query_each_yield(VALUE self)
 static VALUE
 rb_winevt_query_each(VALUE self)
 {
-  struct WinevtQuery* winevtQuery;
-
   RETURN_ENUMERATOR(self, 0, 0);
 
-  TypedData_Get_Struct(self, struct WinevtQuery, &rb_winevt_query_type, winevtQuery);
   while (rb_winevt_query_next(self)) {
     rb_ensure(rb_winevt_query_each_yield, self, rb_winevt_query_close_handle, self);
   }

@@ -5,25 +5,6 @@
 #include <string>
 #include <vector>
 
-char*
-wstr_to_mbstr(UINT cp, const WCHAR* wstr, int clen)
-{
-  char* ptr;
-  int len = WideCharToMultiByte(cp, 0, wstr, clen, nullptr, 0, nullptr, nullptr);
-  if (!(ptr = static_cast<char*>(xmalloc(len))))
-    return nullptr;
-  WideCharToMultiByte(cp, 0, wstr, clen, ptr, len, nullptr, nullptr);
-
-  return ptr;
-}
-
-void
-free_allocated_mbstr(const char* str)
-{
-  if (str)
-    xfree((char*)str);
-}
-
 VALUE
 wstr_to_rb_str(UINT cp, const WCHAR* wstr, int clen)
 {
@@ -46,7 +27,7 @@ render_event(EVT_HANDLE handle, DWORD flags)
   ULONG bufferSizeNeeded = 0;
   ULONG status, count;
   static WCHAR* result;
-  LPTSTR msgBuf;
+  CHAR msgBuf[256];
 
   do {
     if (bufferSizeNeeded > bufferSize) {
@@ -54,7 +35,7 @@ render_event(EVT_HANDLE handle, DWORD flags)
       try {
         buffer.resize(bufferSize);
         buffer.shrink_to_fit();
-      } catch (std::bad_alloc e) {
+      } catch (std::bad_alloc &e) {
         status = ERROR_OUTOFMEMORY;
         bufferSize = 0;
         rb_raise(rb_eWinevtQueryError, "Out of memory");
@@ -76,20 +57,15 @@ render_event(EVT_HANDLE handle, DWORD flags)
   } while (status == ERROR_INSUFFICIENT_BUFFER);
 
   if (status != ERROR_SUCCESS) {
-    FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM |
-                    FORMAT_MESSAGE_IGNORE_INSERTS,
-                  nullptr,
-                  status,
-                  MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-                  msgBuf,
-                  0,
-                  nullptr);
-
-    VALUE errmsg = rb_str_new2(msgBuf);
-    LocalFree(msgBuf);
-
+    FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+                   nullptr,
+                   status,
+                   MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+                   msgBuf,
+                   sizeof(msgBuf),
+                   nullptr);
     rb_raise(
-      rb_eWinevtQueryError, "ErrorCode: %ld\nError: %s\n", status, RSTRING_PTR(errmsg));
+      rb_eWinevtQueryError, "ErrorCode: %ld\nError: %s\n", status, msgBuf);
   }
 
   result = _wcsdup(&buffer.front());
@@ -116,12 +92,10 @@ get_values(EVT_HANDLE handle)
   ULONG bufferSize = 0;
   ULONG bufferSizeNeeded = 0;
   DWORD status, propCount = 0;
-  char* result;
-  LPTSTR msgBuf;
+  CHAR msgBuf[256];
   WCHAR* tmpWChar = nullptr;
   VALUE userValues = rb_ary_new();
 
-  static PCWSTR eventProperties[] = { L"Event/EventData/Data[1]" };
   EVT_HANDLE renderContext = EvtCreateRenderContext(0, nullptr, EvtRenderContextUser);
   if (renderContext == nullptr) {
     rb_raise(rb_eWinevtQueryError, "Failed to create renderContext");
@@ -133,7 +107,7 @@ get_values(EVT_HANDLE handle)
       try {
         buffer.resize(bufferSize);
         buffer.shrink_to_fit();
-      } catch (std::bad_alloc e) {
+      } catch (std::bad_alloc &e) {
         status = ERROR_OUTOFMEMORY;
         bufferSize = 0;
         rb_raise(rb_eWinevtQueryError, "Out of memory");
@@ -155,20 +129,15 @@ get_values(EVT_HANDLE handle)
   } while (status == ERROR_INSUFFICIENT_BUFFER);
 
   if (status != ERROR_SUCCESS) {
-    FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM |
-                    FORMAT_MESSAGE_IGNORE_INSERTS,
-                  nullptr,
-                  status,
-                  MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-                  msgBuf,
-                  0,
-                  nullptr);
-
-    VALUE errmsg = rb_str_new2(msgBuf);
-    LocalFree(msgBuf);
-
+    FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+                   nullptr,
+                   status,
+                   MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+                   msgBuf,
+                   sizeof(msgBuf),
+                   nullptr);
     rb_raise(
-      rb_eWinevtQueryError, "ErrorCode: %lu\nError: %s\n", status, RSTRING_PTR(errmsg));
+      rb_eWinevtQueryError, "ErrorCode: %lu\nError: %s\n", status, msgBuf);
   }
 
   PEVT_VARIANT pRenderedValues = reinterpret_cast<PEVT_VARIANT>(&buffer.front());
@@ -179,7 +148,7 @@ get_values(EVT_HANDLE handle)
   std::vector<CHAR> sResult(256);
   VALUE rbObj;
 
-  for (int i = 0; i < propCount; i++) {
+  for (DWORD i = 0; i < propCount; i++) {
     switch (pRenderedValues[i].Type) {
       case EvtVarTypeNull:
         rb_ary_push(userValues, Qnil);
@@ -318,13 +287,11 @@ get_values(EVT_HANDLE handle)
         }
         break;
       case EvtVarTypeHexInt32:
-        rbObj = ULONG2NUM(pRenderedValues[i].UInt32Val);
-        rbObj = rb_sprintf("%#x", rbObj);
+        rbObj = rb_sprintf("%#x", pRenderedValues[i].UInt32Val);
         rb_ary_push(userValues, rbObj);
         break;
       case EvtVarTypeHexInt64:
-        rbObj = ULONG2NUM(pRenderedValues[i].UInt64Val);
-        rbObj = rb_sprintf("%#x", rbObj);
+        rbObj = rb_sprintf("%#I64x", pRenderedValues[i].UInt64Val);
         rb_ary_push(userValues, rbObj);
         break;
       case EvtVarTypeEvtXml:
@@ -474,11 +441,10 @@ get_description(EVT_HANDLE handle)
 {
 #define BUFSIZE 4096
   std::vector<WCHAR> buffer(BUFSIZE);
-  ULONG bufferSize = 0;
   ULONG bufferSizeNeeded = 0;
   ULONG status, count;
   std::vector<WCHAR> result;
-  LPTSTR msgBuf;
+  CHAR msgBuf[256];
   EVT_HANDLE hMetadata = nullptr;
 
   static PCWSTR eventProperties[] = { L"Event/System/Provider/@Name" };
@@ -501,20 +467,15 @@ get_description(EVT_HANDLE handle)
   }
 
   if (status != ERROR_SUCCESS) {
-    FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM |
-                    FORMAT_MESSAGE_IGNORE_INSERTS,
-                  nullptr,
-                  status,
-                  MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-                  msgBuf,
-                  0,
-                  nullptr);
-
-    VALUE errmsg = rb_str_new2(msgBuf);
-    LocalFree(msgBuf);
-
+    FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+                   nullptr,
+                   status,
+                   MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+                   msgBuf,
+                   sizeof(msgBuf),
+                   nullptr);
     rb_raise(
-      rb_eWinevtQueryError, "ErrorCode: %lu\nError: %s\n", status, RSTRING_PTR(errmsg));
+      rb_eWinevtQueryError, "ErrorCode: %lu\nError: %s\n", status, msgBuf);
   }
 
   // Obtain buffer as EVT_VARIANT pointer. To avoid ErrorCide 87 in EvtRender.
