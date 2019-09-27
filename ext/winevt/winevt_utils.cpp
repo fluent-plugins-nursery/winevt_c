@@ -19,56 +19,58 @@ wstr_to_rb_str(UINT cp, const WCHAR* wstr, int clen)
   return str;
 }
 
-WCHAR*
-render_event(EVT_HANDLE handle, DWORD flags)
+VALUE
+render_to_rb_str(EVT_HANDLE handle, DWORD flags)
 {
-  std::vector<WCHAR> buffer(1);
+  VALUE vbuffer;
+  WCHAR *buffer;
   ULONG bufferSize = 0;
-  ULONG bufferSizeNeeded = 0;
-  ULONG status, count;
-  static WCHAR* result;
-  CHAR msgBuf[256];
+  ULONG bufferSizeUsed = 0;
+  ULONG count;
+  BOOL succeeded;
+  VALUE result;
 
-  do {
-    if (bufferSizeNeeded > bufferSize) {
-      bufferSize = bufferSizeNeeded;
-      try {
-        buffer.resize(bufferSize);
-        buffer.shrink_to_fit();
-      } catch (std::bad_alloc &e) {
-        status = ERROR_OUTOFMEMORY;
-        bufferSize = 0;
-        rb_raise(rb_eWinevtQueryError, "Out of memory");
-        break;
-      }
-    }
+  if (flags != EvtRenderEventXml && flags != EvtRenderBookmark) {
+    return Qnil;
+  }
 
-    if (EvtRender(nullptr,
-                  handle,
-                  flags,
-                  buffer.size(),
-                  &buffer.front(),
-                  &bufferSizeNeeded,
-                  &count) != FALSE) {
-      status = ERROR_SUCCESS;
-    } else {
-      status = GetLastError();
-    }
-  } while (status == ERROR_INSUFFICIENT_BUFFER);
+  // Get the size of the buffer
+  EvtRender(nullptr,
+            handle,
+            flags,
+            0,
+            NULL,
+            &bufferSize,
+            &count);
 
-  if (status != ERROR_SUCCESS) {
+  // bufferSize is in bytes, not characters
+  buffer = (WCHAR*)ALLOCV(vbuffer, bufferSize);
+
+  succeeded = EvtRender(nullptr,
+                        handle,
+                        flags,
+                        bufferSize,
+                        buffer,
+                        &bufferSizeUsed,
+                        &count);
+  if (!succeeded) {
+    DWORD status = GetLastError();
+    CHAR msgBuf[256];
+
     FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
                    nullptr,
                    status,
                    MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
                    msgBuf,
-                   sizeof(msgBuf),
+                   _countof(msgBuf),
                    nullptr);
+    ALLOCV_END(vbuffer);
     rb_raise(
-      rb_eWinevtQueryError, "ErrorCode: %ld\nError: %s\n", status, msgBuf);
+      rb_eWinevtQueryError, "ErrorCode: %lu\nError: %s\n", status, msgBuf);
   }
 
-  result = _wcsdup(&buffer.front());
+  result = wstr_to_rb_str(CP_UTF8, buffer, -1);
+  ALLOCV_END(vbuffer);
 
   return result;
 }

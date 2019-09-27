@@ -165,17 +165,12 @@ rb_winevt_subscribe_next(VALUE self)
 static VALUE
 rb_winevt_subscribe_render(VALUE self)
 {
-  WCHAR* wResult;
   struct WinevtSubscribe* winevtSubscribe;
-  VALUE utf8str;
 
   TypedData_Get_Struct(
     self, struct WinevtSubscribe, &rb_winevt_subscribe_type, winevtSubscribe);
-  wResult = render_event(winevtSubscribe->event, EvtRenderEventXml);
-  utf8str = wstr_to_rb_str(CP_UTF8, wResult, -1);
-  free(wResult);
 
-  return utf8str;
+  return render_to_rb_str(winevtSubscribe->event, EvtRenderEventXml);
 }
 
 static VALUE
@@ -249,18 +244,12 @@ rb_winevt_subscribe_each(VALUE self)
 static VALUE
 rb_winevt_subscribe_get_bookmark(VALUE self)
 {
-  WCHAR* wResult;
   struct WinevtSubscribe* winevtSubscribe;
-  VALUE utf8str;
 
   TypedData_Get_Struct(
     self, struct WinevtSubscribe, &rb_winevt_subscribe_type, winevtSubscribe);
 
-  wResult = render_event(winevtSubscribe->bookmark, EvtRenderBookmark);
-  utf8str = wstr_to_rb_str(CP_UTF8, wResult, -1);
-  free(wResult);
-
-  return utf8str;
+  return render_to_rb_str(winevtSubscribe->bookmark, EvtRenderBookmark);
 }
 
 void
