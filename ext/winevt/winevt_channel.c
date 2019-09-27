@@ -112,8 +112,7 @@ rb_winevt_channel_each(VALUE self)
     winevtChannel->channels = NULL;
   }
 
-  if (buffer)
-    free(buffer);
+  free(buffer);
 
   return Qnil;
 }
