@@ -1,7 +1,6 @@
 #include <winevt_c.h>
 
-static void
-channel_free(void* ptr);
+static void channel_free(void* ptr);
 
 static const rb_data_type_t rb_winevt_channel_type = { "winevt/channel",
                                                        {
@@ -62,8 +61,11 @@ rb_winevt_channel_each(VALUE self)
   if (hChannels) {
     winevtChannel->channels = hChannels;
   } else {
-    _snprintf_s(
-      errBuf, 256, _TRUNCATE, "Failed to enumerate channels with %lu\n", GetLastError());
+    _snprintf_s(errBuf,
+                _countof(errBuf),
+                _TRUNCATE,
+                "Failed to enumerate channels with %lu\n",
+                GetLastError());
     rb_raise(rb_eRuntimeError, errBuf);
   }
 
@@ -89,8 +91,11 @@ rb_winevt_channel_each(VALUE self)
       } else {
         free(buffer);
         EvtClose(winevtChannel->channels);
-        _snprintf_s(
-          errBuf, 256, _TRUNCATE, "EvtNextChannelPath failed with %lu.\n", status);
+        _snprintf_s(errBuf,
+                    _countof(errBuf),
+                    _TRUNCATE,
+                    "EvtNextChannelPath failed with %lu.\n",
+                    status);
         rb_raise(rb_eRuntimeError, errBuf);
       }
     }
