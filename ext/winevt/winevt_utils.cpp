@@ -90,59 +90,60 @@ guid_to_wstr(const GUID& guid)
 VALUE
 get_values(EVT_HANDLE handle)
 {
-  std::vector<WCHAR> buffer;
+  VALUE vbuffer;
+  EVT_VARIANT *buffer;
   ULONG bufferSize = 0;
-  ULONG bufferSizeNeeded = 0;
+  ULONG bufferSizeUsed = 0;
   DWORD status, propCount = 0;
   CHAR msgBuf[256];
   WCHAR* tmpWChar = nullptr;
   VALUE userValues = rb_ary_new();
+  BOOL succeeded;
 
   EVT_HANDLE renderContext = EvtCreateRenderContext(0, nullptr, EvtRenderContextUser);
   if (renderContext == nullptr) {
     rb_raise(rb_eWinevtQueryError, "Failed to create renderContext");
   }
 
-  do {
-    if (bufferSizeNeeded > bufferSize) {
-      bufferSize = bufferSizeNeeded;
-      try {
-        buffer.resize(bufferSize);
-        buffer.shrink_to_fit();
-      } catch (std::bad_alloc &e) {
-        status = ERROR_OUTOFMEMORY;
-        bufferSize = 0;
-        rb_raise(rb_eWinevtQueryError, "Out of memory");
-        break;
-      }
-    }
+  // Get the size of the buffer
+  EvtRender(renderContext,
+            handle,
+            EvtRenderEventValues,
+            0,
+            NULL,
+            &bufferSize,
+            &propCount);
 
-    if (EvtRender(renderContext,
-                  handle,
-                  EvtRenderEventValues,
-                  buffer.size(),
-                  &buffer.front(),
-                  &bufferSizeNeeded,
-                  &propCount) != FALSE) {
-      status = ERROR_SUCCESS;
-    } else {
-      status = GetLastError();
-    }
-  } while (status == ERROR_INSUFFICIENT_BUFFER);
+  // bufferSize is in bytes, not array size
+  buffer = (EVT_VARIANT*)ALLOCV(vbuffer, bufferSize);
 
-  if (status != ERROR_SUCCESS) {
+  succeeded = EvtRender(renderContext,
+                        handle,
+                        EvtRenderEventValues,
+                        bufferSize,
+                        buffer,
+                        &bufferSizeUsed,
+                        &propCount);
+  if (!succeeded) {
+    DWORD status = GetLastError();
+    CHAR msgBuf[256];
+
+    ALLOCV_END(vbuffer);
+    if (renderContext)
+      EvtClose(renderContext);
+
     FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
                    nullptr,
                    status,
                    MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
                    msgBuf,
-                   sizeof(msgBuf),
+                   _countof(msgBuf),
                    nullptr);
     rb_raise(
       rb_eWinevtQueryError, "ErrorCode: %lu\nError: %s\n", status, msgBuf);
   }
 
-  PEVT_VARIANT pRenderedValues = reinterpret_cast<PEVT_VARIANT>(&buffer.front());
+  PEVT_VARIANT pRenderedValues = buffer;
   LARGE_INTEGER timestamp;
   SYSTEMTIME st;
   FILETIME ft;
@@ -310,6 +311,7 @@ get_values(EVT_HANDLE handle)
     }
   }
 
+  ALLOCV_END(vbuffer);
   if (renderContext)
     EvtClose(renderContext);
 
