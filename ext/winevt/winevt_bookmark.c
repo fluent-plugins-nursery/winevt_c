@@ -89,19 +89,12 @@ rb_winevt_bookmark_update(VALUE self, VALUE event)
 static VALUE
 rb_winevt_bookmark_render(VALUE self)
 {
-  WCHAR* wResult;
   struct WinevtBookmark* winevtBookmark;
-  VALUE utf8str;
 
   TypedData_Get_Struct(
     self, struct WinevtBookmark, &rb_winevt_bookmark_type, winevtBookmark);
-  wResult = render_event(winevtBookmark->bookmark, EvtRenderBookmark);
-  utf8str = wstr_to_rb_str(CP_UTF8, wResult, -1);
 
-  if (wResult != NULL)
-    free(wResult);
-
-  return utf8str;
+  return render_to_rb_str(winevtBookmark->bookmark, EvtRenderBookmark);
 }
 
 void

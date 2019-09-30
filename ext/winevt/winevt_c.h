@@ -27,7 +27,7 @@ extern "C"
 #endif /* __cplusplus */
 
   VALUE wstr_to_rb_str(UINT cp, const WCHAR* wstr, int clen);
-  WCHAR* render_event(EVT_HANDLE handle, DWORD flags);
+  VALUE render_to_rb_str(EVT_HANDLE handle, DWORD flags);
   WCHAR* get_description(EVT_HANDLE handle);
   VALUE get_values(EVT_HANDLE handle);
 
