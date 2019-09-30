@@ -91,11 +91,10 @@ VALUE
 get_values(EVT_HANDLE handle)
 {
   VALUE vbuffer;
-  EVT_VARIANT *buffer;
+  PEVT_VARIANT pRenderedValues;
   ULONG bufferSize = 0;
   ULONG bufferSizeUsed = 0;
-  DWORD status, propCount = 0;
-  CHAR msgBuf[256];
+  DWORD propCount = 0;
   WCHAR* tmpWChar = nullptr;
   VALUE userValues = rb_ary_new();
   BOOL succeeded;
@@ -115,13 +114,13 @@ get_values(EVT_HANDLE handle)
             &propCount);
 
   // bufferSize is in bytes, not array size
-  buffer = (EVT_VARIANT*)ALLOCV(vbuffer, bufferSize);
+  pRenderedValues = (PEVT_VARIANT)ALLOCV(vbuffer, bufferSize);
 
   succeeded = EvtRender(renderContext,
                         handle,
                         EvtRenderEventValues,
                         bufferSize,
-                        buffer,
+                        pRenderedValues,
                         &bufferSizeUsed,
                         &propCount);
   if (!succeeded) {
@@ -143,7 +142,6 @@ get_values(EVT_HANDLE handle)
       rb_eWinevtQueryError, "ErrorCode: %lu\nError: %s\n", status, msgBuf);
   }
 
-  PEVT_VARIANT pRenderedValues = buffer;
   LARGE_INTEGER timestamp;
   SYSTEMTIME st;
   FILETIME ft;
