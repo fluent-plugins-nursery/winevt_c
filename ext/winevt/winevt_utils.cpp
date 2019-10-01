@@ -303,8 +303,7 @@ get_values(EVT_HANDLE handle)
     CHAR msgBuf[256];
 
     ALLOCV_END(vbuffer);
-    if (renderContext)
-      EvtClose(renderContext);
+    EvtClose(renderContext);
 
     FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
                    nullptr,
@@ -320,8 +319,7 @@ get_values(EVT_HANDLE handle)
   userValues = extract_user_evt_variants(pRenderedValues, propCount);
 
   ALLOCV_END(vbuffer);
-  if (renderContext)
-    EvtClose(renderContext);
+  EvtClose(renderContext);
 
   return userValues;
 }
