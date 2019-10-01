@@ -123,11 +123,6 @@ class WinevtTest < Test::Unit::TestCase
       assert(@subscribe.bookmark)
     end
 
-    def test_render
-      @subscribe.next
-      assert(@subscribe.render)
-    end
-
     def test_each
       assert do
         @subscribe.respond_to?(:each)

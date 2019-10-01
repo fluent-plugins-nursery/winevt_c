@@ -60,12 +60,15 @@ struct WinevtQuery
   LONG timeout;
 };
 
+#define SUBSCRIBE_ARRAY_SIZE 10
+
 struct WinevtSubscribe
 {
   HANDLE signalEvent;
   EVT_HANDLE subscription;
   EVT_HANDLE bookmark;
-  EVT_HANDLE event;
+  EVT_HANDLE hEvents[SUBSCRIBE_ARRAY_SIZE];
+  DWORD count;
   DWORD flags;
   BOOL tailing;
 };
