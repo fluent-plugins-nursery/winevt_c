@@ -22,14 +22,13 @@
 #define EventChannel(object) ((struct WinevtChannel*)DATA_PTR(object))
 
 #ifdef __cplusplus
-extern "C"
-{
+extern "C" {
 #endif /* __cplusplus */
 
-  VALUE wstr_to_rb_str(UINT cp, const WCHAR* wstr, int clen);
-  VALUE render_to_rb_str(EVT_HANDLE handle, DWORD flags);
-  WCHAR* get_description(EVT_HANDLE handle);
-  VALUE get_values(EVT_HANDLE handle);
+VALUE wstr_to_rb_str(UINT cp, const WCHAR* wstr, int clen);
+VALUE render_to_rb_str(EVT_HANDLE handle, DWORD flags);
+WCHAR* get_description(EVT_HANDLE handle);
+VALUE get_values(EVT_HANDLE handle);
 
 #ifdef __cplusplus
 }
@@ -71,13 +70,9 @@ struct WinevtSubscribe
   BOOL tailing;
 };
 
-void
-Init_winevt_query(VALUE rb_cEventLog);
-void
-Init_winevt_channel(VALUE rb_cEventLog);
-void
-Init_winevt_bookmark(VALUE rb_cEventLog);
-void
-Init_winevt_subscribe(VALUE rb_cEventLog);
+void Init_winevt_query(VALUE rb_cEventLog);
+void Init_winevt_channel(VALUE rb_cEventLog);
+void Init_winevt_bookmark(VALUE rb_cEventLog);
+void Init_winevt_subscribe(VALUE rb_cEventLog);
 
 #endif // _WINEVT_C_H

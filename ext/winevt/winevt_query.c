@@ -1,7 +1,6 @@
 #include <winevt_c.h>
 
-static void
-query_free(void* ptr);
+static void query_free(void* ptr);
 
 static const rb_data_type_t rb_winevt_query_type = { "winevt/query",
                                                      {

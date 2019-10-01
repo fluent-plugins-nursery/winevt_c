@@ -23,7 +23,7 @@ VALUE
 render_to_rb_str(EVT_HANDLE handle, DWORD flags)
 {
   VALUE vbuffer;
-  WCHAR *buffer;
+  WCHAR* buffer;
   ULONG bufferSize = 0;
   ULONG bufferSizeUsed = 0;
   ULONG count;
@@ -35,24 +35,13 @@ render_to_rb_str(EVT_HANDLE handle, DWORD flags)
   }
 
   // Get the size of the buffer
-  EvtRender(nullptr,
-            handle,
-            flags,
-            0,
-            NULL,
-            &bufferSize,
-            &count);
+  EvtRender(nullptr, handle, flags, 0, NULL, &bufferSize, &count);
 
   // bufferSize is in bytes, not characters
   buffer = (WCHAR*)ALLOCV(vbuffer, bufferSize);
 
-  succeeded = EvtRender(nullptr,
-                        handle,
-                        flags,
-                        bufferSize,
-                        buffer,
-                        &bufferSizeUsed,
-                        &count);
+  succeeded =
+    EvtRender(nullptr, handle, flags, bufferSize, buffer, &bufferSizeUsed, &count);
   if (!succeeded) {
     DWORD status = GetLastError();
     CHAR msgBuf[256];
@@ -65,8 +54,7 @@ render_to_rb_str(EVT_HANDLE handle, DWORD flags)
                    _countof(msgBuf),
                    nullptr);
     ALLOCV_END(vbuffer);
-    rb_raise(
-      rb_eWinevtQueryError, "ErrorCode: %lu\nError: %s\n", status, msgBuf);
+    rb_raise(rb_eWinevtQueryError, "ErrorCode: %lu\nError: %s\n", status, msgBuf);
   }
 
   result = wstr_to_rb_str(CP_UTF8, buffer, -1);
@@ -262,7 +250,6 @@ extract_user_evt_variants(PEVT_VARIANT pRenderedValues, DWORD propCount)
   return userValues;
 }
 
-
 VALUE
 get_values(EVT_HANDLE handle)
 {
@@ -280,13 +267,8 @@ get_values(EVT_HANDLE handle)
   }
 
   // Get the size of the buffer
-  EvtRender(renderContext,
-            handle,
-            EvtRenderEventValues,
-            0,
-            NULL,
-            &bufferSize,
-            &propCount);
+  EvtRender(
+    renderContext, handle, EvtRenderEventValues, 0, NULL, &bufferSize, &propCount);
 
   // bufferSize is in bytes, not array size
   pRenderedValues = (PEVT_VARIANT)ALLOCV(vbuffer, bufferSize);
@@ -312,8 +294,7 @@ get_values(EVT_HANDLE handle)
                    msgBuf,
                    _countof(msgBuf),
                    nullptr);
-    rb_raise(
-      rb_eWinevtQueryError, "ErrorCode: %lu\nError: %s\n", status, msgBuf);
+    rb_raise(rb_eWinevtQueryError, "ErrorCode: %lu\nError: %s\n", status, msgBuf);
   }
 
   userValues = extract_user_evt_variants(pRenderedValues, propCount);
@@ -484,8 +465,7 @@ get_description(EVT_HANDLE handle)
                    msgBuf,
                    sizeof(msgBuf),
                    nullptr);
-    rb_raise(
-      rb_eWinevtQueryError, "ErrorCode: %lu\nError: %s\n", status, msgBuf);
+    rb_raise(rb_eWinevtQueryError, "ErrorCode: %lu\nError: %s\n", status, msgBuf);
   }
 
   // Obtain buffer as EVT_VARIANT pointer. To avoid ErrorCide 87 in EvtRender.

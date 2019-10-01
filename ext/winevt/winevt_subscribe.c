@@ -1,7 +1,6 @@
 #include <winevt_c.h>
 
-static void
-subscribe_free(void* ptr);
+static void subscribe_free(void* ptr);
 
 static const rb_data_type_t rb_winevt_subscribe_type = { "winevt/subscribe",
                                                          {
