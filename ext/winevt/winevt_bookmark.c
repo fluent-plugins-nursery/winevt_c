@@ -79,10 +79,11 @@ rb_winevt_bookmark_update(VALUE self, VALUE event)
   TypedData_Get_Struct(
     self, struct WinevtBookmark, &rb_winevt_bookmark_type, winevtBookmark);
 
-  if (EvtUpdateBookmark(winevtBookmark->bookmark, winevtQuery->event))
-    return Qtrue;
-
-  return Qfalse;
+  for (int i = 0; i < winevtQuery->count; i++) {
+    if (!EvtUpdateBookmark(winevtBookmark->bookmark, winevtQuery->hEvents[i]))
+      return Qfalse;
+  }
+  return Qtrue;
 }
 
 static VALUE
