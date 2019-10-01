@@ -87,61 +87,11 @@ guid_to_wstr(const GUID& guid)
   return s;
 }
 
-VALUE
-get_values(EVT_HANDLE handle)
+static VALUE
+extract_user_evt_variants(PEVT_VARIANT pRenderedValues, DWORD propCount)
 {
-  VALUE vbuffer;
-  PEVT_VARIANT pRenderedValues;
-  ULONG bufferSize = 0;
-  ULONG bufferSizeUsed = 0;
-  DWORD propCount = 0;
-  WCHAR* tmpWChar = nullptr;
   VALUE userValues = rb_ary_new();
-  BOOL succeeded;
-
-  EVT_HANDLE renderContext = EvtCreateRenderContext(0, nullptr, EvtRenderContextUser);
-  if (renderContext == nullptr) {
-    rb_raise(rb_eWinevtQueryError, "Failed to create renderContext");
-  }
-
-  // Get the size of the buffer
-  EvtRender(renderContext,
-            handle,
-            EvtRenderEventValues,
-            0,
-            NULL,
-            &bufferSize,
-            &propCount);
-
-  // bufferSize is in bytes, not array size
-  pRenderedValues = (PEVT_VARIANT)ALLOCV(vbuffer, bufferSize);
-
-  succeeded = EvtRender(renderContext,
-                        handle,
-                        EvtRenderEventValues,
-                        bufferSize,
-                        pRenderedValues,
-                        &bufferSizeUsed,
-                        &propCount);
-  if (!succeeded) {
-    DWORD status = GetLastError();
-    CHAR msgBuf[256];
-
-    ALLOCV_END(vbuffer);
-    if (renderContext)
-      EvtClose(renderContext);
-
-    FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-                   nullptr,
-                   status,
-                   MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-                   msgBuf,
-                   _countof(msgBuf),
-                   nullptr);
-    rb_raise(
-      rb_eWinevtQueryError, "ErrorCode: %lu\nError: %s\n", status, msgBuf);
-  }
-
+  WCHAR* tmpWChar = nullptr;
   LARGE_INTEGER timestamp;
   SYSTEMTIME st;
   FILETIME ft;
@@ -308,6 +258,66 @@ get_values(EVT_HANDLE handle)
         break;
     }
   }
+
+  return userValues;
+}
+
+
+VALUE
+get_values(EVT_HANDLE handle)
+{
+  VALUE vbuffer;
+  PEVT_VARIANT pRenderedValues;
+  ULONG bufferSize = 0;
+  ULONG bufferSizeUsed = 0;
+  DWORD propCount = 0;
+  BOOL succeeded;
+  VALUE userValues = Qnil;
+
+  EVT_HANDLE renderContext = EvtCreateRenderContext(0, nullptr, EvtRenderContextUser);
+  if (renderContext == nullptr) {
+    rb_raise(rb_eWinevtQueryError, "Failed to create renderContext");
+  }
+
+  // Get the size of the buffer
+  EvtRender(renderContext,
+            handle,
+            EvtRenderEventValues,
+            0,
+            NULL,
+            &bufferSize,
+            &propCount);
+
+  // bufferSize is in bytes, not array size
+  pRenderedValues = (PEVT_VARIANT)ALLOCV(vbuffer, bufferSize);
+
+  succeeded = EvtRender(renderContext,
+                        handle,
+                        EvtRenderEventValues,
+                        bufferSize,
+                        pRenderedValues,
+                        &bufferSizeUsed,
+                        &propCount);
+  if (!succeeded) {
+    DWORD status = GetLastError();
+    CHAR msgBuf[256];
+
+    ALLOCV_END(vbuffer);
+    if (renderContext)
+      EvtClose(renderContext);
+
+    FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+                   nullptr,
+                   status,
+                   MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+                   msgBuf,
+                   _countof(msgBuf),
+                   nullptr);
+    rb_raise(
+      rb_eWinevtQueryError, "ErrorCode: %lu\nError: %s\n", status, msgBuf);
+  }
+
+  userValues = extract_user_evt_variants(pRenderedValues, propCount);
 
   ALLOCV_END(vbuffer);
   if (renderContext)
