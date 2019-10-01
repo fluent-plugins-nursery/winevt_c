@@ -79,12 +79,6 @@ static VALUE
 extract_user_evt_variants(PEVT_VARIANT pRenderedValues, DWORD propCount)
 {
   VALUE userValues = rb_ary_new();
-  WCHAR* tmpWChar = nullptr;
-  LARGE_INTEGER timestamp;
-  SYSTEMTIME st;
-  FILETIME ft;
-  std::vector<CHAR> strTime(128);
-  std::vector<CHAR> sResult(256);
   VALUE rbObj;
 
   for (DWORD i = 0; i < propCount; i++) {
@@ -142,22 +136,20 @@ extract_user_evt_variants(PEVT_VARIANT pRenderedValues, DWORD propCount)
         rbObj = ULONG2NUM(pRenderedValues[i].UInt64Val);
         rb_ary_push(userValues, rbObj);
         break;
-      case EvtVarTypeSingle:
-        _snprintf_s(&sResult.front(),
-                    sResult.size(),
-                    _TRUNCATE,
-                    "%f",
-                    pRenderedValues[i].SingleVal);
-        rb_ary_push(userValues, rb_utf8_str_new_cstr(&sResult.front()));
+      case EvtVarTypeSingle: {
+        CHAR sResult[256];
+        _snprintf_s(
+          sResult, _countof(sResult), _TRUNCATE, "%f", pRenderedValues[i].SingleVal);
+        rb_ary_push(userValues, rb_utf8_str_new_cstr(sResult));
         break;
-      case EvtVarTypeDouble:
-        _snprintf_s(&sResult.front(),
-                    sResult.size(),
-                    _TRUNCATE,
-                    "%lf",
-                    pRenderedValues[i].DoubleVal);
-        rb_ary_push(userValues, rb_utf8_str_new_cstr(&sResult.front()));
+      }
+      case EvtVarTypeDouble: {
+        CHAR sResult[256];
+        _snprintf_s(
+          sResult, _countof(sResult), _TRUNCATE, "%lf", pRenderedValues[i].DoubleVal);
+        rb_ary_push(userValues, rb_utf8_str_new_cstr(sResult));
         break;
+      }
       case EvtVarTypeBoolean:
         rbObj = pRenderedValues[i].BooleanVal ? Qtrue : Qfalse;
         rb_ary_push(userValues, rbObj);
@@ -176,13 +168,17 @@ extract_user_evt_variants(PEVT_VARIANT pRenderedValues, DWORD propCount)
         rbObj = SIZET2NUM(pRenderedValues[i].SizeTVal);
         rb_ary_push(userValues, rbObj);
         break;
-      case EvtVarTypeFileTime:
+      case EvtVarTypeFileTime: {
+        LARGE_INTEGER timestamp;
+        CHAR strTime[128];
+        FILETIME ft;
+        SYSTEMTIME st;
         timestamp.QuadPart = pRenderedValues[i].FileTimeVal;
         ft.dwHighDateTime = timestamp.HighPart;
         ft.dwLowDateTime = timestamp.LowPart;
         if (FileTimeToSystemTime(&ft, &st)) {
-          _snprintf_s(&strTime.front(),
-                      strTime.size(),
+          _snprintf_s(strTime,
+                      _countof(strTime),
                       _TRUNCATE,
                       "%04d-%02d-%02d %02d:%02d:%02d.%dZ",
                       st.wYear,
@@ -192,16 +188,19 @@ extract_user_evt_variants(PEVT_VARIANT pRenderedValues, DWORD propCount)
                       st.wMinute,
                       st.wSecond,
                       st.wMilliseconds);
-          rb_ary_push(userValues, rb_utf8_str_new_cstr(&strTime.front()));
+          rb_ary_push(userValues, rb_utf8_str_new_cstr(strTime));
         } else {
           rb_ary_push(userValues, rb_utf8_str_new_cstr("?"));
         }
         break;
-      case EvtVarTypeSysTime:
+      }
+      case EvtVarTypeSysTime: {
+        CHAR strTime[128];
+        SYSTEMTIME st;
         if (pRenderedValues[i].SysTimeVal != nullptr) {
           st = *pRenderedValues[i].SysTimeVal;
-          _snprintf_s(&strTime.front(),
-                      strTime.size(),
+          _snprintf_s(strTime,
+                      _countof(strTime),
                       _TRUNCATE,
                       "%04d-%02d-%02d %02d:%02d:%02d.%dZ",
                       st.wYear,
@@ -211,12 +210,14 @@ extract_user_evt_variants(PEVT_VARIANT pRenderedValues, DWORD propCount)
                       st.wMinute,
                       st.wSecond,
                       st.wMilliseconds);
-          rb_ary_push(userValues, rb_utf8_str_new_cstr(&strTime.front()));
+          rb_ary_push(userValues, rb_utf8_str_new_cstr(strTime));
         } else {
           rb_ary_push(userValues, rb_utf8_str_new_cstr("?"));
         }
         break;
-      case EvtVarTypeSid:
+      }
+      case EvtVarTypeSid: {
+        WCHAR* tmpWChar = nullptr;
         if (ConvertSidToStringSidW(pRenderedValues[i].SidVal, &tmpWChar)) {
           rbObj = wstr_to_rb_str(CP_UTF8, tmpWChar, -1);
           rb_ary_push(userValues, rbObj);
@@ -225,6 +226,7 @@ extract_user_evt_variants(PEVT_VARIANT pRenderedValues, DWORD propCount)
           rb_ary_push(userValues, rb_utf8_str_new_cstr("?"));
         }
         break;
+      }
       case EvtVarTypeHexInt32:
         rbObj = rb_sprintf("%#x", pRenderedValues[i].UInt32Val);
         rb_ary_push(userValues, rbObj);
