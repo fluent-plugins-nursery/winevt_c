@@ -18,11 +18,6 @@ class WinevtTest < Test::Unit::TestCase
       assert_true(@query.next)
     end
 
-    def test_render
-      @query.next
-      assert(@query.render)
-    end
-
     def test_timeout
       @query.timeout = 1
       assert_equal(1, @query.timeout)
@@ -121,11 +116,6 @@ class WinevtTest < Test::Unit::TestCase
     def test_bookmark
       @subscribe.next
       assert(@subscribe.bookmark)
-    end
-
-    def test_render
-      @subscribe.next
-      assert(@subscribe.render)
     end
 
     def test_each

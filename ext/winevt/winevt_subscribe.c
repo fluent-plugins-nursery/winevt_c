@@ -25,8 +25,11 @@ subscribe_free(void* ptr)
   if (winevtSubscribe->bookmark)
     EvtClose(winevtSubscribe->bookmark);
 
-  if (winevtSubscribe->event)
-    EvtClose(winevtSubscribe->event);
+  for (int i = 0; i < winevtSubscribe->count; i++) {
+    if (winevtSubscribe->hEvents[i]) {
+      EvtClose(winevtSubscribe->hEvents[i]);
+    }
+  }
 
   xfree(ptr);
 }
@@ -144,16 +147,28 @@ rb_winevt_subscribe_subscribe(int argc, VALUE* argv, VALUE self)
 static VALUE
 rb_winevt_subscribe_next(VALUE self)
 {
-  EVT_HANDLE event;
+  EVT_HANDLE hEvents[SUBSCRIBE_ARRAY_SIZE];
   ULONG count;
+  DWORD status = ERROR_SUCCESS;
   struct WinevtSubscribe* winevtSubscribe;
 
   TypedData_Get_Struct(
     self, struct WinevtSubscribe, &rb_winevt_subscribe_type, winevtSubscribe);
 
-  if (EvtNext(winevtSubscribe->subscription, 1, &event, INFINITE, 0, &count) != FALSE) {
-    winevtSubscribe->event = event;
-    EvtUpdateBookmark(winevtSubscribe->bookmark, winevtSubscribe->event);
+  if (!EvtNext(winevtSubscribe->subscription, SUBSCRIBE_ARRAY_SIZE,
+              hEvents, INFINITE, 0, &count)) {
+    status = GetLastError();
+    if (ERROR_NO_MORE_ITEMS != status) {
+      return Qfalse;
+    }
+  }
+
+  if (status == ERROR_SUCCESS) {
+    winevtSubscribe->count = count;
+    for (int i = 0; i < count; i++) {
+      winevtSubscribe->hEvents[i] = hEvents[i];
+      EvtUpdateBookmark(winevtSubscribe->bookmark, winevtSubscribe->hEvents[i]);
+    }
 
     return Qtrue;
   }
@@ -162,26 +177,18 @@ rb_winevt_subscribe_next(VALUE self)
 }
 
 static VALUE
-rb_winevt_subscribe_render(VALUE self)
+rb_winevt_subscribe_render(EVT_HANDLE event)
 {
-  struct WinevtSubscribe* winevtSubscribe;
-
-  TypedData_Get_Struct(
-    self, struct WinevtSubscribe, &rb_winevt_subscribe_type, winevtSubscribe);
-
-  return render_to_rb_str(winevtSubscribe->event, EvtRenderEventXml);
+  return render_to_rb_str(event, EvtRenderEventXml);
 }
 
 static VALUE
-rb_winevt_subscribe_message(VALUE self)
+rb_winevt_subscribe_message(EVT_HANDLE event)
 {
   WCHAR* wResult;
-  struct WinevtSubscribe* winevtSubscribe;
   VALUE utf8str;
 
-  TypedData_Get_Struct(
-    self, struct WinevtSubscribe, &rb_winevt_subscribe_type, winevtSubscribe);
-  wResult = get_description(winevtSubscribe->event);
+  wResult = get_description(event);
   utf8str = wstr_to_rb_str(CP_UTF8, wResult, -1);
   free(wResult);
 
@@ -189,13 +196,9 @@ rb_winevt_subscribe_message(VALUE self)
 }
 
 static VALUE
-rb_winevt_subscribe_string_inserts(VALUE self)
+rb_winevt_subscribe_string_inserts(EVT_HANDLE event)
 {
-  struct WinevtSubscribe* winevtSubscribe;
-
-  TypedData_Get_Struct(
-    self, struct WinevtSubscribe, &rb_winevt_subscribe_type, winevtSubscribe);
-  return get_values(winevtSubscribe->event);
+  return get_values(event);
 }
 
 static VALUE
@@ -206,9 +209,11 @@ rb_winevt_subscribe_close_handle(VALUE self)
   TypedData_Get_Struct(
     self, struct WinevtSubscribe, &rb_winevt_subscribe_type, winevtSubscribe);
 
-  if (winevtSubscribe->event != NULL) {
-    EvtClose(winevtSubscribe->event);
-    winevtSubscribe->event = NULL;
+  for (int i = 0; i < winevtSubscribe->count; i++) {
+    if (winevtSubscribe->hEvents[i] != NULL) {
+      EvtClose(winevtSubscribe->hEvents[i]);
+      winevtSubscribe->hEvents[i] = NULL;
+    }
   }
 
   return Qnil;
@@ -218,11 +223,17 @@ static VALUE
 rb_winevt_subscribe_each_yield(VALUE self)
 {
   RETURN_ENUMERATOR(self, 0, 0);
+  struct WinevtSubscribe* winevtSubscribe;
 
-  rb_yield_values(3,
-                  rb_winevt_subscribe_render(self),
-                  rb_winevt_subscribe_message(self),
-                  rb_winevt_subscribe_string_inserts(self));
+  TypedData_Get_Struct(
+    self, struct WinevtSubscribe, &rb_winevt_subscribe_type, winevtSubscribe);
+
+  for (int i = 0; i < winevtSubscribe->count; i++) {
+    rb_yield_values(3,
+                    rb_winevt_subscribe_render(winevtSubscribe->hEvents[i]),
+                    rb_winevt_subscribe_message(winevtSubscribe->hEvents[i]),
+                    rb_winevt_subscribe_string_inserts(winevtSubscribe->hEvents[i]));
+  }
 
   return Qnil;
 }
@@ -260,12 +271,7 @@ Init_winevt_subscribe(VALUE rb_cEventLog)
   rb_define_method(rb_cSubscribe, "initialize", rb_winevt_subscribe_initialize, 0);
   rb_define_method(rb_cSubscribe, "subscribe", rb_winevt_subscribe_subscribe, -1);
   rb_define_method(rb_cSubscribe, "next", rb_winevt_subscribe_next, 0);
-  rb_define_method(rb_cSubscribe, "render", rb_winevt_subscribe_render, 0);
-  rb_define_method(rb_cSubscribe, "message", rb_winevt_subscribe_message, 0);
-  rb_define_method(
-    rb_cSubscribe, "string_inserts", rb_winevt_subscribe_string_inserts, 0);
   rb_define_method(rb_cSubscribe, "each", rb_winevt_subscribe_each, 0);
-  rb_define_method(rb_cSubscribe, "close_handle", rb_winevt_subscribe_close_handle, 0);
   rb_define_method(rb_cSubscribe, "bookmark", rb_winevt_subscribe_get_bookmark, 0);
   rb_define_method(rb_cSubscribe, "tail?", rb_winevt_subscribe_tail_p, 0);
   rb_define_method(rb_cSubscribe, "tail=", rb_winevt_subscribe_set_tail, 1);

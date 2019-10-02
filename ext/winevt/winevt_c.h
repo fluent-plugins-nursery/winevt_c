@@ -51,21 +51,26 @@ struct WinevtBookmark
   ULONG count;
 };
 
+#define QUERY_ARRAY_SIZE 10
+
 struct WinevtQuery
 {
   EVT_HANDLE query;
-  EVT_HANDLE event;
+  EVT_HANDLE hEvents[QUERY_ARRAY_SIZE];
   ULONG count;
   LONG offset;
   LONG timeout;
 };
+
+#define SUBSCRIBE_ARRAY_SIZE 10
 
 struct WinevtSubscribe
 {
   HANDLE signalEvent;
   EVT_HANDLE subscription;
   EVT_HANDLE bookmark;
-  EVT_HANDLE event;
+  EVT_HANDLE hEvents[SUBSCRIBE_ARRAY_SIZE];
+  DWORD count;
   DWORD flags;
   BOOL tailing;
 };
