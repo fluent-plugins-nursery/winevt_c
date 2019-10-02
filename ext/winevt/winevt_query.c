@@ -291,6 +291,5 @@ Init_winevt_query(VALUE rb_cEventLog)
   rb_define_method(rb_cQuery, "offset=", rb_winevt_query_set_offset, 1);
   rb_define_method(rb_cQuery, "timeout", rb_winevt_query_get_timeout, 0);
   rb_define_method(rb_cQuery, "timeout=", rb_winevt_query_set_timeout, 1);
-  rb_define_method(rb_cQuery, "close_handle", rb_winevt_query_close_handle, 0);
   rb_define_method(rb_cQuery, "each", rb_winevt_query_each, 0);
 }
