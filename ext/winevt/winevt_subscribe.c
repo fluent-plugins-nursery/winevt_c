@@ -157,7 +157,8 @@ rb_winevt_subscribe_next(VALUE self)
 
   if (!EvtNext(winevtSubscribe->subscription, SUBSCRIBE_ARRAY_SIZE,
               hEvents, INFINITE, 0, &count)) {
-    if (ERROR_NO_MORE_ITEMS != (status = GetLastError())) {
+    status = GetLastError();
+    if (ERROR_NO_MORE_ITEMS != status) {
       return Qfalse;
     }
   }

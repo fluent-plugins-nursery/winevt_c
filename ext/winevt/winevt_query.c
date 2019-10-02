@@ -129,7 +129,8 @@ rb_winevt_query_next(VALUE self)
   TypedData_Get_Struct(self, struct WinevtQuery, &rb_winevt_query_type, winevtQuery);
 
   if (!EvtNext(winevtQuery->query, QUERY_ARRAY_SIZE, hEvents, INFINITE, 0, &count)) {
-    if (ERROR_NO_MORE_ITEMS != (status = GetLastError())) {
+    status = GetLastError();
+    if (ERROR_NO_MORE_ITEMS != status) {
       return Qfalse;
     }
   }
