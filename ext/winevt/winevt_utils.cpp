@@ -500,3 +500,185 @@ cleanup:
 
   return _wcsdup(result.data());
 }
+
+VALUE
+render_system_event(EVT_HANDLE hEvent)
+{
+  DWORD status = ERROR_SUCCESS;
+  EVT_HANDLE hContext = NULL;
+  DWORD dwBufferSize = 0;
+  DWORD dwBufferUsed = 0;
+  DWORD dwPropertyCount = 0;
+  PEVT_VARIANT pRenderedValues = NULL;
+  WCHAR wsGuid[50];
+  LPSTR pwsSid = NULL;
+  ULONGLONG ullTimeStamp = 0;
+  ULONGLONG ullNanoseconds = 0;
+  SYSTEMTIME st;
+  FILETIME ft;
+  CHAR buffer[32];
+  VALUE rbstr;
+  DWORD EventID;
+  VALUE hash = rb_hash_new();
+
+  hContext = EvtCreateRenderContext(0, NULL, EvtRenderContextSystem);
+  if (NULL == hContext) {
+    rb_raise(rb_eWinevtQueryError,
+             "Failed to create renderContext with %lu\n", GetLastError());
+  }
+
+  if (!EvtRender(hContext,
+                 hEvent,
+                 EvtRenderEventValues,
+                 dwBufferSize,
+                 pRenderedValues,
+                 &dwBufferUsed,
+                 &dwPropertyCount)) {
+    if (ERROR_INSUFFICIENT_BUFFER == (status = GetLastError())) {
+      dwBufferSize = dwBufferUsed;
+      pRenderedValues = (PEVT_VARIANT)malloc(dwBufferSize);
+      if (pRenderedValues) {
+        EvtRender(hContext,
+                  hEvent,
+                  EvtRenderEventValues,
+                  dwBufferSize,
+                  pRenderedValues,
+                  &dwBufferUsed,
+                  &dwPropertyCount);
+      } else {
+        wprintf(L"malloc failed\n");
+        status = ERROR_OUTOFMEMORY;
+        goto cleanup;
+      }
+    }
+
+    if (ERROR_SUCCESS != (status = GetLastError())) {
+      wprintf(L"EvtRender failed with %d\n", GetLastError());
+      goto cleanup;
+    }
+  }
+
+  rbstr = wstr_to_rb_str(CP_UTF8, pRenderedValues[EvtSystemProviderName].StringVal, -1);
+  rb_hash_aset(hash, ID2SYM(rb_intern("ProviderName")), rbstr);
+  if (NULL != pRenderedValues[EvtSystemProviderGuid].GuidVal) {
+    const GUID* Guid = pRenderedValues[EvtSystemProviderGuid].GuidVal;
+    StringFromGUID2(*Guid, wsGuid, _countof(wsGuid));
+    rbstr = wstr_to_rb_str(CP_UTF8, wsGuid, -1);
+    rb_hash_aset(hash, ID2SYM(rb_intern("ProviderGuid")), rbstr);
+  } else {
+    rb_hash_aset(hash, ID2SYM(rb_intern("ProviderGuid")), Qnil);
+  }
+
+  EventID = pRenderedValues[EvtSystemEventID].UInt16Val;
+  if (EvtVarTypeNull != pRenderedValues[EvtSystemQualifiers].Type) {
+    EventID = MAKELONG(pRenderedValues[EvtSystemEventID].UInt16Val,
+                       pRenderedValues[EvtSystemQualifiers].UInt16Val);
+  }
+  rb_hash_aset(hash, ID2SYM(rb_intern("EventID")), LONG2NUM(EventID));
+
+  rb_hash_aset(hash,
+               ID2SYM(rb_intern("Version")),
+               (EvtVarTypeNull == pRenderedValues[EvtSystemVersion].Type)
+                 ? INT2NUM(0)
+                 : INT2NUM(pRenderedValues[EvtSystemVersion].ByteVal));
+  rb_hash_aset(hash,
+               ID2SYM(rb_intern("Level")),
+               (EvtVarTypeNull == pRenderedValues[EvtSystemLevel].Type)
+                 ? INT2NUM(0)
+                 : INT2NUM(pRenderedValues[EvtSystemLevel].ByteVal));
+  rb_hash_aset(hash,
+               ID2SYM(rb_intern("Task")),
+               (EvtVarTypeNull == pRenderedValues[EvtSystemTask].Type)
+                 ? INT2NUM(0)
+                 : INT2NUM(pRenderedValues[EvtSystemTask].UInt16Val));
+  rb_hash_aset(hash,
+               ID2SYM(rb_intern("Opcode")),
+               (EvtVarTypeNull == pRenderedValues[EvtSystemOpcode].Type)
+                 ? INT2NUM(0)
+                 : INT2NUM(pRenderedValues[EvtSystemOpcode].ByteVal));
+  _snprintf_s(buffer, _countof(buffer), _TRUNCATE,
+              "0x%llx", pRenderedValues[EvtSystemKeywords].UInt64Val);
+  rb_hash_aset(hash,
+               ID2SYM(rb_intern("Keywords")),
+               (EvtVarTypeNull == pRenderedValues[EvtSystemKeywords].Type)
+                 ? Qnil
+                 : rb_str_new2(buffer));
+
+  ullTimeStamp = pRenderedValues[EvtSystemTimeCreated].FileTimeVal;
+  ft.dwHighDateTime = (DWORD)((ullTimeStamp >> 32) & 0xFFFFFFFF);
+  ft.dwLowDateTime = (DWORD)(ullTimeStamp & 0xFFFFFFFF);
+
+  FileTimeToSystemTime(&ft, &st);
+  ullNanoseconds =
+    (ullTimeStamp % 10000000) *
+    100; // Display nanoseconds instead of milliseconds for higher resolution
+  _snprintf_s(buffer,
+              _countof(buffer),
+              _TRUNCATE,
+              "%02d/%02d/%02d %02d:%02d:%02d.%llu",
+              st.wYear,
+              st.wMonth,
+              st.wDay,
+              st.wHour,
+              st.wMinute,
+              st.wSecond,
+              ullNanoseconds);
+  rb_hash_aset(hash,
+               ID2SYM(rb_intern("TimeCreated")),
+               (EvtVarTypeNull == pRenderedValues[EvtSystemKeywords].Type)
+                 ? Qnil
+                 : rb_str_new2(buffer));
+  _snprintf_s(buffer,
+              _countof(buffer),
+              _TRUNCATE,
+              "%llu",
+              pRenderedValues[EvtSystemEventRecordId].UInt64Val);
+  rb_hash_aset(hash,
+               ID2SYM(rb_intern("EventRecordID")),
+               (EvtVarTypeNull == pRenderedValues[EvtSystemEventRecordId].UInt64Val)
+                 ? Qnil
+                 : rb_str_new2(buffer));
+
+  if (EvtVarTypeNull != pRenderedValues[EvtSystemActivityID].Type) {
+    const GUID* Guid = pRenderedValues[EvtSystemActivityID].GuidVal;
+    StringFromGUID2(*Guid, wsGuid, _countof(wsGuid));
+    rbstr = wstr_to_rb_str(CP_UTF8, wsGuid, -1);
+    rb_hash_aset(hash, ID2SYM(rb_intern("ActivityID")), rbstr);
+  }
+
+  if (EvtVarTypeNull != pRenderedValues[EvtSystemRelatedActivityID].Type) {
+    const GUID* Guid = pRenderedValues[EvtSystemRelatedActivityID].GuidVal;
+    StringFromGUID2(*Guid, wsGuid, _countof(wsGuid));
+    rbstr = wstr_to_rb_str(CP_UTF8, wsGuid, -1);
+    rb_hash_aset(hash, ID2SYM(rb_intern("RelatedActivityID")), rbstr);
+  }
+
+  rb_hash_aset(hash,
+               ID2SYM(rb_intern("ProcessID")),
+               UINT2NUM(pRenderedValues[EvtSystemProcessID].UInt32Val));
+  rb_hash_aset(hash,
+               ID2SYM(rb_intern("ThreadID")),
+               UINT2NUM(pRenderedValues[EvtSystemThreadID].UInt32Val));
+  rbstr = wstr_to_rb_str(CP_UTF8, pRenderedValues[EvtSystemChannel].StringVal, -1);
+  rb_hash_aset(hash, ID2SYM(rb_intern("Channel")), rbstr);
+  rbstr = wstr_to_rb_str(CP_UTF8, pRenderedValues[EvtSystemComputer].StringVal, -1);
+  rb_hash_aset(hash, ID2SYM(rb_intern("Computer")), rbstr);
+
+  if (EvtVarTypeNull != pRenderedValues[EvtSystemUserID].Type) {
+    if (ConvertSidToStringSid(pRenderedValues[EvtSystemUserID].SidVal, &pwsSid)) {
+      rbstr = rb_utf8_str_new_cstr(pwsSid);
+      rb_hash_aset(hash, ID2SYM(rb_intern("UserID")), rbstr);
+      LocalFree(pwsSid);
+    }
+  }
+
+cleanup:
+
+  if (hContext)
+    EvtClose(hContext);
+
+  if (pRenderedValues)
+    free(pRenderedValues);
+
+  return hash;
+}

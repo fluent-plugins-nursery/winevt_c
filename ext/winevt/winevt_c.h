@@ -30,6 +30,7 @@ VALUE wstr_to_rb_str(UINT cp, const WCHAR* wstr, int clen);
 VALUE render_to_rb_str(EVT_HANDLE handle, DWORD flags);
 WCHAR* get_description(EVT_HANDLE handle);
 VALUE get_values(EVT_HANDLE handle);
+VALUE render_system_event(EVT_HANDLE handle);
 
 #ifdef __cplusplus
 }
