@@ -207,6 +207,9 @@ rb_winevt_query_seek(VALUE self, VALUE bookmark_or_flag)
     case T_STRING:
       flag = get_evt_seek_flag_from_cstr(StringValueCStr(bookmark_or_flag));
       break;
+    case T_FIXNUM:
+      flag = NUM2LONG(bookmark_or_flag);
+      break;
     default:
       if (!rb_obj_is_kind_of(bookmark_or_flag, rb_cBookmark))
         rb_raise(rb_eArgError, "Expected a String or a Symbol or a Bookmark instance");
@@ -225,8 +228,9 @@ rb_winevt_query_seek(VALUE self, VALUE bookmark_or_flag)
   } else {
     TypedData_Get_Struct(self, struct WinevtQuery, &rb_winevt_query_type, winevtQuery);
     if (EvtSeek(
-          winevtQuery->query, winevtQuery->offset, NULL, winevtQuery->timeout, flag))
+          winevtQuery->query, winevtQuery->offset, NULL, winevtQuery->timeout, flag)) {
       return Qtrue;
+    }
   }
 
   return Qfalse;
@@ -283,8 +287,17 @@ void
 Init_winevt_query(VALUE rb_cEventLog)
 {
   rb_cQuery = rb_define_class_under(rb_cEventLog, "Query", rb_cObject);
-
   rb_define_alloc_func(rb_cQuery, rb_winevt_query_alloc);
+
+  rb_cFlag = rb_define_module_under(rb_cQuery, "Flag");
+
+  rb_define_const(rb_cFlag, "RelativeToFirst", LONG2NUM(EvtSeekRelativeToFirst));
+  rb_define_const(rb_cFlag, "RelativeToLast", LONG2NUM(EvtSeekRelativeToLast));
+  rb_define_const(rb_cFlag, "RelativeToCurrent", LONG2NUM(EvtSeekRelativeToCurrent));
+  rb_define_const(rb_cFlag, "RelativeToBookmark", LONG2NUM(EvtSeekRelativeToBookmark));
+  rb_define_const(rb_cFlag, "OriginMask", LONG2NUM(EvtSeekOriginMask));
+  rb_define_const(rb_cFlag, "Strict", LONG2NUM(EvtSeekStrict));
+
   rb_define_method(rb_cQuery, "initialize", rb_winevt_query_initialize, 2);
   rb_define_method(rb_cQuery, "next", rb_winevt_query_next, 0);
   rb_define_method(rb_cQuery, "seek", rb_winevt_query_seek, 1);

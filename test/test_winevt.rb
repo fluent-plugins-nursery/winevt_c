@@ -41,6 +41,10 @@ class WinevtTest < Test::Unit::TestCase
       assert_true(@query.seek("first"))
       assert_true(@query.seek(:last))
       assert_true(@query.seek("last"))
+      assert_true(@query.seek(Winevt::EventLog::Query::Flag::RelativeToLast))
+      assert_true(@query.seek(Winevt::EventLog::Query::Flag::RelativeToFirst))
+      assert_true(@query.seek(Winevt::EventLog::Query::Flag::RelativeToFirst |
+                              Winevt::EventLog::Query::Flag::Strict))
     end
 
     def test_seek_with_invalid_flag
