@@ -130,6 +130,12 @@ class WinevtTest < Test::Unit::TestCase
       rate_limit = 50
       @subscribe.rate_limit = rate_limit
       assert_equal(rate_limit, @subscribe.rate_limit)
+      assert_raise(ArgumentError) do
+        @subscribe.rate_limit = 3
+      end
+      assert_raise(ArgumentError) do
+        @subscribe.rate_limit = 33
+      end
     end
   end
 

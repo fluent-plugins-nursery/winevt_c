@@ -306,11 +306,17 @@ static VALUE
 rb_winevt_subscribe_set_rate_limit(VALUE self, VALUE rb_rate_limit)
 {
   struct WinevtSubscribe* winevtSubscribe;
+  DWORD rateLimit;
 
   TypedData_Get_Struct(
     self, struct WinevtSubscribe, &rb_winevt_subscribe_type, winevtSubscribe);
 
-  winevtSubscribe->rateLimit = NUM2INT(rb_rate_limit);
+  rateLimit = NUM2INT(rb_rate_limit);
+
+  if (rateLimit < 10 || (rateLimit % 10)) {
+    rb_raise(rb_eArgError, "Specify a multiples of 10");
+  }
+  winevtSubscribe->rateLimit = rateLimit;
 
   return Qnil;
 }
