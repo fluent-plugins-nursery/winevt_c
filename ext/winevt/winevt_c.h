@@ -16,6 +16,7 @@
 #endif /* WIN32_WINNT */
 #define _WIN32_WINNT MINIMUM_WINDOWS_VERSION
 
+#include <time.h>
 #include <winevt.h>
 #define EventQuery(object) ((struct WinevtQuery*)DATA_PTR(object))
 #define EventBookMark(object) ((struct WinevtBookmark*)DATA_PTR(object))
@@ -63,6 +64,7 @@ struct WinevtQuery
 };
 
 #define SUBSCRIBE_ARRAY_SIZE 10
+#define SUBSCRIBE_RATE_INFINITE -1
 
 struct WinevtSubscribe
 {
@@ -73,6 +75,9 @@ struct WinevtSubscribe
   DWORD count;
   DWORD flags;
   BOOL tailing;
+  DWORD rateLimit;
+  time_t lastTime;
+  DWORD currentRate;
 };
 
 void Init_winevt_query(VALUE rb_cEventLog);

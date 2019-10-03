@@ -47,6 +47,15 @@ rb_winevt_subscribe_alloc(VALUE klass)
 static VALUE
 rb_winevt_subscribe_initialize(VALUE self)
 {
+  struct WinevtSubscribe* winevtSubscribe;
+
+  TypedData_Get_Struct(
+    self, struct WinevtSubscribe, &rb_winevt_subscribe_type, winevtSubscribe);
+
+  winevtSubscribe->rateLimit = SUBSCRIBE_RATE_INFINITE;
+  winevtSubscribe->lastTime = 0;
+  winevtSubscribe->currentRate = 0;
+
   return Qnil;
 }
 
@@ -148,12 +157,25 @@ static VALUE
 rb_winevt_subscribe_next(VALUE self)
 {
   EVT_HANDLE hEvents[SUBSCRIBE_ARRAY_SIZE];
-  ULONG count;
+  ULONG count = 0;
   DWORD status = ERROR_SUCCESS;
+  ULONG currRate = 0;
+  time_t now = 0, lastTime = 0;
   struct WinevtSubscribe* winevtSubscribe;
 
   TypedData_Get_Struct(
     self, struct WinevtSubscribe, &rb_winevt_subscribe_type, winevtSubscribe);
+
+  if (winevtSubscribe->rateLimit != SUBSCRIBE_RATE_INFINITE) {
+    time(&now);
+
+    if (now <= winevtSubscribe->lastTime) {
+      currRate = winevtSubscribe->currentRate;
+      if (currRate >= winevtSubscribe->rateLimit) {
+        return Qfalse;
+      }
+    }
+  }
 
   if (!EvtNext(winevtSubscribe->subscription, SUBSCRIBE_ARRAY_SIZE,
               hEvents, INFINITE, 0, &count)) {
@@ -168,6 +190,13 @@ rb_winevt_subscribe_next(VALUE self)
     for (int i = 0; i < count; i++) {
       winevtSubscribe->hEvents[i] = hEvents[i];
       EvtUpdateBookmark(winevtSubscribe->bookmark, winevtSubscribe->hEvents[i]);
+    }
+
+    if (winevtSubscribe->rateLimit != SUBSCRIBE_RATE_INFINITE) {
+      time(&lastTime);
+      winevtSubscribe->lastTime = lastTime;
+      currRate += count;
+      winevtSubscribe->currentRate = currRate;
     }
 
     return Qtrue;
@@ -262,12 +291,39 @@ rb_winevt_subscribe_get_bookmark(VALUE self)
   return render_to_rb_str(winevtSubscribe->bookmark, EvtRenderBookmark);
 }
 
+static VALUE
+rb_winevt_subscribe_get_rate_limit(VALUE self)
+{
+  struct WinevtSubscribe* winevtSubscribe;
+
+  TypedData_Get_Struct(
+    self, struct WinevtSubscribe, &rb_winevt_subscribe_type, winevtSubscribe);
+
+  return INT2NUM(winevtSubscribe->rateLimit);
+}
+
+static VALUE
+rb_winevt_subscribe_set_rate_limit(VALUE self, VALUE rb_rate_limit)
+{
+  struct WinevtSubscribe* winevtSubscribe;
+
+  TypedData_Get_Struct(
+    self, struct WinevtSubscribe, &rb_winevt_subscribe_type, winevtSubscribe);
+
+  winevtSubscribe->rateLimit = NUM2INT(rb_rate_limit);
+
+  return Qnil;
+}
+
 void
 Init_winevt_subscribe(VALUE rb_cEventLog)
 {
   rb_cSubscribe = rb_define_class_under(rb_cEventLog, "Subscribe", rb_cObject);
 
   rb_define_alloc_func(rb_cSubscribe, rb_winevt_subscribe_alloc);
+
+  rb_define_const(rb_cSubscribe, "RATE_INFINITE", SUBSCRIBE_RATE_INFINITE);
+
   rb_define_method(rb_cSubscribe, "initialize", rb_winevt_subscribe_initialize, 0);
   rb_define_method(rb_cSubscribe, "subscribe", rb_winevt_subscribe_subscribe, -1);
   rb_define_method(rb_cSubscribe, "next", rb_winevt_subscribe_next, 0);
@@ -275,4 +331,6 @@ Init_winevt_subscribe(VALUE rb_cEventLog)
   rb_define_method(rb_cSubscribe, "bookmark", rb_winevt_subscribe_get_bookmark, 0);
   rb_define_method(rb_cSubscribe, "tail?", rb_winevt_subscribe_tail_p, 0);
   rb_define_method(rb_cSubscribe, "tail=", rb_winevt_subscribe_set_tail, 1);
+  rb_define_method(rb_cSubscribe, "rate_limit", rb_winevt_subscribe_get_rate_limit, 0);
+  rb_define_method(rb_cSubscribe, "rate_limit=", rb_winevt_subscribe_set_rate_limit, 1);
 }
