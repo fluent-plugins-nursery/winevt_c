@@ -509,6 +509,7 @@ render_system_event(EVT_HANDLE hEvent)
   DWORD dwBufferSize = 0;
   DWORD dwBufferUsed = 0;
   DWORD dwPropertyCount = 0;
+  VALUE vRenderedValues;
   PEVT_VARIANT pRenderedValues = NULL;
   WCHAR wsGuid[50];
   LPSTR pwsSid = NULL;
@@ -536,7 +537,7 @@ render_system_event(EVT_HANDLE hEvent)
                  &dwPropertyCount)) {
     if (ERROR_INSUFFICIENT_BUFFER == (status = GetLastError())) {
       dwBufferSize = dwBufferUsed;
-      pRenderedValues = (PEVT_VARIANT)malloc(dwBufferSize);
+      pRenderedValues = (PEVT_VARIANT)ALLOCV(vRenderedValues, dwBufferSize);
       if (pRenderedValues) {
         EvtRender(hContext,
                   hEvent,
@@ -546,15 +547,18 @@ render_system_event(EVT_HANDLE hEvent)
                   &dwBufferUsed,
                   &dwPropertyCount);
       } else {
-        wprintf(L"malloc failed\n");
-        status = ERROR_OUTOFMEMORY;
-        goto cleanup;
+        EvtClose(hContext);
+        rb_raise(rb_eRuntimeError,
+             "Failed to malloc memory with %lu\n", status);
       }
     }
 
     if (ERROR_SUCCESS != (status = GetLastError())) {
-      wprintf(L"EvtRender failed with %d\n", GetLastError());
-      goto cleanup;
+      EvtClose(hContext);
+      ALLOCV_END(vRenderedValues);
+
+      rb_raise(rb_eWinevtQueryError,
+               "EvtRender failed with %lu\n", status);
     }
   }
 
@@ -672,13 +676,8 @@ render_system_event(EVT_HANDLE hEvent)
     }
   }
 
-cleanup:
-
-  if (hContext)
-    EvtClose(hContext);
-
-  if (pRenderedValues)
-    free(pRenderedValues);
+  EvtClose(hContext);
+  ALLOCV_END(vRenderedValues);
 
   return hash;
 }
