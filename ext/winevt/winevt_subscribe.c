@@ -162,17 +162,20 @@ rb_winevt_subscribe_subscribe(int argc, VALUE* argv, VALUE self)
   return Qfalse;
 }
 
-BOOL rate_limit_default_check_handler(struct WinevtSubscribe *winevtSubscribe)
+BOOL
+rate_limit_default_check_handler(struct WinevtSubscribe *winevtSubscribe)
 {
   return FALSE;
 }
 
-void rate_limit_default_state_handler(struct WinevtSubscribe *winevtSubscribe,
-                                      ULONG count)
+void
+rate_limit_default_state_handler(struct WinevtSubscribe *winevtSubscribe,
+                                 ULONG count)
 {
 }
 
-BOOL rate_limit_check_handler(struct WinevtSubscribe *winevtSubscribe)
+BOOL
+rate_limit_check_handler(struct WinevtSubscribe *winevtSubscribe)
 {
   time_t now;
   ULONG currRate = 0;
@@ -192,7 +195,8 @@ BOOL rate_limit_check_handler(struct WinevtSubscribe *winevtSubscribe)
   return FALSE;
 }
 
-void rate_limit_state_handler(struct WinevtSubscribe *winevtSubscribe, ULONG count)
+void
+rate_limit_state_handler(struct WinevtSubscribe *winevtSubscribe, ULONG count)
 {
   time_t lastTime = 0;
   ULONG currRate = 0;
