@@ -77,7 +77,10 @@ struct WinevtSubscribe
   BOOL tailing;
   DWORD rateLimit;
   time_t lastTime;
+  DWORD previousRate;
   DWORD currentRate;
+  BOOL (*limit_check_handler)(struct WinevtSubscribe*);
+  void (*state_handler)(struct WinevtSubscribe*, ULONG count);
 };
 
 void Init_winevt_query(VALUE rb_cEventLog);

@@ -44,6 +44,12 @@ rb_winevt_subscribe_alloc(VALUE klass)
   return obj;
 }
 
+BOOL rate_limit_default_check_handler(struct WinevtSubscribe *winevtSubscribe);
+void rate_limit_default_state_handler(struct WinevtSubscribe *winevtSubscribe,
+                                      ULONG count);
+BOOL rate_limit_check_handler(struct WinevtSubscribe *winevtSubscribe);
+void rate_limit_state_handler(struct WinevtSubscribe *winevtSubscribe, ULONG count);
+
 static VALUE
 rb_winevt_subscribe_initialize(VALUE self)
 {
@@ -55,6 +61,9 @@ rb_winevt_subscribe_initialize(VALUE self)
   winevtSubscribe->rateLimit = SUBSCRIBE_RATE_INFINITE;
   winevtSubscribe->lastTime = 0;
   winevtSubscribe->currentRate = 0;
+
+  winevtSubscribe->limit_check_handler = rate_limit_default_check_handler;
+  winevtSubscribe->state_handler = rate_limit_default_state_handler;
 
   return Qnil;
 }
@@ -153,28 +162,61 @@ rb_winevt_subscribe_subscribe(int argc, VALUE* argv, VALUE self)
   return Qfalse;
 }
 
+BOOL rate_limit_default_check_handler(struct WinevtSubscribe *winevtSubscribe)
+{
+  return FALSE;
+}
+
+void rate_limit_default_state_handler(struct WinevtSubscribe *winevtSubscribe,
+                                      ULONG count)
+{
+}
+
+BOOL rate_limit_check_handler(struct WinevtSubscribe *winevtSubscribe)
+{
+  time_t now;
+  ULONG currRate = 0;
+
+  time(&now);
+
+  winevtSubscribe->previousRate = 0;
+
+  if (now <= winevtSubscribe->lastTime) {
+    winevtSubscribe->previousRate = winevtSubscribe->currentRate;
+    currRate = winevtSubscribe->currentRate;
+    if (currRate >= winevtSubscribe->rateLimit) {
+      return TRUE;
+    }
+  }
+
+  return FALSE;
+}
+
+void rate_limit_state_handler(struct WinevtSubscribe *winevtSubscribe, ULONG count)
+{
+  time_t lastTime = 0;
+  ULONG currRate = 0;
+
+  time(&lastTime);
+  winevtSubscribe->lastTime = lastTime;
+  currRate = winevtSubscribe->previousRate;
+  currRate += count;
+  winevtSubscribe->currentRate = currRate;
+}
+
 static VALUE
 rb_winevt_subscribe_next(VALUE self)
 {
   EVT_HANDLE hEvents[SUBSCRIBE_ARRAY_SIZE];
   ULONG count = 0;
   DWORD status = ERROR_SUCCESS;
-  ULONG currRate = 0;
-  time_t now = 0, lastTime = 0;
   struct WinevtSubscribe* winevtSubscribe;
 
   TypedData_Get_Struct(
     self, struct WinevtSubscribe, &rb_winevt_subscribe_type, winevtSubscribe);
 
-  if (winevtSubscribe->rateLimit != SUBSCRIBE_RATE_INFINITE) {
-    time(&now);
-
-    if (now <= winevtSubscribe->lastTime) {
-      currRate = winevtSubscribe->currentRate;
-      if (currRate >= winevtSubscribe->rateLimit) {
-        return Qfalse;
-      }
-    }
+  if (winevtSubscribe->limit_check_handler(winevtSubscribe)) {
+    return Qfalse;
   }
 
   if (!EvtNext(winevtSubscribe->subscription, SUBSCRIBE_ARRAY_SIZE,
@@ -192,12 +234,7 @@ rb_winevt_subscribe_next(VALUE self)
       EvtUpdateBookmark(winevtSubscribe->bookmark, winevtSubscribe->hEvents[i]);
     }
 
-    if (winevtSubscribe->rateLimit != SUBSCRIBE_RATE_INFINITE) {
-      time(&lastTime);
-      winevtSubscribe->lastTime = lastTime;
-      currRate += count;
-      winevtSubscribe->currentRate = currRate;
-    }
+    winevtSubscribe->state_handler(winevtSubscribe, count);
 
     return Qtrue;
   }
@@ -317,6 +354,11 @@ rb_winevt_subscribe_set_rate_limit(VALUE self, VALUE rb_rate_limit)
     rb_raise(rb_eArgError, "Specify a multiples of 10");
   }
   winevtSubscribe->rateLimit = rateLimit;
+
+  if (winevtSubscribe->rateLimit != SUBSCRIBE_RATE_INFINITE) {
+    winevtSubscribe->limit_check_handler = rate_limit_check_handler;
+    winevtSubscribe->state_handler = rate_limit_state_handler;
+  }
 
   return Qnil;
 }
