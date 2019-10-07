@@ -36,15 +36,19 @@ class WinevtTest < Test::Unit::TestCase
       end
     end
 
-    def test_seek
-      assert_true(@query.seek(:first))
-      assert_true(@query.seek("first"))
-      assert_true(@query.seek(:last))
-      assert_true(@query.seek("last"))
-      assert_true(@query.seek(Winevt::EventLog::Query::Flag::RelativeToLast))
-      assert_true(@query.seek(Winevt::EventLog::Query::Flag::RelativeToFirst))
-      assert_true(@query.seek(Winevt::EventLog::Query::Flag::RelativeToFirst |
-                              Winevt::EventLog::Query::Flag::Strict))
+    data("first symbol" => [true, :first],
+         "first string" => [true, "first"],
+         "last symbol" => [true, :last],
+         "last string" => [true, "last"],
+         "Flag::RelativeToLast" => [true, Winevt::EventLog::Query::Flag::RelativeToLast],
+         "Flag::RelativeToFirst" => [true, Winevt::EventLog::Query::Flag::RelativeToFirst],
+         "valid complex Flag" => [true, Winevt::EventLog::Query::Flag::RelativeToFirst |
+                                        Winevt::EventLog::Query::Flag::Strict],
+         "invalid flag" => [false, 123]
+        )
+    def test_seek(data)
+      expected, value = data
+      assert_equal(expected, @query.seek(value))
     end
 
     def test_seek_with_invalid_flag
