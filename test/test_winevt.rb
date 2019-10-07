@@ -123,6 +123,23 @@ class WinevtTest < Test::Unit::TestCase
         @subscribe.respond_to?(:each)
       end
     end
+
+    def test_rate_limit
+      assert_equal(Winevt::EventLog::Subscribe::RATE_INFINITE,
+                   @subscribe.rate_limit)
+      rate_limit = 50
+      @subscribe.rate_limit = rate_limit
+      assert_equal(rate_limit, @subscribe.rate_limit)
+      @subscribe.rate_limit = Winevt::EventLog::Subscribe::RATE_INFINITE
+      assert_equal(Winevt::EventLog::Subscribe::RATE_INFINITE,
+                   @subscribe.rate_limit)
+      assert_raise(ArgumentError) do
+        @subscribe.rate_limit = 3
+      end
+      assert_raise(ArgumentError) do
+        @subscribe.rate_limit = 33
+      end
+    end
   end
 
   class ChannelTest < self
