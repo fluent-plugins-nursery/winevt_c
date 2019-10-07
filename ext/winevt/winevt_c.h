@@ -77,7 +77,6 @@ struct WinevtSubscribe
   BOOL tailing;
   DWORD rateLimit;
   time_t lastTime;
-  DWORD previousRate;
   DWORD currentRate;
 };
 

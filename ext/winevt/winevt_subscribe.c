@@ -157,21 +157,18 @@ BOOL
 is_rate_limit_exceeded(struct WinevtSubscribe *winevtSubscribe)
 {
   time_t now;
-  ULONG currRate = 0;
 
   if (winevtSubscribe->rateLimit == SUBSCRIBE_RATE_INFINITE)
     return FALSE;
 
   time(&now);
 
-  winevtSubscribe->previousRate = 0;
-
   if (now <= winevtSubscribe->lastTime) {
-    winevtSubscribe->previousRate = winevtSubscribe->currentRate;
-    currRate = winevtSubscribe->currentRate;
-    if (currRate >= winevtSubscribe->rateLimit) {
+    if (winevtSubscribe->currentRate >= winevtSubscribe->rateLimit) {
       return TRUE;
     }
+  } else {
+    winevtSubscribe->currentRate = 0;
   }
 
   return FALSE;
@@ -181,16 +178,13 @@ void
 update_to_reflect_rate_limit_state(struct WinevtSubscribe *winevtSubscribe, ULONG count)
 {
   time_t lastTime = 0;
-  ULONG currRate = 0;
 
   if (winevtSubscribe->rateLimit == SUBSCRIBE_RATE_INFINITE)
     return;
 
   time(&lastTime);
   winevtSubscribe->lastTime = lastTime;
-  currRate = winevtSubscribe->previousRate;
-  currRate += count;
-  winevtSubscribe->currentRate = currRate;
+  winevtSubscribe->currentRate += count;
 }
 
 static VALUE
