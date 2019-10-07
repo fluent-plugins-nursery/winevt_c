@@ -154,7 +154,7 @@ rb_winevt_subscribe_subscribe(int argc, VALUE* argv, VALUE self)
 }
 
 BOOL
-rate_limit_check_handler(struct WinevtSubscribe *winevtSubscribe)
+is_rate_limit_exceeded(struct WinevtSubscribe *winevtSubscribe)
 {
   time_t now;
   ULONG currRate = 0;
@@ -178,7 +178,7 @@ rate_limit_check_handler(struct WinevtSubscribe *winevtSubscribe)
 }
 
 void
-rate_limit_state_handler(struct WinevtSubscribe *winevtSubscribe, ULONG count)
+rate_limit_state(struct WinevtSubscribe *winevtSubscribe, ULONG count)
 {
   time_t lastTime = 0;
   ULONG currRate = 0;
@@ -204,7 +204,7 @@ rb_winevt_subscribe_next(VALUE self)
   TypedData_Get_Struct(
     self, struct WinevtSubscribe, &rb_winevt_subscribe_type, winevtSubscribe);
 
-  if (rate_limit_check_handler(winevtSubscribe)) {
+  if (is_rate_limit_exceeded(winevtSubscribe)) {
     return Qfalse;
   }
 
@@ -223,7 +223,7 @@ rb_winevt_subscribe_next(VALUE self)
       EvtUpdateBookmark(winevtSubscribe->bookmark, winevtSubscribe->hEvents[i]);
     }
 
-    rate_limit_state_handler(winevtSubscribe, count);
+    rate_limit_state(winevtSubscribe, count);
 
     return Qtrue;
   }
