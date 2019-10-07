@@ -55,6 +55,7 @@ rb_winevt_subscribe_initialize(VALUE self)
   winevtSubscribe->rateLimit = SUBSCRIBE_RATE_INFINITE;
   winevtSubscribe->lastTime = 0;
   winevtSubscribe->currentRate = 0;
+  winevtSubscribe->renderAsXML = TRUE;
 
   return Qnil;
 }
@@ -226,9 +227,18 @@ rb_winevt_subscribe_next(VALUE self)
 }
 
 static VALUE
-rb_winevt_subscribe_render(EVT_HANDLE event)
+rb_winevt_subscribe_render(VALUE self, EVT_HANDLE event)
 {
-  return render_to_rb_str(event, EvtRenderEventXml);
+  struct WinevtSubscribe* winevtSubscribe;
+
+  TypedData_Get_Struct(
+    self, struct WinevtSubscribe, &rb_winevt_subscribe_type, winevtSubscribe);
+
+  if (winevtSubscribe->renderAsXML) {
+    return render_to_rb_str(event, EvtRenderEventXml);
+  } else {
+    return render_system_event(event);
+  }
 }
 
 static VALUE
@@ -279,7 +289,7 @@ rb_winevt_subscribe_each_yield(VALUE self)
 
   for (int i = 0; i < winevtSubscribe->count; i++) {
     rb_yield_values(3,
-                    rb_winevt_subscribe_render(winevtSubscribe->hEvents[i]),
+                    rb_winevt_subscribe_render(self, winevtSubscribe->hEvents[i]),
                     rb_winevt_subscribe_message(winevtSubscribe->hEvents[i]),
                     rb_winevt_subscribe_string_inserts(winevtSubscribe->hEvents[i]));
   }
@@ -344,6 +354,30 @@ rb_winevt_subscribe_set_rate_limit(VALUE self, VALUE rb_rate_limit)
   return Qnil;
 }
 
+static VALUE
+rb_winevt_subscribe_render_as_xml_p(VALUE self)
+{
+  struct WinevtSubscribe* winevtSubscribe;
+
+  TypedData_Get_Struct(
+    self, struct WinevtSubscribe, &rb_winevt_subscribe_type, winevtSubscribe);
+
+  return winevtSubscribe->renderAsXML ? Qtrue : Qfalse;
+}
+
+static VALUE
+rb_winevt_subscribe_set_render_as_xml(VALUE self, VALUE rb_render_as_xml)
+{
+  struct WinevtSubscribe* winevtSubscribe;
+
+  TypedData_Get_Struct(
+    self, struct WinevtSubscribe, &rb_winevt_subscribe_type, winevtSubscribe);
+
+  winevtSubscribe->renderAsXML = RTEST(rb_render_as_xml);
+
+  return Qnil;
+}
+
 void
 Init_winevt_subscribe(VALUE rb_cEventLog)
 {
@@ -362,4 +396,6 @@ Init_winevt_subscribe(VALUE rb_cEventLog)
   rb_define_method(rb_cSubscribe, "tail=", rb_winevt_subscribe_set_tail, 1);
   rb_define_method(rb_cSubscribe, "rate_limit", rb_winevt_subscribe_get_rate_limit, 0);
   rb_define_method(rb_cSubscribe, "rate_limit=", rb_winevt_subscribe_set_rate_limit, 1);
+  rb_define_method(rb_cSubscribe, "render_as_xml?", rb_winevt_subscribe_render_as_xml_p, 0);
+  rb_define_method(rb_cSubscribe, "render_as_xml=", rb_winevt_subscribe_set_render_as_xml, 1);
 }

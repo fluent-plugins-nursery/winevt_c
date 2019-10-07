@@ -148,6 +148,12 @@ class WinevtTest < Test::Unit::TestCase
         @subscribe.rate_limit = 33
       end
     end
+
+    def test_render_as_xml
+      assert_true(@subscribe.render_as_xml?)
+      @subscribe.render_as_xml = false
+      assert_false(@subscribe.render_as_xml?)
+    end
   end
 
   class ChannelTest < self

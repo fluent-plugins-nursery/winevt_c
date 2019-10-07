@@ -80,6 +80,7 @@ struct WinevtSubscribe
   DWORD rateLimit;
   time_t lastTime;
   DWORD currentRate;
+  BOOL renderAsXML;
 };
 
 void Init_winevt_query(VALUE rb_cEventLog);
