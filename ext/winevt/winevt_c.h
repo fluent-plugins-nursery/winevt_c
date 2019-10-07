@@ -63,6 +63,7 @@ struct WinevtQuery
   ULONG count;
   LONG offset;
   LONG timeout;
+  BOOL renderAsXML;
 };
 
 #define SUBSCRIBE_ARRAY_SIZE 10

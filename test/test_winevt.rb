@@ -89,6 +89,12 @@ class WinevtTest < Test::Unit::TestCase
       assert_true(@bookmark.update(@query))
       assert(@bookmark.render)
     end
+
+    def test_render_as_xml
+      assert_true(@query.render_as_xml?)
+      @query.render_as_xml = false
+      assert_false(@query.render_as_xml?)
+    end
   end
 
   class SubscribeTest < self
