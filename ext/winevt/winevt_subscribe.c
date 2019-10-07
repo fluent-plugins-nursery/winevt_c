@@ -44,9 +44,6 @@ rb_winevt_subscribe_alloc(VALUE klass)
   return obj;
 }
 
-BOOL rate_limit_default_check_handler(struct WinevtSubscribe *winevtSubscribe);
-void rate_limit_default_state_handler(struct WinevtSubscribe *winevtSubscribe,
-                                      ULONG count);
 BOOL rate_limit_check_handler(struct WinevtSubscribe *winevtSubscribe);
 void rate_limit_state_handler(struct WinevtSubscribe *winevtSubscribe, ULONG count);
 
@@ -62,8 +59,8 @@ rb_winevt_subscribe_initialize(VALUE self)
   winevtSubscribe->lastTime = 0;
   winevtSubscribe->currentRate = 0;
 
-  winevtSubscribe->limit_check_handler = rate_limit_default_check_handler;
-  winevtSubscribe->state_handler = rate_limit_default_state_handler;
+  winevtSubscribe->limit_check_handler = rate_limit_check_handler;
+  winevtSubscribe->state_handler = rate_limit_state_handler;
 
   return Qnil;
 }
@@ -163,22 +160,13 @@ rb_winevt_subscribe_subscribe(int argc, VALUE* argv, VALUE self)
 }
 
 BOOL
-rate_limit_default_check_handler(struct WinevtSubscribe *winevtSubscribe)
-{
-  return FALSE;
-}
-
-void
-rate_limit_default_state_handler(struct WinevtSubscribe *winevtSubscribe,
-                                 ULONG count)
-{
-}
-
-BOOL
 rate_limit_check_handler(struct WinevtSubscribe *winevtSubscribe)
 {
   time_t now;
   ULONG currRate = 0;
+
+  if (winevtSubscribe->rateLimit == SUBSCRIBE_RATE_INFINITE)
+    return FALSE;
 
   time(&now);
 
@@ -200,6 +188,9 @@ rate_limit_state_handler(struct WinevtSubscribe *winevtSubscribe, ULONG count)
 {
   time_t lastTime = 0;
   ULONG currRate = 0;
+
+  if (winevtSubscribe->rateLimit == SUBSCRIBE_RATE_INFINITE)
+    return;
 
   time(&lastTime);
   winevtSubscribe->lastTime = lastTime;
@@ -354,13 +345,10 @@ rb_winevt_subscribe_set_rate_limit(VALUE self, VALUE rb_rate_limit)
 
   rateLimit = NUM2LONG(rb_rate_limit);
 
-  if (rateLimit == SUBSCRIBE_RATE_INFINITE) {
-    winevtSubscribe->rateLimit = rateLimit;
-
-    winevtSubscribe->limit_check_handler = rate_limit_default_check_handler;
-    winevtSubscribe->state_handler = rate_limit_default_state_handler;
-  } else if (rateLimit < 10 || (rateLimit % 10)) {
-    rb_raise(rb_eArgError, "Specify a multiples of 10 or RATE_INFINITE constant");
+  if ((rateLimit != SUBSCRIBE_RATE_INFINITE) &&
+      (rateLimit < 10 || rateLimit % 10)) {
+    rb_raise(rb_eArgError,
+             "Specify a multiples of 10 or RATE_INFINITE constant");
   } else {
     winevtSubscribe->rateLimit = rateLimit;
 
