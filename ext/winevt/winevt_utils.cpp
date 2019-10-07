@@ -563,14 +563,14 @@ render_system_event(EVT_HANDLE hEvent)
   }
 
   rbstr = wstr_to_rb_str(CP_UTF8, pRenderedValues[EvtSystemProviderName].StringVal, -1);
-  rb_hash_aset(hash, ID2SYM(rb_intern("ProviderName")), rbstr);
+  rb_hash_aset(hash, rb_str_new2("ProviderName"), rbstr);
   if (NULL != pRenderedValues[EvtSystemProviderGuid].GuidVal) {
     const GUID* Guid = pRenderedValues[EvtSystemProviderGuid].GuidVal;
     StringFromGUID2(*Guid, wsGuid, _countof(wsGuid));
     rbstr = wstr_to_rb_str(CP_UTF8, wsGuid, -1);
-    rb_hash_aset(hash, ID2SYM(rb_intern("ProviderGuid")), rbstr);
+    rb_hash_aset(hash, rb_str_new2("ProviderGuid"), rbstr);
   } else {
-    rb_hash_aset(hash, ID2SYM(rb_intern("ProviderGuid")), Qnil);
+    rb_hash_aset(hash, rb_str_new2("ProviderGuid"), Qnil);
   }
 
   EventID = pRenderedValues[EvtSystemEventID].UInt16Val;
@@ -578,32 +578,32 @@ render_system_event(EVT_HANDLE hEvent)
     EventID = MAKELONG(pRenderedValues[EvtSystemEventID].UInt16Val,
                        pRenderedValues[EvtSystemQualifiers].UInt16Val);
   }
-  rb_hash_aset(hash, ID2SYM(rb_intern("EventID")), LONG2NUM(EventID));
+  rb_hash_aset(hash, rb_str_new2("EventID"), LONG2NUM(EventID));
 
   rb_hash_aset(hash,
-               ID2SYM(rb_intern("Version")),
+               rb_str_new2("Version"),
                (EvtVarTypeNull == pRenderedValues[EvtSystemVersion].Type)
                  ? INT2NUM(0)
                  : INT2NUM(pRenderedValues[EvtSystemVersion].ByteVal));
   rb_hash_aset(hash,
-               ID2SYM(rb_intern("Level")),
+               rb_str_new2("Level"),
                (EvtVarTypeNull == pRenderedValues[EvtSystemLevel].Type)
                  ? INT2NUM(0)
                  : INT2NUM(pRenderedValues[EvtSystemLevel].ByteVal));
   rb_hash_aset(hash,
-               ID2SYM(rb_intern("Task")),
+               rb_str_new2("Task"),
                (EvtVarTypeNull == pRenderedValues[EvtSystemTask].Type)
                  ? INT2NUM(0)
                  : INT2NUM(pRenderedValues[EvtSystemTask].UInt16Val));
   rb_hash_aset(hash,
-               ID2SYM(rb_intern("Opcode")),
+               rb_str_new2("Opcode"),
                (EvtVarTypeNull == pRenderedValues[EvtSystemOpcode].Type)
                  ? INT2NUM(0)
                  : INT2NUM(pRenderedValues[EvtSystemOpcode].ByteVal));
   _snprintf_s(buffer, _countof(buffer), _TRUNCATE,
               "0x%llx", pRenderedValues[EvtSystemKeywords].UInt64Val);
   rb_hash_aset(hash,
-               ID2SYM(rb_intern("Keywords")),
+               rb_str_new2("Keywords"),
                (EvtVarTypeNull == pRenderedValues[EvtSystemKeywords].Type)
                  ? Qnil
                  : rb_str_new2(buffer));
@@ -628,7 +628,7 @@ render_system_event(EVT_HANDLE hEvent)
               st.wSecond,
               ullNanoseconds);
   rb_hash_aset(hash,
-               ID2SYM(rb_intern("TimeCreated")),
+               rb_str_new2("TimeCreated"),
                (EvtVarTypeNull == pRenderedValues[EvtSystemKeywords].Type)
                  ? Qnil
                  : rb_str_new2(buffer));
@@ -638,7 +638,7 @@ render_system_event(EVT_HANDLE hEvent)
               "%llu",
               pRenderedValues[EvtSystemEventRecordId].UInt64Val);
   rb_hash_aset(hash,
-               ID2SYM(rb_intern("EventRecordID")),
+               rb_str_new2("EventRecordID"),
                (EvtVarTypeNull == pRenderedValues[EvtSystemEventRecordId].UInt64Val)
                  ? Qnil
                  : rb_str_new2(buffer));
@@ -647,31 +647,31 @@ render_system_event(EVT_HANDLE hEvent)
     const GUID* Guid = pRenderedValues[EvtSystemActivityID].GuidVal;
     StringFromGUID2(*Guid, wsGuid, _countof(wsGuid));
     rbstr = wstr_to_rb_str(CP_UTF8, wsGuid, -1);
-    rb_hash_aset(hash, ID2SYM(rb_intern("ActivityID")), rbstr);
+    rb_hash_aset(hash, rb_str_new2("ActivityID"), rbstr);
   }
 
   if (EvtVarTypeNull != pRenderedValues[EvtSystemRelatedActivityID].Type) {
     const GUID* Guid = pRenderedValues[EvtSystemRelatedActivityID].GuidVal;
     StringFromGUID2(*Guid, wsGuid, _countof(wsGuid));
     rbstr = wstr_to_rb_str(CP_UTF8, wsGuid, -1);
-    rb_hash_aset(hash, ID2SYM(rb_intern("RelatedActivityID")), rbstr);
+    rb_hash_aset(hash, rb_str_new2("RelatedActivityID"), rbstr);
   }
 
   rb_hash_aset(hash,
-               ID2SYM(rb_intern("ProcessID")),
+               rb_str_new2("ProcessID"),
                UINT2NUM(pRenderedValues[EvtSystemProcessID].UInt32Val));
   rb_hash_aset(hash,
-               ID2SYM(rb_intern("ThreadID")),
+               rb_str_new2("ThreadID"),
                UINT2NUM(pRenderedValues[EvtSystemThreadID].UInt32Val));
   rbstr = wstr_to_rb_str(CP_UTF8, pRenderedValues[EvtSystemChannel].StringVal, -1);
-  rb_hash_aset(hash, ID2SYM(rb_intern("Channel")), rbstr);
+  rb_hash_aset(hash, rb_str_new2("Channel"), rbstr);
   rbstr = wstr_to_rb_str(CP_UTF8, pRenderedValues[EvtSystemComputer].StringVal, -1);
-  rb_hash_aset(hash, ID2SYM(rb_intern("Computer")), rbstr);
+  rb_hash_aset(hash, rb_str_new2("Computer"), rbstr);
 
   if (EvtVarTypeNull != pRenderedValues[EvtSystemUserID].Type) {
     if (ConvertSidToStringSid(pRenderedValues[EvtSystemUserID].SidVal, &pwsSid)) {
       rbstr = rb_utf8_str_new_cstr(pwsSid);
-      rb_hash_aset(hash, ID2SYM(rb_intern("UserID")), rbstr);
+      rb_hash_aset(hash, rb_str_new2("UserID"), rbstr);
       LocalFree(pwsSid);
     }
   }
