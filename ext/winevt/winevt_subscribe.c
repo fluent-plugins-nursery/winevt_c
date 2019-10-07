@@ -44,9 +44,6 @@ rb_winevt_subscribe_alloc(VALUE klass)
   return obj;
 }
 
-BOOL rate_limit_check_handler(struct WinevtSubscribe *winevtSubscribe);
-void rate_limit_state_handler(struct WinevtSubscribe *winevtSubscribe, ULONG count);
-
 static VALUE
 rb_winevt_subscribe_initialize(VALUE self)
 {
@@ -58,9 +55,6 @@ rb_winevt_subscribe_initialize(VALUE self)
   winevtSubscribe->rateLimit = SUBSCRIBE_RATE_INFINITE;
   winevtSubscribe->lastTime = 0;
   winevtSubscribe->currentRate = 0;
-
-  winevtSubscribe->limit_check_handler = rate_limit_check_handler;
-  winevtSubscribe->state_handler = rate_limit_state_handler;
 
   return Qnil;
 }
@@ -210,7 +204,7 @@ rb_winevt_subscribe_next(VALUE self)
   TypedData_Get_Struct(
     self, struct WinevtSubscribe, &rb_winevt_subscribe_type, winevtSubscribe);
 
-  if (winevtSubscribe->limit_check_handler(winevtSubscribe)) {
+  if (rate_limit_check_handler(winevtSubscribe)) {
     return Qfalse;
   }
 
@@ -229,7 +223,7 @@ rb_winevt_subscribe_next(VALUE self)
       EvtUpdateBookmark(winevtSubscribe->bookmark, winevtSubscribe->hEvents[i]);
     }
 
-    winevtSubscribe->state_handler(winevtSubscribe, count);
+    rate_limit_state_handler(winevtSubscribe, count);
 
     return Qtrue;
   }
@@ -351,10 +345,8 @@ rb_winevt_subscribe_set_rate_limit(VALUE self, VALUE rb_rate_limit)
              "Specify a multiples of 10 or RATE_INFINITE constant");
   } else {
     winevtSubscribe->rateLimit = rateLimit;
-
-    winevtSubscribe->limit_check_handler = rate_limit_check_handler;
-    winevtSubscribe->state_handler = rate_limit_state_handler;
   }
+
   return Qnil;
 }
 
