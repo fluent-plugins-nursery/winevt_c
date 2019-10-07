@@ -178,7 +178,7 @@ is_rate_limit_exceeded(struct WinevtSubscribe *winevtSubscribe)
 }
 
 void
-rate_limit_state(struct WinevtSubscribe *winevtSubscribe, ULONG count)
+update_to_reflect_rate_limit_state(struct WinevtSubscribe *winevtSubscribe, ULONG count)
 {
   time_t lastTime = 0;
   ULONG currRate = 0;
@@ -223,7 +223,7 @@ rb_winevt_subscribe_next(VALUE self)
       EvtUpdateBookmark(winevtSubscribe->bookmark, winevtSubscribe->hEvents[i]);
     }
 
-    rate_limit_state(winevtSubscribe, count);
+    update_to_reflect_rate_limit_state(winevtSubscribe, count);
 
     return Qtrue;
   }
