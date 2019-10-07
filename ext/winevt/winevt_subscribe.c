@@ -352,18 +352,21 @@ rb_winevt_subscribe_set_rate_limit(VALUE self, VALUE rb_rate_limit)
   TypedData_Get_Struct(
     self, struct WinevtSubscribe, &rb_winevt_subscribe_type, winevtSubscribe);
 
-  rateLimit = NUM2INT(rb_rate_limit);
+  rateLimit = NUM2LONG(rb_rate_limit);
 
-  if (rateLimit < 10 || (rateLimit % 10)) {
-    rb_raise(rb_eArgError, "Specify a multiples of 10");
-  }
-  winevtSubscribe->rateLimit = rateLimit;
+  if (rateLimit == SUBSCRIBE_RATE_INFINITE) {
+    winevtSubscribe->rateLimit = rateLimit;
 
-  if (winevtSubscribe->rateLimit != SUBSCRIBE_RATE_INFINITE) {
+    winevtSubscribe->limit_check_handler = rate_limit_default_check_handler;
+    winevtSubscribe->state_handler = rate_limit_default_state_handler;
+  } else if (rateLimit < 10 || (rateLimit % 10)) {
+    rb_raise(rb_eArgError, "Specify a multiples of 10 or RATE_INFINITE constant");
+  } else {
+    winevtSubscribe->rateLimit = rateLimit;
+
     winevtSubscribe->limit_check_handler = rate_limit_check_handler;
     winevtSubscribe->state_handler = rate_limit_state_handler;
   }
-
   return Qnil;
 }
 
