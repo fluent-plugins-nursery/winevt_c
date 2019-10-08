@@ -36,6 +36,7 @@ VALUE get_values(EVT_HANDLE handle);
 #endif /* __cplusplus */
 
 VALUE rb_cQuery;
+VALUE rb_cFlag;
 VALUE rb_cChannel;
 VALUE rb_cBookmark;
 VALUE rb_cSubscribe;
