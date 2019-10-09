@@ -564,6 +564,9 @@ render_system_event(EVT_HANDLE hEvent)
     }
   }
 
+  // EVT_VARIANT value with EvtRenderContextSystem will be decomposed
+  // as the following enum definition:
+  // https://docs.microsoft.com/en-us/windows/win32/api/winevt/ne-winevt-evt_system_property_id
   rbstr = wstr_to_rb_str(CP_UTF8, pRenderedValues[EvtSystemProviderName].StringVal, -1);
   rb_hash_aset(hash, rb_str_new2("ProviderName"), rbstr);
   if (NULL != pRenderedValues[EvtSystemProviderGuid].GuidVal) {
