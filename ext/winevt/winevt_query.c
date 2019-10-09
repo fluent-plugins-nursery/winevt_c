@@ -67,6 +67,7 @@ rb_winevt_query_initialize(VALUE self, VALUE channel, VALUE xpath)
     NULL, evtChannel, evtXPath, EvtQueryChannelPath | EvtQueryTolerateQueryErrors);
   winevtQuery->offset = 0L;
   winevtQuery->timeout = 0L;
+  winevtQuery->renderAsXML = TRUE;
 
   ALLOCV_END(wchannelBuf);
   ALLOCV_END(wpathBuf);
@@ -148,9 +149,17 @@ rb_winevt_query_next(VALUE self)
 }
 
 static VALUE
-rb_winevt_query_render(EVT_HANDLE event)
+rb_winevt_query_render(VALUE self, EVT_HANDLE event)
 {
-  return render_to_rb_str(event, EvtRenderEventXml);
+  struct WinevtQuery* winevtQuery;
+
+  TypedData_Get_Struct(self, struct WinevtQuery, &rb_winevt_query_type, winevtQuery);
+
+  if (winevtQuery->renderAsXML) {
+    return render_to_rb_str(event, EvtRenderEventXml);
+  } else {
+    return render_system_event(event);
+  }
 }
 
 static VALUE
@@ -264,7 +273,7 @@ rb_winevt_query_each_yield(VALUE self)
 
   for (int i = 0; i < winevtQuery->count; i++) {
     rb_yield_values(3,
-                    rb_winevt_query_render(winevtQuery->hEvents[i]),
+                    rb_winevt_query_render(self, winevtQuery->hEvents[i]),
                     rb_winevt_query_message(winevtQuery->hEvents[i]),
                     rb_winevt_query_string_inserts(winevtQuery->hEvents[i]));
   }
@@ -279,6 +288,28 @@ rb_winevt_query_each(VALUE self)
   while (rb_winevt_query_next(self)) {
     rb_ensure(rb_winevt_query_each_yield, self, rb_winevt_query_close_handle, self);
   }
+
+  return Qnil;
+}
+
+static VALUE
+rb_winevt_query_render_as_xml_p(VALUE self)
+{
+  struct WinevtQuery* winevtQuery;
+
+  TypedData_Get_Struct(self, struct WinevtQuery, &rb_winevt_query_type, winevtQuery);
+
+  return winevtQuery->renderAsXML ? Qtrue : Qfalse;
+}
+
+static VALUE
+rb_winevt_query_set_render_as_xml(VALUE self, VALUE rb_render_as_xml)
+{
+  struct WinevtQuery* winevtQuery;
+
+  TypedData_Get_Struct(self, struct WinevtQuery, &rb_winevt_query_type, winevtQuery);
+
+  winevtQuery->renderAsXML = RTEST(rb_render_as_xml);
 
   return Qnil;
 }
@@ -306,4 +337,6 @@ Init_winevt_query(VALUE rb_cEventLog)
   rb_define_method(rb_cQuery, "timeout", rb_winevt_query_get_timeout, 0);
   rb_define_method(rb_cQuery, "timeout=", rb_winevt_query_set_timeout, 1);
   rb_define_method(rb_cQuery, "each", rb_winevt_query_each, 0);
+  rb_define_method(rb_cQuery, "render_as_xml?", rb_winevt_query_render_as_xml_p, 0);
+  rb_define_method(rb_cQuery, "render_as_xml=", rb_winevt_query_set_render_as_xml, 1);
 }
