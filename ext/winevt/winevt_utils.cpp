@@ -535,7 +535,8 @@ render_system_event(EVT_HANDLE hEvent)
                  pRenderedValues,
                  &dwBufferUsed,
                  &dwPropertyCount)) {
-    if (ERROR_INSUFFICIENT_BUFFER == (status = GetLastError())) {
+    status = GetLastError();
+    if (ERROR_INSUFFICIENT_BUFFER == status) {
       dwBufferSize = dwBufferUsed;
       pRenderedValues = (PEVT_VARIANT)ALLOCV(vRenderedValues, dwBufferSize);
       if (pRenderedValues) {
@@ -553,7 +554,8 @@ render_system_event(EVT_HANDLE hEvent)
       }
     }
 
-    if (ERROR_SUCCESS != (status = GetLastError())) {
+    status = GetLastError();
+    if (ERROR_SUCCESS != status) {
       EvtClose(hContext);
       ALLOCV_END(vRenderedValues);
 
