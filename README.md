@@ -24,6 +24,10 @@ Or install it yourself as:
 
     $ ridk exec gem install winevt_c
 
+## Fat gems building
+
+* Docker is needed to build fat gem due to rake-compiler-dock uses docker container.
+
 ## Usage
 
 Usage examples are found in [example directory](example).
