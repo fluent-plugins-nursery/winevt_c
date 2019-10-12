@@ -27,7 +27,7 @@ desc 'Build gems for Windows per rake-compiler-dock'
 task 'gem:native' do
   # See RUBY_CC_VERSION in https://github.com/rake-compiler/rake-compiler-dock/blob/master/Dockerfile.mri
   RakeCompilerDock.sh <<-EOS
-    bundle --local
+    gem install bundler --no-doc && bundle --local
     bundle exec rake cross native gem RUBY_CC_VERSION=2.4.0:2.5.0:2.6.0
 EOS
 end
