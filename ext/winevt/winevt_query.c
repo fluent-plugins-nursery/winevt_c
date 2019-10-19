@@ -36,6 +36,14 @@ rb_winevt_query_alloc(VALUE klass)
   return obj;
 }
 
+/*
+ * Initalize Query class.
+ *
+ * @param channel [String] Querying EventLog channel.
+ * @param xpath [String] Querying XPath.
+ * @return [Query]
+ *
+ */
 static VALUE
 rb_winevt_query_initialize(VALUE self, VALUE channel, VALUE xpath)
 {
@@ -75,8 +83,13 @@ rb_winevt_query_initialize(VALUE self, VALUE channel, VALUE xpath)
   return Qnil;
 }
 
+/*
+ * This function returns querying event offset.
+ *
+ * @return [Integer]
+ */
 static VALUE
-rb_winevt_query_get_offset(VALUE self, VALUE offset)
+rb_winevt_query_get_offset(VALUE self)
 {
   struct WinevtQuery* winevtQuery;
 
@@ -85,6 +98,11 @@ rb_winevt_query_get_offset(VALUE self, VALUE offset)
   return LONG2NUM(winevtQuery->offset);
 }
 
+/*
+ * This function specifies querying event offset.
+ *
+ * @param offset [Integer] offset value
+ */
 static VALUE
 rb_winevt_query_set_offset(VALUE self, VALUE offset)
 {
@@ -97,8 +115,13 @@ rb_winevt_query_set_offset(VALUE self, VALUE offset)
   return Qnil;
 }
 
+/*
+ * This function returns timeout value.
+ *
+ * @return [Integer]
+ */
 static VALUE
-rb_winevt_query_get_timeout(VALUE self, VALUE timeout)
+rb_winevt_query_get_timeout(VALUE self)
 {
   struct WinevtQuery* winevtQuery;
 
@@ -107,6 +130,11 @@ rb_winevt_query_get_timeout(VALUE self, VALUE timeout)
   return LONG2NUM(winevtQuery->timeout);
 }
 
+/*
+ * This function specifies timeout value.
+ *
+ * @param timeout [Integer] timeout value
+ */
 static VALUE
 rb_winevt_query_set_timeout(VALUE self, VALUE timeout)
 {
@@ -119,6 +147,11 @@ rb_winevt_query_set_timeout(VALUE self, VALUE timeout)
   return Qnil;
 }
 
+/*
+ * This function processes consuming Windows EventLog operation to the
+ * next values.
+ *
+ */
 static VALUE
 rb_winevt_query_next(VALUE self)
 {
@@ -202,6 +235,12 @@ get_evt_seek_flag_from_cstr(char* flag_str)
   return 0;
 }
 
+/*
+ * This function specify seek strategy.
+ *
+ * @param bookmark_or_flag [Bookmark|Query::Flag]
+ * @return [Boolean]
+ */
 static VALUE
 rb_winevt_query_seek(VALUE self, VALUE bookmark_or_flag)
 {
@@ -280,6 +319,12 @@ rb_winevt_query_each_yield(VALUE self)
   return Qnil;
 }
 
+/*
+ * Enumerate to obtain Windows EventLog contains.
+ *
+ * @yield ([String],[String],[String])
+ *
+ */
 static VALUE
 rb_winevt_query_each(VALUE self)
 {
@@ -292,6 +337,11 @@ rb_winevt_query_each(VALUE self)
   return Qnil;
 }
 
+/*
+ * This function returns whether render as xml or not.
+ *
+ * @return [Boolean]
+ */
 static VALUE
 rb_winevt_query_render_as_xml_p(VALUE self)
 {
@@ -302,6 +352,11 @@ rb_winevt_query_render_as_xml_p(VALUE self)
   return winevtQuery->renderAsXML ? Qtrue : Qfalse;
 }
 
+/*
+ * This function specifies whether render as xml or not.
+ *
+ * @param rb_render_as_xml [Boolean]
+ */
 static VALUE
 rb_winevt_query_set_render_as_xml(VALUE self, VALUE rb_render_as_xml)
 {
