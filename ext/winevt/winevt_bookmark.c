@@ -1,5 +1,22 @@
 #include <winevt_c.h>
 
+/*
+ * Document-class: Winevt::EventLog::Bookmark
+ *
+ * Bookmark for querying/ subscribing Windows EventLog progress.
+ *
+ * @example
+ *  require 'winevt'
+ *
+ *  @query = Winevt::EventLog::Query.new("Application", "*[System[(Level <= 3) and TimeCreated[timediff(@SystemTime) <= 86400000]]]")
+ *  @bookmark = Winevt::EventLog::Bookmark.new
+ *  @query.each do |xml|
+ *    @bookmark.update(@query)
+ *  end
+ *
+ *  puts @bookmark.render
+ */
+
 static void bookmark_free(void* ptr);
 
 static const rb_data_type_t rb_winevt_bookmark_type = { "winevt/bookmark",

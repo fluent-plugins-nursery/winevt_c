@@ -1,5 +1,29 @@
 #include <winevt_c.h>
 
+/*
+ * Document-class: Winevt::EventLog::Subscribe
+ *
+ * Subscribe Windows EventLog channel.
+ *
+ * @example
+ *  require 'winevt'
+ *
+ *  @subscribe = Winevt::EventLog::Subscribe.new
+ *  @subscribe.tail = true
+ *  @subscribe.rate_limit = 80
+ *  @subscribe.subscribe(
+ *    "Application", "*[System[(Level <= 4) and TimeCreated[timediff(@SystemTime) <= 86400000]]]"
+ *  )
+ *  while true do
+ *    @subscribe.each do |eventlog, message, string_inserts|
+ *      puts ({eventlog: eventlog, data: message})
+ *    end
+ *    sleep(0.1)
+ *  end
+ *
+ * @see: https://docs.microsoft.com/en-us/windows/win32/api/winevt/nf-winevt-evtsubscribe
+ */
+
 static void subscribe_free(void* ptr);
 
 static const rb_data_type_t rb_winevt_subscribe_type = { "winevt/subscribe",

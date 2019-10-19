@@ -1,5 +1,12 @@
 #include <winevt_c.h>
 
+/*
+ * Document-class: Winevt::EventLog::Channel
+ *
+ * Retrieve Windows EventLog channel name.
+ *
+ */
+
 static void channel_free(void* ptr);
 
 static const rb_data_type_t rb_winevt_channel_type = { "winevt/channel",

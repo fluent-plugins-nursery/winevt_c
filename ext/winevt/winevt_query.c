@@ -1,5 +1,20 @@
 #include <winevt_c.h>
 
+/*
+ * Document-class: Winevt::EventLog::Query
+ *
+ * Query Windows EventLog channel.
+ *
+ * @example
+ *  require 'winevt'
+ *
+ *  @query = Winevt::EventLog::Query.new("Application", "*[System[(Level <= 3) and TimeCreated[timediff(@SystemTime) <= 86400000]]]")
+ *
+ *  @query.each do |eventlog, message, string_inserts|
+ *    puts ({eventlog: eventlog, data: message})
+ *  end
+ */
+
 static void query_free(void* ptr);
 
 static const rb_data_type_t rb_winevt_query_type = { "winevt/query",
