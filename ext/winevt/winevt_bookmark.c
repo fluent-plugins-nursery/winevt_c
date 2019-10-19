@@ -32,6 +32,14 @@ rb_winevt_bookmark_alloc(VALUE klass)
   return obj;
 }
 
+/*
+ * Initalize Bookmark class. Receive XML string or nil.
+ *
+ * @overload initailize(options={})
+ *   @option options [String] XML rendered Bookmark string.
+ * @return [Bookmark]
+ *
+ */
 static VALUE
 rb_winevt_bookmark_initialize(int argc, VALUE* argv, VALUE self)
 {
@@ -68,6 +76,12 @@ rb_winevt_bookmark_initialize(int argc, VALUE* argv, VALUE self)
   return Qnil;
 }
 
+/*
+ * This function updates bookmark and returns Bookmark instance.
+ *
+ * @param event [Query]
+ * @return [Bookmark]
+ */
 static VALUE
 rb_winevt_bookmark_update(VALUE self, VALUE event)
 {
@@ -86,6 +100,12 @@ rb_winevt_bookmark_update(VALUE self, VALUE event)
   return Qtrue;
 }
 
+
+/*
+ * This function renders bookmark class content.
+ *
+ * @return [String]
+ */
 static VALUE
 rb_winevt_bookmark_render(VALUE self)
 {
