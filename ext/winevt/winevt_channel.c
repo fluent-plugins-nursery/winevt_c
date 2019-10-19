@@ -32,12 +32,24 @@ rb_winevt_channel_alloc(VALUE klass)
   return obj;
 }
 
+/*
+ * Initalize Channel class.
+ *
+ * @return [Channel]
+ *
+ */
 static VALUE
 rb_winevt_channel_initialize(VALUE klass)
 {
   return Qnil;
 }
 
+/*
+ * Enumerate Windows EventLog channels
+ *
+ * @yield ([String])
+ *
+ */
 static VALUE
 rb_winevt_channel_each(VALUE self)
 {
