@@ -5,6 +5,14 @@
  *
  * Retrieve Windows EventLog channel name.
  *
+ * @example
+ *  require 'winevt'
+ *  channels = []
+ *  @channel = Winevt::EventLog::Channel.new
+ *  @channel.each do |channel|
+ *    channels << channel
+ *  end
+ *  print channels
  */
 
 static void channel_free(void* ptr);
