@@ -91,7 +91,7 @@ rb_winevt_subscribe_initialize(VALUE self)
 }
 
 /*
- * This function returns whether tailing or not.
+ * This function specifies whether tailing or not.
  *
  * @param rb_tailing_p [Boolean]
  */
