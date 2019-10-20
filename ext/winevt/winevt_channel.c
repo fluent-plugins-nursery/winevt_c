@@ -62,7 +62,7 @@ rb_winevt_channel_initialize(VALUE klass)
 /*
  * Enumerate Windows EventLog channels
  *
- * @yield ([String])
+ * @yield (String)
  *
  */
 static VALUE
