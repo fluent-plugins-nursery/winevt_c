@@ -385,6 +385,7 @@ rb_winevt_subscribe_get_bookmark(VALUE self)
 /*
  * This function returns rate limit value.
  *
+ * @since 0.6.0
  * @return [Integer]
  */
 static VALUE
@@ -401,6 +402,7 @@ rb_winevt_subscribe_get_rate_limit(VALUE self)
 /*
  * This function specifies rate limit value.
  *
+ * @since 0.6.0
  * @param rb_rate_limit [Integer] rate_limit value
  */
 static VALUE
@@ -428,6 +430,7 @@ rb_winevt_subscribe_set_rate_limit(VALUE self, VALUE rb_rate_limit)
 /*
  * This function returns whether render as xml or not.
  *
+ * @since 0.6.0
  * @return [Boolean]
  */
 static VALUE
@@ -444,6 +447,7 @@ rb_winevt_subscribe_render_as_xml_p(VALUE self)
 /*
  * This function specifies whether render as xml or not.
  *
+ * @since 0.6.0
  * @param rb_render_as_xml [Boolean]
  */
 static VALUE

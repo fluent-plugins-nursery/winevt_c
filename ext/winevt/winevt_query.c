@@ -394,31 +394,37 @@ Init_winevt_query(VALUE rb_cEventLog)
 
   /*
    * EVT_SEEK_FLAGS enumeration: EvtSeekRelativeToFirst
+   * @since 0.6.0
    * @see https://msdn.microsoft.com/en-us/windows/desktop/aa385575#EvtSeekRelativeToFirst
    */
   rb_define_const(rb_cFlag, "RelativeToFirst", LONG2NUM(EvtSeekRelativeToFirst));
   /*
    * EVT_SEEK_FLAGS enumeration: EvtSeekRelativeToLast
+   * @since 0.6.0
    * @see https://msdn.microsoft.com/en-us/windows/desktop/aa385575#EvtSeekRelativeToLast
    */
   rb_define_const(rb_cFlag, "RelativeToLast", LONG2NUM(EvtSeekRelativeToLast));
   /*
    * EVT_SEEK_FLAGS enumeration: EvtSeekRelativeToCurrent
+   * @since 0.6.0
    * @see https://msdn.microsoft.com/en-us/windows/desktop/aa385575#EvtSeekRelativeToCurrent
    */
   rb_define_const(rb_cFlag, "RelativeToCurrent", LONG2NUM(EvtSeekRelativeToCurrent));
   /*
    * EVT_SEEK_FLAGS enumeration: EvtSeekRelativeToBookmark
+   * @since 0.6.0
    * @see https://msdn.microsoft.com/en-us/windows/desktop/aa385575#EvtSeekRelativeToBookmark
    */
   rb_define_const(rb_cFlag, "RelativeToBookmark", LONG2NUM(EvtSeekRelativeToBookmark));
   /*
    * EVT_SEEK_FLAGS enumeration: EvtSeekOriginMask
+   * @since 0.6.0
    * @see https://msdn.microsoft.com/en-us/windows/desktop/aa385575#EvtSeekOriginMask
    */
   rb_define_const(rb_cFlag, "OriginMask", LONG2NUM(EvtSeekOriginMask));
   /*
    * EVT_SEEK_FLAGS enumeration: EvtSeekStrict
+   * @since 0.6.0
    * @see https://msdn.microsoft.com/en-us/windows/desktop/aa385575#EvtSeekStrict
    */
   rb_define_const(rb_cFlag, "Strict", LONG2NUM(EvtSeekStrict));
