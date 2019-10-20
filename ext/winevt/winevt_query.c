@@ -254,7 +254,7 @@ get_evt_seek_flag_from_cstr(char* flag_str)
 }
 
 /*
- * This function specify seek strategy.
+ * This function specifies seek strategy.
  *
  * @param bookmark_or_flag [Bookmark|Query::Flag]
  * @return [Boolean]
