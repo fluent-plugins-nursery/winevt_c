@@ -238,6 +238,15 @@ update_to_reflect_rate_limit_state(struct WinevtSubscribe *winevtSubscribe, ULON
   winevtSubscribe->currentRate += count;
 }
 
+/*
+ * Handle the next values. Since v0.6.0, this method is used for
+ * testing only. Please use #each instead.
+ *
+ * @return [Boolean]
+ *
+ * @see each
+ */
+
 static VALUE
 rb_winevt_subscribe_next(VALUE self)
 {
@@ -348,9 +357,13 @@ rb_winevt_subscribe_each_yield(VALUE self)
 }
 
 /*
- * Enumerate to obtain Windows EventLog contains.
+ * Enumerate to obtain Windows EventLog contents.
  *
- * @yield ([String],[String],[String])
+ * This method yields the following:
+ * (Stringified EventLog, Stringified detail message, Stringified
+ * insert values)
+ *
+ * @yield (String,String,String)
  *
  */
 static VALUE

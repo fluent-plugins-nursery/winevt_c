@@ -3,7 +3,7 @@
 /*
  * Document-class: Winevt::EventLog::Bookmark
  *
- * Bookmark for querying/ subscribing Windows EventLog progress.
+ * Bookmark for querying/subscribing Windows EventLog progress.
  *
  * @example
  *  require 'winevt'

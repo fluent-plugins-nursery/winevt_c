@@ -163,9 +163,12 @@ rb_winevt_query_set_timeout(VALUE self, VALUE timeout)
 }
 
 /*
- * This function processes consuming Windows EventLog operation to the
- * next values.
+ * Handle the next values. Since v0.6.0, this method is used for
+ * testing only. Please use #each instead.
  *
+ * @return [Boolean]
+ *
+ * @see each
  */
 static VALUE
 rb_winevt_query_next(VALUE self)
@@ -335,9 +338,13 @@ rb_winevt_query_each_yield(VALUE self)
 }
 
 /*
- * Enumerate to obtain Windows EventLog contains.
+ * Enumerate to obtain Windows EventLog contents.
  *
- * @yield ([String],[String],[String])
+ * This method yields the following:
+ * (Stringified EventLog, Stringified detail message, Stringified
+ * insert values)
+ *
+ * @yield (String,String,String)
  *
  */
 static VALUE
