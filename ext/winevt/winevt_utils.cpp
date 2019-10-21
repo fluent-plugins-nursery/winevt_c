@@ -19,6 +19,28 @@ wstr_to_rb_str(UINT cp, const WCHAR* wstr, int clen)
   return str;
 }
 
+void
+raise_system_error(VALUE error, DWORD errorCode)
+{
+  WCHAR msgBuf[256];
+  VALUE errorMessage;
+
+  FormatMessageW(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+                 NULL,
+                 errorCode,
+                 MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+                 msgBuf,
+                 _countof(msgBuf),
+                 NULL);
+  errorMessage = wstr_to_rb_str(CP_UTF8, msgBuf, -1);
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat="
+#pragma GCC diagnostic ignored "-Wformat-extra-args"
+  rb_raise(error, "ErrorCode: %lu\nError: %" PRIsVALUE "\n", errorCode, errorMessage);
+#pragma GCC diagnostic pop
+}
+
 VALUE
 render_to_rb_str(EVT_HANDLE handle, DWORD flags)
 {
