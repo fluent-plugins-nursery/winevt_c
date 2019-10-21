@@ -66,17 +66,8 @@ render_to_rb_str(EVT_HANDLE handle, DWORD flags)
     EvtRender(nullptr, handle, flags, bufferSize, buffer, &bufferSizeUsed, &count);
   if (!succeeded) {
     DWORD status = GetLastError();
-    CHAR msgBuf[256];
-
-    FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-                   nullptr,
-                   status,
-                   MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-                   msgBuf,
-                   _countof(msgBuf),
-                   nullptr);
     ALLOCV_END(vbuffer);
-    rb_raise(rb_eWinevtQueryError, "ErrorCode: %lu\nError: %s\n", status, msgBuf);
+    raise_system_error(rb_eWinevtQueryError, status);
   }
 
   result = wstr_to_rb_str(CP_UTF8, buffer, -1);
@@ -306,19 +297,9 @@ get_values(EVT_HANDLE handle)
                         &propCount);
   if (!succeeded) {
     DWORD status = GetLastError();
-    CHAR msgBuf[256];
-
     ALLOCV_END(vbuffer);
     EvtClose(renderContext);
-
-    FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-                   nullptr,
-                   status,
-                   MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-                   msgBuf,
-                   _countof(msgBuf),
-                   nullptr);
-    rb_raise(rb_eWinevtQueryError, "ErrorCode: %lu\nError: %s\n", status, msgBuf);
+    raise_system_error(rb_eWinevtQueryError, status);
   }
 
   userValues = extract_user_evt_variants(pRenderedValues, propCount);
@@ -459,7 +440,6 @@ get_description(EVT_HANDLE handle)
   ULONG bufferSizeNeeded = 0;
   ULONG status, count;
   std::vector<WCHAR> result;
-  CHAR msgBuf[256];
   EVT_HANDLE hMetadata = nullptr;
 
   static PCWSTR eventProperties[] = { L"Event/System/Provider/@Name" };
@@ -482,14 +462,7 @@ get_description(EVT_HANDLE handle)
   }
 
   if (status != ERROR_SUCCESS) {
-    FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-                   nullptr,
-                   status,
-                   MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-                   msgBuf,
-                   sizeof(msgBuf),
-                   nullptr);
-    rb_raise(rb_eWinevtQueryError, "ErrorCode: %lu\nError: %s\n", status, msgBuf);
+    raise_system_error(rb_eWinevtQueryError, status);
   }
 
   // Obtain buffer as EVT_VARIANT pointer. To avoid ErrorCide 87 in EvtRender.
