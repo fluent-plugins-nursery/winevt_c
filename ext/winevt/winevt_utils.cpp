@@ -22,7 +22,7 @@ wstr_to_rb_str(UINT cp, const WCHAR* wstr, int clen)
 void
 raise_system_error(VALUE error, DWORD errorCode)
 {
-  WCHAR msgBuf[256];
+  WCHAR msgBuf[256] = { 0 };
   VALUE errorMessage;
 
   FormatMessageW(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
