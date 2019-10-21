@@ -143,8 +143,8 @@ rb_winevt_subscribe_subscribe(int argc, VALUE* argv, VALUE self)
   EVT_HANDLE hSubscription = NULL, hBookmark = NULL;
   HANDLE hSignalEvent;
   DWORD len, flags = 0L;
-  VALUE wpathBuf, wqueryBuf;
-  PWSTR path, query;
+  VALUE wpathBuf, wqueryBuf, wBookmarkBuf;
+  PWSTR path, query, bookmarkXml;
   DWORD status = ERROR_SUCCESS;
   struct WinevtSubscribe* winevtSubscribe;
 
@@ -157,8 +157,24 @@ rb_winevt_subscribe_subscribe(int argc, VALUE* argv, VALUE self)
   Check_Type(rb_path, T_STRING);
   Check_Type(rb_query, T_STRING);
 
-  if (rb_obj_is_kind_of(rb_bookmark, rb_cBookmark)) {
-    hBookmark = EventBookMark(rb_bookmark)->bookmark;
+  if (rb_obj_is_kind_of(rb_bookmark, rb_cString)) {
+    // bookmarkXml : To wide char
+    len = MultiByteToWideChar(
+        CP_UTF8, 0, RSTRING_PTR(rb_bookmark), RSTRING_LEN(rb_bookmark), NULL, 0);
+    bookmarkXml = ALLOCV_N(WCHAR, wBookmarkBuf, len + 1);
+    MultiByteToWideChar(CP_UTF8,
+                        0,
+                        RSTRING_PTR(rb_bookmark),
+                        RSTRING_LEN(rb_bookmark),
+                        bookmarkXml,
+                        len);
+    bookmarkXml[len] = L'\0';
+    hBookmark = EvtCreateBookmark(bookmarkXml);
+    ALLOCV_END(wBookmarkBuf);
+    if (hBookmark == NULL) {
+      status = GetLastError();
+      raise_system_error(rb_eWinevtQueryError, status);
+    }
   }
 
   // path : To wide char
