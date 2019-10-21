@@ -99,7 +99,7 @@ rb_winevt_query_initialize(VALUE self, VALUE channel, VALUE xpath)
 }
 
 /*
- * This function returns querying event offset.
+ * This method returns querying event offset.
  *
  * @return [Integer]
  */
@@ -114,7 +114,7 @@ rb_winevt_query_get_offset(VALUE self)
 }
 
 /*
- * This function specifies querying event offset.
+ * This method specifies querying event offset.
  *
  * @param offset [Integer] offset value
  */
@@ -131,7 +131,7 @@ rb_winevt_query_set_offset(VALUE self, VALUE offset)
 }
 
 /*
- * This function returns timeout value.
+ * This method returns timeout value.
  *
  * @return [Integer]
  */
@@ -146,7 +146,7 @@ rb_winevt_query_get_timeout(VALUE self)
 }
 
 /*
- * This function specifies timeout value.
+ * This method specifies timeout value.
  *
  * @param timeout [Integer] timeout value
  */
@@ -254,7 +254,7 @@ get_evt_seek_flag_from_cstr(char* flag_str)
 }
 
 /*
- * This function specifies seek strategy.
+ * This method specifies seek strategy.
  *
  * @param bookmark_or_flag [Bookmark|Query::Flag]
  * @return [Boolean]
@@ -360,7 +360,7 @@ rb_winevt_query_each(VALUE self)
 }
 
 /*
- * This function returns whether render as xml or not.
+ * This method returns whether render as xml or not.
  *
  * @return [Boolean]
  */
@@ -375,7 +375,7 @@ rb_winevt_query_render_as_xml_p(VALUE self)
 }
 
 /*
- * This function specifies whether render as xml or not.
+ * This method specifies whether render as xml or not.
  *
  * @param rb_render_as_xml [Boolean]
  */

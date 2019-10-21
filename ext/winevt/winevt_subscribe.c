@@ -91,7 +91,7 @@ rb_winevt_subscribe_initialize(VALUE self)
 }
 
 /*
- * This function specifies whether tailing or not.
+ * This method specifies whether tailing or not.
  *
  * @param rb_tailing_p [Boolean]
  */
@@ -109,7 +109,7 @@ rb_winevt_subscribe_set_tail(VALUE self, VALUE rb_tailing_p)
 }
 
 /*
- * This function returns whether tailing or not.
+ * This method returns whether tailing or not.
  *
  * @return [Boolean]
  */
@@ -380,7 +380,7 @@ rb_winevt_subscribe_each(VALUE self)
 }
 
 /*
- * This function renders bookmark content which is related to Subscribe class instance.
+ * This method renders bookmark content which is related to Subscribe class instance.
  *
  * @return [String]
  */
@@ -396,7 +396,7 @@ rb_winevt_subscribe_get_bookmark(VALUE self)
 }
 
 /*
- * This function returns rate limit value.
+ * This method returns rate limit value.
  *
  * @since 0.6.0
  * @return [Integer]
@@ -413,7 +413,7 @@ rb_winevt_subscribe_get_rate_limit(VALUE self)
 }
 
 /*
- * This function specifies rate limit value.
+ * This method specifies rate limit value.
  *
  * @since 0.6.0
  * @param rb_rate_limit [Integer] rate_limit value
@@ -441,7 +441,7 @@ rb_winevt_subscribe_set_rate_limit(VALUE self, VALUE rb_rate_limit)
 }
 
 /*
- * This function returns whether render as xml or not.
+ * This method returns whether render as xml or not.
  *
  * @since 0.6.0
  * @return [Boolean]
@@ -458,7 +458,7 @@ rb_winevt_subscribe_render_as_xml_p(VALUE self)
 }
 
 /*
- * This function specifies whether render as xml or not.
+ * This method specifies whether render as xml or not.
  *
  * @since 0.6.0
  * @param rb_render_as_xml [Boolean]

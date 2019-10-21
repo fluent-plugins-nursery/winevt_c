@@ -94,7 +94,7 @@ rb_winevt_bookmark_initialize(int argc, VALUE* argv, VALUE self)
 }
 
 /*
- * This function updates bookmark and returns Bookmark instance.
+ * This method updates bookmark and returns Bookmark instance.
  *
  * @param event [Query]
  * @return [Bookmark]
@@ -119,7 +119,7 @@ rb_winevt_bookmark_update(VALUE self, VALUE event)
 
 
 /*
- * This function renders bookmark class content.
+ * This method renders bookmark class content.
  *
  * @return [String]
  */
