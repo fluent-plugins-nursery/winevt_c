@@ -21,7 +21,7 @@
  *    sleep(0.1)
  *  end
  *
- * @see: https://docs.microsoft.com/en-us/windows/win32/api/winevt/nf-winevt-evtsubscribe
+ * @see https://docs.microsoft.com/en-us/windows/win32/api/winevt/nf-winevt-evtsubscribe
  */
 
 static void subscribe_free(void* ptr);
