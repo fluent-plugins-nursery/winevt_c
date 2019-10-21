@@ -117,6 +117,14 @@ class WinevtTest < Test::Unit::TestCase
       assert_true(subscribe.next)
     end
 
+    def test_subscribe_invalid_query
+      subscribe = Winevt::EventLog::Subscribe.new
+      error = assert_raises Winevt::EventLog::Query::Error do
+        subscribe.subscribe("", "");
+      end
+      assert_match(/ErrorCode: 15001\nError: .*\n/, error.message)
+    end
+
     def test_next
       assert_true(@subscribe.next)
     end
