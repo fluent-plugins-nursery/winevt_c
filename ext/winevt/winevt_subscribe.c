@@ -186,8 +186,6 @@ rb_winevt_subscribe_subscribe(int argc, VALUE* argv, VALUE self)
 
   hSubscription =
     EvtSubscribe(NULL, hSignalEvent, path, query, hBookmark, NULL, NULL, flags);
-  if (!hSubscription) {
-  }
 
   ALLOCV_END(wpathBuf);
   ALLOCV_END(wqueryBuf);
@@ -198,8 +196,9 @@ rb_winevt_subscribe_subscribe(int argc, VALUE* argv, VALUE self)
     winevtSubscribe->bookmark = hBookmark;
   } else {
     winevtSubscribe->bookmark = EvtCreateBookmark(NULL);
-    status = GetLastError();
   }
+
+  status = GetLastError();
 
   if (status == ERROR_SUCCESS)
     return Qtrue;
