@@ -485,6 +485,7 @@ Init_winevt_subscribe(VALUE rb_cEventLog)
 
   /*
    * For Subscribe#rate_limit=. It represents unspecified rate limit.
+   * @since 0.6.0
    */
   rb_define_const(rb_cSubscribe, "RATE_INFINITE", SUBSCRIBE_RATE_INFINITE);
 
