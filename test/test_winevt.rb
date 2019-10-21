@@ -111,6 +111,12 @@ class WinevtTest < Test::Unit::TestCase
       end
     end
 
+    def test_subscribe_with_bookmark
+      subscribe = Winevt::EventLog::Subscribe.new
+      subscribe.subscribe("Application", "*", @bookmark)
+      assert_true(subscribe.next)
+    end
+
     def test_subscribe_without_bookmark
       subscribe = Winevt::EventLog::Subscribe.new
       subscribe.subscribe("Application", "*")
