@@ -1,5 +1,6 @@
 #include <winevt_c.h>
 
+/* clang-format off */
 /*
  * Document-class: Winevt::EventLog::Query
  *
@@ -14,6 +15,8 @@
  *    puts ({eventlog: eventlog, data: message})
  *  end
  */
+/* clang-format on */
+
 
 static void query_free(void* ptr);
 
@@ -189,7 +192,7 @@ rb_winevt_query_next(VALUE self)
 
   if (status == ERROR_SUCCESS) {
     winevtQuery->count = count;
-    for (int i = 0; i < count; i++){
+    for (int i = 0; i < count; i++) {
       winevtQuery->hEvents[i] = hEvents[i];
     }
 
@@ -309,7 +312,7 @@ rb_winevt_query_close_handle(VALUE self)
 
   TypedData_Get_Struct(self, struct WinevtQuery, &rb_winevt_query_type, winevtQuery);
 
-  for (int i = 0; i < winevtQuery->count; i++){
+  for (int i = 0; i < winevtQuery->count; i++) {
     if (winevtQuery->hEvents[i] != NULL) {
       EvtClose(winevtQuery->hEvents[i]);
       winevtQuery->hEvents[i] = NULL;
@@ -399,6 +402,7 @@ Init_winevt_query(VALUE rb_cEventLog)
 
   rb_cFlag = rb_define_module_under(rb_cQuery, "Flag");
 
+  /* clang-format off */
   /*
    * EVT_SEEK_FLAGS enumeration: EvtSeekRelativeToFirst
    * @since 0.6.0
@@ -435,6 +439,7 @@ Init_winevt_query(VALUE rb_cEventLog)
    * @see https://msdn.microsoft.com/en-us/windows/desktop/aa385575#EvtSeekStrict
    */
   rb_define_const(rb_cFlag, "Strict", LONG2NUM(EvtSeekStrict));
+  /* clang-format on */
 
   rb_define_method(rb_cQuery, "initialize", rb_winevt_query_initialize, 2);
   rb_define_method(rb_cQuery, "next", rb_winevt_query_next, 0);

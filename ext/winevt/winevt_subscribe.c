@@ -1,5 +1,6 @@
 #include <winevt_c.h>
 
+/* clang-format off */
 /*
  * Document-class: Winevt::EventLog::Subscribe
  *
@@ -23,6 +24,7 @@
  *
  * @see https://docs.microsoft.com/en-us/windows/win32/api/winevt/nf-winevt-evtsubscribe
  */
+/* clang-format on */
 
 static void subscribe_free(void* ptr);
 
@@ -205,7 +207,7 @@ rb_winevt_subscribe_subscribe(int argc, VALUE* argv, VALUE self)
 }
 
 BOOL
-is_rate_limit_exceeded(struct WinevtSubscribe *winevtSubscribe)
+is_rate_limit_exceeded(struct WinevtSubscribe* winevtSubscribe)
 {
   time_t now;
 
@@ -226,7 +228,7 @@ is_rate_limit_exceeded(struct WinevtSubscribe *winevtSubscribe)
 }
 
 void
-update_to_reflect_rate_limit_state(struct WinevtSubscribe *winevtSubscribe, ULONG count)
+update_to_reflect_rate_limit_state(struct WinevtSubscribe* winevtSubscribe, ULONG count)
 {
   time_t lastTime = 0;
 
@@ -262,8 +264,12 @@ rb_winevt_subscribe_next(VALUE self)
     return Qfalse;
   }
 
-  if (!EvtNext(winevtSubscribe->subscription, SUBSCRIBE_ARRAY_SIZE,
-              hEvents, INFINITE, 0, &count)) {
+  if (!EvtNext(winevtSubscribe->subscription,
+               SUBSCRIBE_ARRAY_SIZE,
+               hEvents,
+               INFINITE,
+               0,
+               &count)) {
     status = GetLastError();
     if (ERROR_NO_MORE_ITEMS != status) {
       return Qfalse;
@@ -429,10 +435,8 @@ rb_winevt_subscribe_set_rate_limit(VALUE self, VALUE rb_rate_limit)
 
   rateLimit = NUM2LONG(rb_rate_limit);
 
-  if ((rateLimit != SUBSCRIBE_RATE_INFINITE) &&
-      (rateLimit < 10 || rateLimit % 10)) {
-    rb_raise(rb_eArgError,
-             "Specify a multiples of 10 or RATE_INFINITE constant");
+  if ((rateLimit != SUBSCRIBE_RATE_INFINITE) && (rateLimit < 10 || rateLimit % 10)) {
+    rb_raise(rb_eArgError, "Specify a multiples of 10 or RATE_INFINITE constant");
   } else {
     winevtSubscribe->rateLimit = rateLimit;
   }
@@ -498,6 +502,8 @@ Init_winevt_subscribe(VALUE rb_cEventLog)
   rb_define_method(rb_cSubscribe, "tail=", rb_winevt_subscribe_set_tail, 1);
   rb_define_method(rb_cSubscribe, "rate_limit", rb_winevt_subscribe_get_rate_limit, 0);
   rb_define_method(rb_cSubscribe, "rate_limit=", rb_winevt_subscribe_set_rate_limit, 1);
-  rb_define_method(rb_cSubscribe, "render_as_xml?", rb_winevt_subscribe_render_as_xml_p, 0);
-  rb_define_method(rb_cSubscribe, "render_as_xml=", rb_winevt_subscribe_set_render_as_xml, 1);
+  rb_define_method(
+    rb_cSubscribe, "render_as_xml?", rb_winevt_subscribe_render_as_xml_p, 0);
+  rb_define_method(
+    rb_cSubscribe, "render_as_xml=", rb_winevt_subscribe_set_render_as_xml, 1);
 }

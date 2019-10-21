@@ -524,8 +524,8 @@ render_system_event(EVT_HANDLE hEvent)
 
   hContext = EvtCreateRenderContext(0, NULL, EvtRenderContextSystem);
   if (NULL == hContext) {
-    rb_raise(rb_eWinevtQueryError,
-             "Failed to create renderContext with %lu\n", GetLastError());
+    rb_raise(
+      rb_eWinevtQueryError, "Failed to create renderContext with %lu\n", GetLastError());
   }
 
   if (!EvtRender(hContext,
@@ -549,8 +549,7 @@ render_system_event(EVT_HANDLE hEvent)
                   &dwPropertyCount);
       } else {
         EvtClose(hContext);
-        rb_raise(rb_eRuntimeError,
-             "Failed to malloc memory with %lu\n", status);
+        rb_raise(rb_eRuntimeError, "Failed to malloc memory with %lu\n", status);
       }
     }
 
@@ -559,8 +558,7 @@ render_system_event(EVT_HANDLE hEvent)
       EvtClose(hContext);
       ALLOCV_END(vRenderedValues);
 
-      rb_raise(rb_eWinevtQueryError,
-               "EvtRender failed with %lu\n", status);
+      rb_raise(rb_eWinevtQueryError, "EvtRender failed with %lu\n", status);
     }
   }
 
@@ -605,8 +603,11 @@ render_system_event(EVT_HANDLE hEvent)
                (EvtVarTypeNull == pRenderedValues[EvtSystemOpcode].Type)
                  ? INT2NUM(0)
                  : INT2NUM(pRenderedValues[EvtSystemOpcode].ByteVal));
-  _snprintf_s(buffer, _countof(buffer), _TRUNCATE,
-              "0x%llx", pRenderedValues[EvtSystemKeywords].UInt64Val);
+  _snprintf_s(buffer,
+              _countof(buffer),
+              _TRUNCATE,
+              "0x%llx",
+              pRenderedValues[EvtSystemKeywords].UInt64Val);
   rb_hash_aset(hash,
                rb_str_new2("Keywords"),
                (EvtVarTypeNull == pRenderedValues[EvtSystemKeywords].Type)

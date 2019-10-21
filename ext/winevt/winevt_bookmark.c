@@ -1,5 +1,6 @@
 #include <winevt_c.h>
 
+/* clang-format off */
 /*
  * Document-class: Winevt::EventLog::Bookmark
  *
@@ -16,6 +17,7 @@
  *
  *  puts @bookmark.render
  */
+/* clang-format pn */
 
 static void bookmark_free(void* ptr);
 
@@ -116,7 +118,6 @@ rb_winevt_bookmark_update(VALUE self, VALUE event)
   }
   return Qtrue;
 }
-
 
 /*
  * This method renders bookmark class content.
