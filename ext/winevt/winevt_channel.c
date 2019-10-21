@@ -1,5 +1,20 @@
 #include <winevt_c.h>
 
+/*
+ * Document-class: Winevt::EventLog::Channel
+ *
+ * Retrieve Windows EventLog channel name.
+ *
+ * @example
+ *  require 'winevt'
+ *  channels = []
+ *  @channel = Winevt::EventLog::Channel.new
+ *  @channel.each do |channel|
+ *    channels << channel
+ *  end
+ *  print channels
+ */
+
 static void channel_free(void* ptr);
 
 static const rb_data_type_t rb_winevt_channel_type = { "winevt/channel",
@@ -32,12 +47,24 @@ rb_winevt_channel_alloc(VALUE klass)
   return obj;
 }
 
+/*
+ * Initalize Channel class.
+ *
+ * @return [Channel]
+ *
+ */
 static VALUE
 rb_winevt_channel_initialize(VALUE klass)
 {
   return Qnil;
 }
 
+/*
+ * Enumerate Windows EventLog channels
+ *
+ * @yield (String)
+ *
+ */
 static VALUE
 rb_winevt_channel_each(VALUE self)
 {

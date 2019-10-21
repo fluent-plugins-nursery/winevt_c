@@ -1,5 +1,29 @@
 #include <winevt_c.h>
 
+/*
+ * Document-class: Winevt::EventLog::Subscribe
+ *
+ * Subscribe Windows EventLog channel.
+ *
+ * @example
+ *  require 'winevt'
+ *
+ *  @subscribe = Winevt::EventLog::Subscribe.new
+ *  @subscribe.tail = true
+ *  @subscribe.rate_limit = 80
+ *  @subscribe.subscribe(
+ *    "Application", "*[System[(Level <= 4) and TimeCreated[timediff(@SystemTime) <= 86400000]]]"
+ *  )
+ *  while true do
+ *    @subscribe.each do |eventlog, message, string_inserts|
+ *      puts ({eventlog: eventlog, data: message})
+ *    end
+ *    sleep(0.1)
+ *  end
+ *
+ * @see https://docs.microsoft.com/en-us/windows/win32/api/winevt/nf-winevt-evtsubscribe
+ */
+
 static void subscribe_free(void* ptr);
 
 static const rb_data_type_t rb_winevt_subscribe_type = { "winevt/subscribe",
@@ -44,6 +68,12 @@ rb_winevt_subscribe_alloc(VALUE klass)
   return obj;
 }
 
+/*
+ * Initalize Subscribe class.
+ *
+ * @return [Subscribe]
+ *
+ */
 static VALUE
 rb_winevt_subscribe_initialize(VALUE self)
 {
@@ -60,6 +90,11 @@ rb_winevt_subscribe_initialize(VALUE self)
   return Qnil;
 }
 
+/*
+ * This method specifies whether tailing or not.
+ *
+ * @param rb_tailing_p [Boolean]
+ */
 static VALUE
 rb_winevt_subscribe_set_tail(VALUE self, VALUE rb_tailing_p)
 {
@@ -73,8 +108,13 @@ rb_winevt_subscribe_set_tail(VALUE self, VALUE rb_tailing_p)
   return Qnil;
 }
 
+/*
+ * This method returns whether tailing or not.
+ *
+ * @return [Boolean]
+ */
 static VALUE
-rb_winevt_subscribe_tail_p(VALUE self, VALUE rb_flag)
+rb_winevt_subscribe_tail_p(VALUE self)
 {
   struct WinevtSubscribe* winevtSubscribe;
 
@@ -84,6 +124,16 @@ rb_winevt_subscribe_tail_p(VALUE self, VALUE rb_flag)
   return winevtSubscribe->tailing ? Qtrue : Qfalse;
 }
 
+/*
+ * Subscribe into a Windows EventLog channel.
+ *
+ * @overload subscribe(path, query, options={})
+ *   @param path [String] Subscribe Channel
+ *   @param query [String] Query string for channel
+ *   @option options [Bookmark] bookmark Bookmark class instance.
+ * @return [Boolean]
+ *
+ */
 static VALUE
 rb_winevt_subscribe_subscribe(int argc, VALUE* argv, VALUE self)
 {
@@ -187,6 +237,15 @@ update_to_reflect_rate_limit_state(struct WinevtSubscribe *winevtSubscribe, ULON
   winevtSubscribe->lastTime = lastTime;
   winevtSubscribe->currentRate += count;
 }
+
+/*
+ * Handle the next values. Since v0.6.0, this method is used for
+ * testing only. Please use #each instead.
+ *
+ * @return [Boolean]
+ *
+ * @see each
+ */
 
 static VALUE
 rb_winevt_subscribe_next(VALUE self)
@@ -297,6 +356,16 @@ rb_winevt_subscribe_each_yield(VALUE self)
   return Qnil;
 }
 
+/*
+ * Enumerate to obtain Windows EventLog contents.
+ *
+ * This method yields the following:
+ * (Stringified EventLog, Stringified detail message, Stringified
+ * insert values)
+ *
+ * @yield (String,String,String)
+ *
+ */
 static VALUE
 rb_winevt_subscribe_each(VALUE self)
 {
@@ -310,6 +379,11 @@ rb_winevt_subscribe_each(VALUE self)
   return Qnil;
 }
 
+/*
+ * This method renders bookmark content which is related to Subscribe class instance.
+ *
+ * @return [String]
+ */
 static VALUE
 rb_winevt_subscribe_get_bookmark(VALUE self)
 {
@@ -321,6 +395,12 @@ rb_winevt_subscribe_get_bookmark(VALUE self)
   return render_to_rb_str(winevtSubscribe->bookmark, EvtRenderBookmark);
 }
 
+/*
+ * This method returns rate limit value.
+ *
+ * @since 0.6.0
+ * @return [Integer]
+ */
 static VALUE
 rb_winevt_subscribe_get_rate_limit(VALUE self)
 {
@@ -332,6 +412,12 @@ rb_winevt_subscribe_get_rate_limit(VALUE self)
   return INT2NUM(winevtSubscribe->rateLimit);
 }
 
+/*
+ * This method specifies rate limit value.
+ *
+ * @since 0.6.0
+ * @param rb_rate_limit [Integer] rate_limit value
+ */
 static VALUE
 rb_winevt_subscribe_set_rate_limit(VALUE self, VALUE rb_rate_limit)
 {
@@ -354,6 +440,12 @@ rb_winevt_subscribe_set_rate_limit(VALUE self, VALUE rb_rate_limit)
   return Qnil;
 }
 
+/*
+ * This method returns whether render as xml or not.
+ *
+ * @since 0.6.0
+ * @return [Boolean]
+ */
 static VALUE
 rb_winevt_subscribe_render_as_xml_p(VALUE self)
 {
@@ -365,6 +457,12 @@ rb_winevt_subscribe_render_as_xml_p(VALUE self)
   return winevtSubscribe->renderAsXML ? Qtrue : Qfalse;
 }
 
+/*
+ * This method specifies whether render as xml or not.
+ *
+ * @since 0.6.0
+ * @param rb_render_as_xml [Boolean]
+ */
 static VALUE
 rb_winevt_subscribe_set_render_as_xml(VALUE self, VALUE rb_render_as_xml)
 {
@@ -385,6 +483,10 @@ Init_winevt_subscribe(VALUE rb_cEventLog)
 
   rb_define_alloc_func(rb_cSubscribe, rb_winevt_subscribe_alloc);
 
+  /*
+   * For Subscribe#rate_limit=. It represents unspecified rate limit.
+   * @since 0.6.0
+   */
   rb_define_const(rb_cSubscribe, "RATE_INFINITE", SUBSCRIBE_RATE_INFINITE);
 
   rb_define_method(rb_cSubscribe, "initialize", rb_winevt_subscribe_initialize, 0);

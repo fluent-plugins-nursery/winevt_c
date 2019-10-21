@@ -1,5 +1,22 @@
 #include <winevt_c.h>
 
+/*
+ * Document-class: Winevt::EventLog::Bookmark
+ *
+ * Bookmark for querying/subscribing Windows EventLog progress.
+ *
+ * @example
+ *  require 'winevt'
+ *
+ *  @query = Winevt::EventLog::Query.new("Application", "*[System[(Level <= 3) and TimeCreated[timediff(@SystemTime) <= 86400000]]]")
+ *  @bookmark = Winevt::EventLog::Bookmark.new
+ *  @query.each do |xml|
+ *    @bookmark.update(@query)
+ *  end
+ *
+ *  puts @bookmark.render
+ */
+
 static void bookmark_free(void* ptr);
 
 static const rb_data_type_t rb_winevt_bookmark_type = { "winevt/bookmark",
@@ -32,6 +49,14 @@ rb_winevt_bookmark_alloc(VALUE klass)
   return obj;
 }
 
+/*
+ * Initalize Bookmark class. Receive XML string or nil.
+ *
+ * @overload initailize(options={})
+ *   @option options [String] XML rendered Bookmark string.
+ * @return [Bookmark]
+ *
+ */
 static VALUE
 rb_winevt_bookmark_initialize(int argc, VALUE* argv, VALUE self)
 {
@@ -68,6 +93,12 @@ rb_winevt_bookmark_initialize(int argc, VALUE* argv, VALUE self)
   return Qnil;
 }
 
+/*
+ * This method updates bookmark and returns Bookmark instance.
+ *
+ * @param event [Query]
+ * @return [Bookmark]
+ */
 static VALUE
 rb_winevt_bookmark_update(VALUE self, VALUE event)
 {
@@ -86,6 +117,12 @@ rb_winevt_bookmark_update(VALUE self, VALUE event)
   return Qtrue;
 }
 
+
+/*
+ * This method renders bookmark class content.
+ *
+ * @return [String]
+ */
 static VALUE
 rb_winevt_bookmark_render(VALUE self)
 {

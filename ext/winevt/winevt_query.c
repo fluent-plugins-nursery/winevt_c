@@ -1,5 +1,20 @@
 #include <winevt_c.h>
 
+/*
+ * Document-class: Winevt::EventLog::Query
+ *
+ * Query Windows EventLog channel.
+ *
+ * @example
+ *  require 'winevt'
+ *
+ *  @query = Winevt::EventLog::Query.new("Application", "*[System[(Level <= 3) and TimeCreated[timediff(@SystemTime) <= 86400000]]]")
+ *
+ *  @query.each do |eventlog, message, string_inserts|
+ *    puts ({eventlog: eventlog, data: message})
+ *  end
+ */
+
 static void query_free(void* ptr);
 
 static const rb_data_type_t rb_winevt_query_type = { "winevt/query",
@@ -36,6 +51,14 @@ rb_winevt_query_alloc(VALUE klass)
   return obj;
 }
 
+/*
+ * Initalize Query class.
+ *
+ * @param channel [String] Querying EventLog channel.
+ * @param xpath [String] Querying XPath.
+ * @return [Query]
+ *
+ */
 static VALUE
 rb_winevt_query_initialize(VALUE self, VALUE channel, VALUE xpath)
 {
@@ -75,8 +98,13 @@ rb_winevt_query_initialize(VALUE self, VALUE channel, VALUE xpath)
   return Qnil;
 }
 
+/*
+ * This method returns querying event offset.
+ *
+ * @return [Integer]
+ */
 static VALUE
-rb_winevt_query_get_offset(VALUE self, VALUE offset)
+rb_winevt_query_get_offset(VALUE self)
 {
   struct WinevtQuery* winevtQuery;
 
@@ -85,6 +113,11 @@ rb_winevt_query_get_offset(VALUE self, VALUE offset)
   return LONG2NUM(winevtQuery->offset);
 }
 
+/*
+ * This method specifies querying event offset.
+ *
+ * @param offset [Integer] offset value
+ */
 static VALUE
 rb_winevt_query_set_offset(VALUE self, VALUE offset)
 {
@@ -97,8 +130,13 @@ rb_winevt_query_set_offset(VALUE self, VALUE offset)
   return Qnil;
 }
 
+/*
+ * This method returns timeout value.
+ *
+ * @return [Integer]
+ */
 static VALUE
-rb_winevt_query_get_timeout(VALUE self, VALUE timeout)
+rb_winevt_query_get_timeout(VALUE self)
 {
   struct WinevtQuery* winevtQuery;
 
@@ -107,6 +145,11 @@ rb_winevt_query_get_timeout(VALUE self, VALUE timeout)
   return LONG2NUM(winevtQuery->timeout);
 }
 
+/*
+ * This method specifies timeout value.
+ *
+ * @param timeout [Integer] timeout value
+ */
 static VALUE
 rb_winevt_query_set_timeout(VALUE self, VALUE timeout)
 {
@@ -119,6 +162,14 @@ rb_winevt_query_set_timeout(VALUE self, VALUE timeout)
   return Qnil;
 }
 
+/*
+ * Handle the next values. Since v0.6.0, this method is used for
+ * testing only. Please use #each instead.
+ *
+ * @return [Boolean]
+ *
+ * @see each
+ */
 static VALUE
 rb_winevt_query_next(VALUE self)
 {
@@ -202,6 +253,12 @@ get_evt_seek_flag_from_cstr(char* flag_str)
   return 0;
 }
 
+/*
+ * This method specifies seek strategy.
+ *
+ * @param bookmark_or_flag [Bookmark|Query::Flag]
+ * @return [Boolean]
+ */
 static VALUE
 rb_winevt_query_seek(VALUE self, VALUE bookmark_or_flag)
 {
@@ -280,6 +337,16 @@ rb_winevt_query_each_yield(VALUE self)
   return Qnil;
 }
 
+/*
+ * Enumerate to obtain Windows EventLog contents.
+ *
+ * This method yields the following:
+ * (Stringified EventLog, Stringified detail message, Stringified
+ * insert values)
+ *
+ * @yield (String,String,String)
+ *
+ */
 static VALUE
 rb_winevt_query_each(VALUE self)
 {
@@ -292,6 +359,11 @@ rb_winevt_query_each(VALUE self)
   return Qnil;
 }
 
+/*
+ * This method returns whether render as xml or not.
+ *
+ * @return [Boolean]
+ */
 static VALUE
 rb_winevt_query_render_as_xml_p(VALUE self)
 {
@@ -302,6 +374,11 @@ rb_winevt_query_render_as_xml_p(VALUE self)
   return winevtQuery->renderAsXML ? Qtrue : Qfalse;
 }
 
+/*
+ * This method specifies whether render as xml or not.
+ *
+ * @param rb_render_as_xml [Boolean]
+ */
 static VALUE
 rb_winevt_query_set_render_as_xml(VALUE self, VALUE rb_render_as_xml)
 {
@@ -322,11 +399,41 @@ Init_winevt_query(VALUE rb_cEventLog)
 
   rb_cFlag = rb_define_module_under(rb_cQuery, "Flag");
 
+  /*
+   * EVT_SEEK_FLAGS enumeration: EvtSeekRelativeToFirst
+   * @since 0.6.0
+   * @see https://msdn.microsoft.com/en-us/windows/desktop/aa385575#EvtSeekRelativeToFirst
+   */
   rb_define_const(rb_cFlag, "RelativeToFirst", LONG2NUM(EvtSeekRelativeToFirst));
+  /*
+   * EVT_SEEK_FLAGS enumeration: EvtSeekRelativeToLast
+   * @since 0.6.0
+   * @see https://msdn.microsoft.com/en-us/windows/desktop/aa385575#EvtSeekRelativeToLast
+   */
   rb_define_const(rb_cFlag, "RelativeToLast", LONG2NUM(EvtSeekRelativeToLast));
+  /*
+   * EVT_SEEK_FLAGS enumeration: EvtSeekRelativeToCurrent
+   * @since 0.6.0
+   * @see https://msdn.microsoft.com/en-us/windows/desktop/aa385575#EvtSeekRelativeToCurrent
+   */
   rb_define_const(rb_cFlag, "RelativeToCurrent", LONG2NUM(EvtSeekRelativeToCurrent));
+  /*
+   * EVT_SEEK_FLAGS enumeration: EvtSeekRelativeToBookmark
+   * @since 0.6.0
+   * @see https://msdn.microsoft.com/en-us/windows/desktop/aa385575#EvtSeekRelativeToBookmark
+   */
   rb_define_const(rb_cFlag, "RelativeToBookmark", LONG2NUM(EvtSeekRelativeToBookmark));
+  /*
+   * EVT_SEEK_FLAGS enumeration: EvtSeekOriginMask
+   * @since 0.6.0
+   * @see https://msdn.microsoft.com/en-us/windows/desktop/aa385575#EvtSeekOriginMask
+   */
   rb_define_const(rb_cFlag, "OriginMask", LONG2NUM(EvtSeekOriginMask));
+  /*
+   * EVT_SEEK_FLAGS enumeration: EvtSeekStrict
+   * @since 0.6.0
+   * @see https://msdn.microsoft.com/en-us/windows/desktop/aa385575#EvtSeekStrict
+   */
   rb_define_const(rb_cFlag, "Strict", LONG2NUM(EvtSeekStrict));
 
   rb_define_method(rb_cQuery, "initialize", rb_winevt_query_initialize, 2);
