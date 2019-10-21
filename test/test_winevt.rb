@@ -117,6 +117,11 @@ class WinevtTest < Test::Unit::TestCase
       assert_true(subscribe.next)
     end
 
+    def test_subscribe_invalid_path
+      subscribe = Winevt::EventLog::Subscribe.new
+      assert_false(subscribe.subscribe("", ""))
+    end
+
     def test_next
       assert_true(@subscribe.next)
     end
