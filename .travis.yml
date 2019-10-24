@@ -1,0 +1,15 @@
+language: ruby
+rvm:
+  - 2.4
+
+services:
+  - docker
+
+gemfile:
+  - Gemfile
+
+before_install:
+  - gem update --system=2.7.8
+
+script:
+  - bundle exec rake gem:native
