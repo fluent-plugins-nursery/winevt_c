@@ -117,6 +117,15 @@ class WinevtTest < Test::Unit::TestCase
       assert_true(subscribe.next)
     end
 
+    INVALID_XML = "<broken>"
+    def test_subscribe_with_invalid_bookmark
+      subscribe = Winevt::EventLog::Subscribe.new
+      bookmark = Winevt::EventLog::Bookmark.new(INVALID_XML)
+      subscribe.subscribe("Application", "*", bookmark)
+      assert_match(/ErrorCode: 6\nError: .*\n/, subscribe.query_error.message)
+      assert_true(subscribe.next)
+    end
+
     def test_subscribe_without_bookmark
       subscribe = Winevt::EventLog::Subscribe.new
       subscribe.subscribe("Application", "*")
