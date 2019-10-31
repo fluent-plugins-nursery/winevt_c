@@ -205,6 +205,9 @@ rb_winevt_subscribe_subscribe(int argc, VALUE* argv, VALUE self)
   if (!hSubscription) {
     status = GetLastError();
     raise_system_error(rb_eWinevtQueryError, status);
+  } else if (winevtSubscribe->subscription != NULL) {
+    // should be disgarded the old event subscription handle.
+    EvtClose(winevtSubscribe->subscription);
   }
 
   ALLOCV_END(wpathBuf);
