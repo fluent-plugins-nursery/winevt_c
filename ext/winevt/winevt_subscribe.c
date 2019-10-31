@@ -203,6 +203,12 @@ rb_winevt_subscribe_subscribe(int argc, VALUE* argv, VALUE self)
   hSubscription =
     EvtSubscribe(NULL, hSignalEvent, path, query, hBookmark, NULL, NULL, flags);
   if (!hSubscription) {
+    if (hBookmark != NULL) {
+      EvtClose(hBookmark);
+    }
+    if (hSignalEvent != NULL) {
+      CloseHandle(hSignalEvent);
+    }
     status = GetLastError();
     raise_system_error(rb_eWinevtQueryError, status);
   } else if (winevtSubscribe->subscription != NULL) {
@@ -220,6 +226,12 @@ rb_winevt_subscribe_subscribe(int argc, VALUE* argv, VALUE self)
   } else {
     winevtSubscribe->bookmark = EvtCreateBookmark(NULL);
     if (winevtSubscribe->bookmark == NULL) {
+      if (hSubscription != NULL) {
+        EvtClose(hSubscription);
+      }
+      if (hSignalEvent != NULL) {
+        CloseHandle(hSignalEvent);
+      }
       status = GetLastError();
       raise_system_error(rb_eWinevtQueryError, status);
     }
