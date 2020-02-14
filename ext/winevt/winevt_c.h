@@ -78,7 +78,7 @@ struct WinevtSubscribe
   EVT_HANDLE hEvents[SUBSCRIBE_ARRAY_SIZE];
   DWORD count;
   DWORD flags;
-  BOOL tailing;
+  BOOL readExistingEvents;
   DWORD rateLimit;
   time_t lastTime;
   DWORD currentRate;
