@@ -535,7 +535,13 @@ Init_winevt_subscribe(VALUE rb_cEventLog)
   rb_define_method(rb_cSubscribe, "next", rb_winevt_subscribe_next, 0);
   rb_define_method(rb_cSubscribe, "each", rb_winevt_subscribe_each, 0);
   rb_define_method(rb_cSubscribe, "bookmark", rb_winevt_subscribe_get_bookmark, 0);
+  /*
+   * @since 0.7.0
+   */
   rb_define_method(rb_cSubscribe, "read_existing_events?", rb_winevt_subscribe_read_existing_events_p, 0);
+  /*
+   * @since 0.7.0
+   */
   rb_define_method(rb_cSubscribe, "read_existing_events=", rb_winevt_subscribe_set_read_existing_events, 1);
   rb_define_method(rb_cSubscribe, "rate_limit", rb_winevt_subscribe_get_rate_limit, 0);
   rb_define_method(rb_cSubscribe, "rate_limit=", rb_winevt_subscribe_set_rate_limit, 1);
