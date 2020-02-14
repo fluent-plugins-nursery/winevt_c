@@ -88,42 +88,43 @@ rb_winevt_subscribe_initialize(VALUE self)
   winevtSubscribe->lastTime = 0;
   winevtSubscribe->currentRate = 0;
   winevtSubscribe->renderAsXML = TRUE;
+  winevtSubscribe->readExistingEvents = TRUE;
 
   return Qnil;
 }
 
 /*
- * This method specifies whether tailing or not.
+ * This method specifies whether read existing events or not.
  *
- * @param rb_tailing_p [Boolean]
+ * @param rb_read_existing_events_p [Boolean]
  */
 static VALUE
-rb_winevt_subscribe_set_tail(VALUE self, VALUE rb_tailing_p)
+rb_winevt_subscribe_set_read_existing_events(VALUE self, VALUE rb_read_existing_events_p)
 {
   struct WinevtSubscribe* winevtSubscribe;
 
   TypedData_Get_Struct(
     self, struct WinevtSubscribe, &rb_winevt_subscribe_type, winevtSubscribe);
 
-  winevtSubscribe->tailing = RTEST(rb_tailing_p);
+  winevtSubscribe->readExistingEvents = RTEST(rb_read_existing_events_p);
 
   return Qnil;
 }
 
 /*
- * This method returns whether tailing or not.
+ * This method returns whether read existing events or not.
  *
  * @return [Boolean]
  */
 static VALUE
-rb_winevt_subscribe_tail_p(VALUE self)
+rb_winevt_subscribe_read_existing_events_p(VALUE self)
 {
   struct WinevtSubscribe* winevtSubscribe;
 
   TypedData_Get_Struct(
     self, struct WinevtSubscribe, &rb_winevt_subscribe_type, winevtSubscribe);
 
-  return winevtSubscribe->tailing ? Qtrue : Qfalse;
+  return winevtSubscribe->readExistingEvents ? Qtrue : Qfalse;
 }
 
 /*
@@ -194,10 +195,10 @@ rb_winevt_subscribe_subscribe(int argc, VALUE* argv, VALUE self)
 
   if (hBookmark) {
     flags |= EvtSubscribeStartAfterBookmark;
-  } else if (winevtSubscribe->tailing) {
-    flags |= EvtSubscribeToFutureEvents;
-  } else {
+  } else if (winevtSubscribe->readExistingEvents) {
     flags |= EvtSubscribeStartAtOldestRecord;
+  } else {
+    flags |= EvtSubscribeToFutureEvents;
   }
 
   hSubscription =
@@ -534,8 +535,14 @@ Init_winevt_subscribe(VALUE rb_cEventLog)
   rb_define_method(rb_cSubscribe, "next", rb_winevt_subscribe_next, 0);
   rb_define_method(rb_cSubscribe, "each", rb_winevt_subscribe_each, 0);
   rb_define_method(rb_cSubscribe, "bookmark", rb_winevt_subscribe_get_bookmark, 0);
-  rb_define_method(rb_cSubscribe, "tail?", rb_winevt_subscribe_tail_p, 0);
-  rb_define_method(rb_cSubscribe, "tail=", rb_winevt_subscribe_set_tail, 1);
+  /*
+   * @since 0.7.0
+   */
+  rb_define_method(rb_cSubscribe, "read_existing_events?", rb_winevt_subscribe_read_existing_events_p, 0);
+  /*
+   * @since 0.7.0
+   */
+  rb_define_method(rb_cSubscribe, "read_existing_events=", rb_winevt_subscribe_set_read_existing_events, 1);
   rb_define_method(rb_cSubscribe, "rate_limit", rb_winevt_subscribe_get_rate_limit, 0);
   rb_define_method(rb_cSubscribe, "rate_limit=", rb_winevt_subscribe_set_rate_limit, 1);
   rb_define_method(

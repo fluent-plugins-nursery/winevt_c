@@ -143,10 +143,10 @@ class WinevtTest < Test::Unit::TestCase
       assert_true(@subscribe.next)
     end
 
-    def test_tailing
-      assert_false(@subscribe.tail?)
-      @subscribe.tail = true
-      assert_true(@subscribe.tail?)
+    def test_read_existing_events
+      assert_true(@subscribe.read_existing_events?)
+      @subscribe.read_existing_events = false
+      assert_false(@subscribe.read_existing_events?)
     end
 
     def test_bookmark
