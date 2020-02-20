@@ -11,7 +11,7 @@ Gem::Specification.new do |spec|
 
   spec.summary       = %q{Windows Event Log API bindings from winevt.h.}
   spec.description   = spec.summary
-  spec.homepage      = "https://github.com/fluent-plugins-nursery/winevt_c"
+  spec.homepage      = "https://github.com/flurreN/winevt_c"
 
   # Specify which files should be added to the gem when it is released.
   # The `git ls-files -z` loads the files in the RubyGem that have been added into git.
