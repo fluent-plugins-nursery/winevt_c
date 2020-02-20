@@ -195,8 +195,8 @@ rb_winevt_subscribe_subscribe(int argc, VALUE* argv, VALUE self)
 
   if (hBookmark) {
     flags |= EvtSubscribeStartAfterBookmark;
-  } else if (winevtSubscribe->readExistingEvents) {
-    flags |= EvtSubscribeStartAtOldestRecord;
+  //} else if (winevtSubscribe->readExistingEvents) {
+  //  flags |= EvtSubscribeStartAtOldestRecord;
   } else {
     flags |= EvtSubscribeToFutureEvents;
   }
