@@ -47,6 +47,7 @@ VALUE rb_eWinevtQueryError;
 struct WinevtChannel
 {
   EVT_HANDLE channels;
+  BOOL force_enumerate;
 };
 
 struct WinevtBookmark

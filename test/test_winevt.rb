@@ -194,5 +194,11 @@ class WinevtTest < Test::Unit::TestCase
         @channel.each
       end
     end
+
+    def test_force_enumerate
+      assert_false(@channel.force_enumerate)
+      @channel.force_enumerate = true
+      assert_true(@channel.force_enumerate)
+    end
   end
 end

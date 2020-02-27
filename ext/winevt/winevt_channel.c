@@ -9,6 +9,8 @@
  *  require 'winevt'
  *  channels = []
  *  @channel = Winevt::EventLog::Channel.new
+ *  # If users want to retrive all channel name, it should be set as true.
+ *  @channel.force_enumerate = false
  *  @channel.each do |channel|
  *    channels << channel
  *  end
@@ -54,15 +56,58 @@ rb_winevt_channel_alloc(VALUE klass)
  *
  */
 static VALUE
-rb_winevt_channel_initialize(VALUE klass)
+rb_winevt_channel_initialize(VALUE self)
 {
+  struct WinevtChannel* winevtChannel;
+
+  TypedData_Get_Struct(
+    self, struct WinevtChannel, &rb_winevt_channel_type, winevtChannel);
+
+  winevtChannel->force_enumerate = FALSE;
+
   return Qnil;
 }
 
-DWORD is_subscribable_channel_p(EVT_HANDLE hChannel);
-DWORD check_subscribable_with_channel_config_type(int Id, PEVT_VARIANT pProperty);
+/*
+ * This method specifies whether forcing to enumerate channel which
+ * type is Debug and Analytical or not.
+ *
+ * @param rb_force_enumerate_p [Boolean]
+ */
+static VALUE
+rb_winevt_channel_set_force_enumerate(VALUE self, VALUE rb_force_enumerate_p)
+{
+  struct WinevtChannel* winevtChannel;
 
-DWORD is_subscribable_channel_p(EVT_HANDLE hChannel)
+  TypedData_Get_Struct(
+    self, struct WinevtChannel, &rb_winevt_channel_type, winevtChannel);
+
+  winevtChannel->force_enumerate = RTEST(rb_force_enumerate_p);
+
+  return Qnil;
+}
+
+/*
+ * This method returns whether forcing to enumerate channel which type
+ * is Debug and Analytical or not.
+ *
+ * @return [Boolean]
+ */
+static VALUE
+rb_winevt_channel_get_force_enumerate(VALUE self)
+{
+  struct WinevtChannel* winevtChannel;
+
+  TypedData_Get_Struct(
+    self, struct WinevtChannel, &rb_winevt_channel_type, winevtChannel);
+
+  return winevtChannel->force_enumerate ? Qtrue : Qfalse;
+}
+
+DWORD is_subscribable_channel_p(EVT_HANDLE hChannel, BOOL force_enumerate);
+DWORD check_subscribable_with_channel_config_type(int Id, PEVT_VARIANT pProperty, BOOL force_enumerate);
+
+DWORD is_subscribable_channel_p(EVT_HANDLE hChannel, BOOL force_enumerate)
 {
   PEVT_VARIANT pProperty = NULL;
   PEVT_VARIANT pTemp = NULL;
@@ -81,22 +126,29 @@ DWORD is_subscribable_channel_p(EVT_HANDLE hChannel)
           pTemp = NULL;
           EvtGetChannelConfigProperty(hChannel, (EVT_CHANNEL_CONFIG_PROPERTY_ID)Id, 0, dwBufferSize, pProperty, &dwBufferUsed);
         } else {
-          free(pProperty);
+          if (pProperty)
+            free(pProperty);
+
           status = ERROR_OUTOFMEMORY;
           rb_raise(rb_eRuntimeError, "realloc failed with %ld\n", status);
         }
       }
 
       if (ERROR_SUCCESS != (status = GetLastError())) {
-        free(pProperty);
+        if (pProperty)
+          free(pProperty);
+
         rb_raise(rb_eRuntimeError, "EvtGetChannelConfigProperty failed with %ld\n", GetLastError());
       }
     }
 
-    status = check_subscribable_with_channel_config_type(Id, pProperty);
+    status = check_subscribable_with_channel_config_type(Id, pProperty, force_enumerate);
     if (status != ERROR_SUCCESS)
       break;
   }
+
+  if (pProperty)
+    free(pProperty);
 
   return status;
 }
@@ -104,12 +156,14 @@ DWORD is_subscribable_channel_p(EVT_HANDLE hChannel)
 #define EVENT_DEBUG_TYPE 2
 #define EVENT_ANALYTICAL_TYPE 3
 
-DWORD check_subscribable_with_channel_config_type(int Id, PEVT_VARIANT pProperty)
+DWORD check_subscribable_with_channel_config_type(int Id, PEVT_VARIANT pProperty, BOOL force_enumerate)
 {
   DWORD status = ERROR_SUCCESS;
   switch(Id) {
   case EvtChannelConfigType:
-    if (pProperty->UInt32Val == EVENT_DEBUG_TYPE || pProperty->UInt32Val == EVENT_ANALYTICAL_TYPE) {
+    if (!force_enumerate &&
+        (pProperty->UInt32Val == EVENT_DEBUG_TYPE ||
+         pProperty->UInt32Val == EVENT_ANALYTICAL_TYPE)) {
       return ERROR_INVALID_DATA;
     }
     break;
@@ -201,7 +255,7 @@ rb_winevt_channel_each(VALUE self)
       rb_raise(rb_eRuntimeError, errBuf);
     }
 
-    status = is_subscribable_channel_p(hChannelConfig);
+    status = is_subscribable_channel_p(hChannelConfig, winevtChannel->force_enumerate);
     if (status != ERROR_SUCCESS)
       continue;
 
@@ -231,4 +285,6 @@ Init_winevt_channel(VALUE rb_cEventLog)
   rb_define_alloc_func(rb_cChannel, rb_winevt_channel_alloc);
   rb_define_method(rb_cChannel, "initialize", rb_winevt_channel_initialize, 0);
   rb_define_method(rb_cChannel, "each", rb_winevt_channel_each, 0);
+  rb_define_method(rb_cChannel, "force_enumerate", rb_winevt_channel_get_force_enumerate, 0);
+  rb_define_method(rb_cChannel, "force_enumerate=", rb_winevt_channel_set_force_enumerate, 1);
 }
