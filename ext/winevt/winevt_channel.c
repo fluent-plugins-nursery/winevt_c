@@ -126,8 +126,7 @@ DWORD is_subscribable_channel_p(EVT_HANDLE hChannel, BOOL force_enumerate)
           pTemp = NULL;
           EvtGetChannelConfigProperty(hChannel, (EVT_CHANNEL_CONFIG_PROPERTY_ID)Id, 0, dwBufferSize, pProperty, &dwBufferUsed);
         } else {
-          if (pProperty)
-            free(pProperty);
+          free(pProperty);
 
           status = ERROR_OUTOFMEMORY;
           rb_raise(rb_eRuntimeError, "realloc failed with %ld\n", status);
@@ -135,8 +134,7 @@ DWORD is_subscribable_channel_p(EVT_HANDLE hChannel, BOOL force_enumerate)
       }
 
       if (ERROR_SUCCESS != (status = GetLastError())) {
-        if (pProperty)
-          free(pProperty);
+        free(pProperty);
 
         rb_raise(rb_eRuntimeError, "EvtGetChannelConfigProperty failed with %ld\n", GetLastError());
       }
@@ -147,8 +145,7 @@ DWORD is_subscribable_channel_p(EVT_HANDLE hChannel, BOOL force_enumerate)
       break;
   }
 
-  if (pProperty)
-    free(pProperty);
+  free(pProperty);
 
   return status;
 }
