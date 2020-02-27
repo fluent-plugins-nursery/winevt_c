@@ -59,6 +59,68 @@ rb_winevt_channel_initialize(VALUE klass)
   return Qnil;
 }
 
+DWORD is_subscribable_channel_p(EVT_HANDLE hChannel);
+DWORD check_subscribable_with_channel_config_type(int Id, PEVT_VARIANT pProperty);
+
+DWORD is_subscribable_channel_p(EVT_HANDLE hChannel)
+{
+  PEVT_VARIANT pProperty = NULL;
+  PEVT_VARIANT pTemp = NULL;
+  DWORD dwBufferSize = 0;
+  DWORD dwBufferUsed = 0;
+  DWORD status = ERROR_SUCCESS;
+
+  for (int Id = 0; Id < EvtChannelConfigPropertyIdEND; Id++) {
+    if  (!EvtGetChannelConfigProperty(hChannel, (EVT_CHANNEL_CONFIG_PROPERTY_ID)Id, 0, dwBufferSize, pProperty, &dwBufferUsed)) {
+      status = GetLastError();
+      if (ERROR_INSUFFICIENT_BUFFER == status) {
+        dwBufferSize = dwBufferUsed;
+        pTemp = (PEVT_VARIANT)realloc(pProperty, dwBufferSize);
+        if (pTemp) {
+          pProperty = pTemp;
+          pTemp = NULL;
+          EvtGetChannelConfigProperty(hChannel, (EVT_CHANNEL_CONFIG_PROPERTY_ID)Id, 0, dwBufferSize, pProperty, &dwBufferUsed);
+        } else {
+          free(pProperty);
+          status = ERROR_OUTOFMEMORY;
+          rb_raise(rb_eRuntimeError, "realloc failed with %ld\n", status);
+        }
+      }
+
+      if (ERROR_SUCCESS != (status = GetLastError())) {
+        free(pProperty);
+        rb_raise(rb_eRuntimeError, "EvtGetChannelConfigProperty failed with %ld\n", GetLastError());
+      }
+    }
+
+    status = check_subscribable_with_channel_config_type(Id, pProperty);
+    if (status != ERROR_SUCCESS)
+      break;
+  }
+
+  return status;
+}
+
+#define EVENT_DEBUG_TYPE 2
+#define EVENT_ANALYTICAL_TYPE 3
+
+DWORD check_subscribable_with_channel_config_type(int Id, PEVT_VARIANT pProperty)
+{
+  DWORD status = ERROR_SUCCESS;
+  switch(Id) {
+  case EvtChannelConfigType:
+    if (pProperty->UInt32Val == EVENT_DEBUG_TYPE || pProperty->UInt32Val == EVENT_ANALYTICAL_TYPE) {
+      return ERROR_INVALID_DATA;
+    }
+    break;
+  }
+
+  return status;
+}
+
+#undef EVENT_DEBUG_TYPE
+#undef EVENT_ANALYTICAL_TYPE
+
 /*
  * Enumerate Windows EventLog channels
  *
@@ -69,6 +131,7 @@ static VALUE
 rb_winevt_channel_each(VALUE self)
 {
   EVT_HANDLE hChannels;
+  EVT_HANDLE hChannelConfig = NULL;
   struct WinevtChannel* winevtChannel;
   char errBuf[256];
   LPWSTR buffer = NULL;
@@ -124,6 +187,23 @@ rb_winevt_channel_each(VALUE self)
         rb_raise(rb_eRuntimeError, errBuf);
       }
     }
+    hChannelConfig = EvtOpenChannelConfig(NULL, buffer, 0);
+    if (NULL == hChannelConfig) {
+      _snprintf_s(errBuf,
+                  _countof(errBuf),
+                  _TRUNCATE,
+                  "EvtOpenChannelConfig failed with %lu.\n",
+                  GetLastError());
+      free(buffer);
+      buffer = NULL;
+      bufferSize = 0;
+
+      rb_raise(rb_eRuntimeError, errBuf);
+    }
+
+    status = is_subscribable_channel_p(hChannelConfig);
+    if (status != ERROR_SUCCESS)
+      continue;
 
     utf8str = wstr_to_rb_str(CP_UTF8, buffer, -1);
 
