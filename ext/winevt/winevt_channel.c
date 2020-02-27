@@ -17,6 +17,8 @@
  *  print channels
  */
 
+DWORD is_subscribable_channel_p(EVT_HANDLE hChannel, BOOL force_enumerate);
+DWORD check_subscribable_with_channel_config_type(int Id, PEVT_VARIANT pProperty, BOOL force_enumerate);
 static void channel_free(void* ptr);
 
 static const rb_data_type_t rb_winevt_channel_type = { "winevt/channel",
@@ -103,9 +105,6 @@ rb_winevt_channel_get_force_enumerate(VALUE self)
 
   return winevtChannel->force_enumerate ? Qtrue : Qfalse;
 }
-
-DWORD is_subscribable_channel_p(EVT_HANDLE hChannel, BOOL force_enumerate);
-DWORD check_subscribable_with_channel_config_type(int Id, PEVT_VARIANT pProperty, BOOL force_enumerate);
 
 DWORD is_subscribable_channel_p(EVT_HANDLE hChannel, BOOL force_enumerate)
 {
