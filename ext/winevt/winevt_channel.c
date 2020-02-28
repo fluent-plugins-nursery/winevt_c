@@ -134,7 +134,7 @@ DWORD is_subscribable_channel_p(EVT_HANDLE hChannel, BOOL force_enumerate)
         }
       }
 
-      if (ERROR_SUCCESS != (status = GetLastError())) {
+      if (ERROR_SUCCESS != status) {
         free(pProperty);
 
         rb_raise(rb_eRuntimeError, "EvtGetChannelConfigProperty failed with %ld\n", GetLastError());
