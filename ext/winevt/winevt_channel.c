@@ -272,14 +272,18 @@ rb_winevt_channel_each(VALUE self)
       bufferSize = 0;
 
       rb_raise(rb_eRuntimeError, "realloc failed\n");
-    }
-
-    if (status != ERROR_SUCCESS) {
+    } else if (status == ERROR_INVALID_DATA) {
       free(buffer);
       buffer = NULL;
       bufferSize = 0;
 
       continue;
+    } else if (status != ERROR_SUCCESS) {
+      free(buffer);
+      buffer = NULL;
+      bufferSize = 0;
+
+      rb_raise(rb_eRuntimeError, "is_subscribe_channel_p is failed with %ld\n", status);
     }
 
     utf8str = wstr_to_rb_str(CP_UTF8, buffer, -1);
