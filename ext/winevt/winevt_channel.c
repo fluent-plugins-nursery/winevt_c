@@ -266,6 +266,14 @@ rb_winevt_channel_each(VALUE self)
     status = is_subscribable_channel_p(hChannelConfig, winevtChannel->force_enumerate);
     EvtClose(hChannelConfig);
 
+    if (status == ERROR_INVALID_DATA) {
+      free(buffer);
+      buffer = NULL;
+      bufferSize = 0;
+
+      continue;
+    }
+
     if (status == ERROR_OUTOFMEMORY) {
       EvtClose(winevtChannel->channels);
       winevtChannel->channels = NULL;
@@ -275,12 +283,6 @@ rb_winevt_channel_each(VALUE self)
       bufferSize = 0;
 
       rb_raise(rb_eRuntimeError, "realloc failed\n");
-    } else if (status == ERROR_INVALID_DATA) {
-      free(buffer);
-      buffer = NULL;
-      bufferSize = 0;
-
-      continue;
     } else if (status != ERROR_SUCCESS) {
       EvtClose(winevtChannel->channels);
       winevtChannel->channels = NULL;
