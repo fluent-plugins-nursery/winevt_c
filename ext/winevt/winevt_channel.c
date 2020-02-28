@@ -267,6 +267,9 @@ rb_winevt_channel_each(VALUE self)
     EvtClose(hChannelConfig);
 
     if (status == ERROR_OUTOFMEMORY) {
+      EvtClose(winevtChannel->channels);
+      winevtChannel->channels = NULL;
+
       free(buffer);
       buffer = NULL;
       bufferSize = 0;
@@ -279,6 +282,9 @@ rb_winevt_channel_each(VALUE self)
 
       continue;
     } else if (status != ERROR_SUCCESS) {
+      EvtClose(winevtChannel->channels);
+      winevtChannel->channels = NULL;
+
       free(buffer);
       buffer = NULL;
       bufferSize = 0;
