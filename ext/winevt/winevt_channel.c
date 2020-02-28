@@ -254,6 +254,7 @@ rb_winevt_channel_each(VALUE self)
     }
 
     status = is_subscribable_channel_p(hChannelConfig, winevtChannel->force_enumerate);
+    EvtClose(hChannelConfig);
     if (status != ERROR_SUCCESS)
       continue;
 
