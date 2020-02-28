@@ -248,6 +248,10 @@ rb_winevt_channel_each(VALUE self)
                   _TRUNCATE,
                   "EvtOpenChannelConfig failed with %lu.\n",
                   GetLastError());
+
+      EvtClose(winevtChannel->channels);
+      winevtChannel->channels = NULL;
+
       free(buffer);
       buffer = NULL;
       bufferSize = 0;
