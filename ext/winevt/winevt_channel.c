@@ -132,14 +132,16 @@ DWORD is_subscribable_channel_p(EVT_HANDLE hChannel, BOOL force_enumerate)
         } else {
           free(pProperty);
 
-          rb_raise(rb_eRuntimeError, "realloc failed\n");
+          status = ERROR_OUTOFMEMORY;
+
+          goto cleanup;
         }
       }
 
       if (ERROR_SUCCESS != status) {
         free(pProperty);
 
-        rb_raise(rb_eRuntimeError, "EvtGetChannelConfigProperty failed with %ld\n", status);
+        goto cleanup;
       }
     }
 
@@ -147,6 +149,8 @@ DWORD is_subscribable_channel_p(EVT_HANDLE hChannel, BOOL force_enumerate)
     if (status != ERROR_SUCCESS)
       break;
   }
+
+cleanup:
 
   free(pProperty);
 
@@ -261,6 +265,15 @@ rb_winevt_channel_each(VALUE self)
 
     status = is_subscribable_channel_p(hChannelConfig, winevtChannel->force_enumerate);
     EvtClose(hChannelConfig);
+
+    if (status == ERROR_OUTOFMEMORY) {
+      free(buffer);
+      buffer = NULL;
+      bufferSize = 0;
+
+      rb_raise(rb_eRuntimeError, "realloc failed\n");
+    }
+
     if (status != ERROR_SUCCESS) {
       free(buffer);
       buffer = NULL;
