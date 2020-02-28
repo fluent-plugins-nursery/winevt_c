@@ -257,8 +257,13 @@ rb_winevt_channel_each(VALUE self)
 
     status = is_subscribable_channel_p(hChannelConfig, winevtChannel->force_enumerate);
     EvtClose(hChannelConfig);
-    if (status != ERROR_SUCCESS)
+    if (status != ERROR_SUCCESS) {
+      free(buffer);
+      buffer = NULL;
+      bufferSize = 0;
+
       continue;
+    }
 
     utf8str = wstr_to_rb_str(CP_UTF8, buffer, -1);
 
