@@ -126,6 +126,7 @@ DWORD is_subscribable_channel_p(EVT_HANDLE hChannel, BOOL force_enumerate)
           pProperty = pTemp;
           pTemp = NULL;
           EvtGetChannelConfigProperty(hChannel, (EVT_CHANNEL_CONFIG_PROPERTY_ID)Id, 0, dwBufferSize, pProperty, &dwBufferUsed);
+          status = GetLastError();
         } else {
           free(pProperty);
 
