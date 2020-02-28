@@ -129,8 +129,7 @@ DWORD is_subscribable_channel_p(EVT_HANDLE hChannel, BOOL force_enumerate)
         } else {
           free(pProperty);
 
-          status = ERROR_OUTOFMEMORY;
-          rb_raise(rb_eRuntimeError, "realloc failed with %ld\n", status);
+          rb_raise(rb_eRuntimeError, "realloc failed\n");
         }
       }
 
