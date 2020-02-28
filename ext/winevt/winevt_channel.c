@@ -9,7 +9,7 @@
  *  require 'winevt'
  *  channels = []
  *  @channel = Winevt::EventLog::Channel.new
- *  # If users want to retrive all channel name, it should be set as true.
+ *  # If users want to retrieve all channel name, it should be set as true.
  *  @channel.force_enumerate = false
  *  @channel.each do |channel|
  *    channels << channel
