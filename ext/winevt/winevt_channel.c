@@ -117,7 +117,7 @@ DWORD is_subscribable_channel_p(EVT_HANDLE hChannel, BOOL force_enumerate)
   DWORD status = ERROR_SUCCESS;
 
   for (int Id = 0; Id < EvtChannelConfigPropertyIdEND; Id++) {
-    if  (!EvtGetChannelConfigProperty(hChannel, (EVT_CHANNEL_CONFIG_PROPERTY_ID)Id, 0, dwBufferSize, pProperty, &dwBufferUsed)) {
+    if (!EvtGetChannelConfigProperty(hChannel, (EVT_CHANNEL_CONFIG_PROPERTY_ID)Id, 0, dwBufferSize, pProperty, &dwBufferUsed)) {
       status = GetLastError();
       if (ERROR_INSUFFICIENT_BUFFER == status) {
         dwBufferSize = dwBufferUsed;
