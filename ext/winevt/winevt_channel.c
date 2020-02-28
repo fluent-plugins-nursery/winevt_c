@@ -75,6 +75,7 @@ rb_winevt_channel_initialize(VALUE self)
  * type is Debug and Analytical or not.
  *
  * @param rb_force_enumerate_p [Boolean]
+ * @since 0.7.1
  */
 static VALUE
 rb_winevt_channel_set_force_enumerate(VALUE self, VALUE rb_force_enumerate_p)
@@ -94,6 +95,7 @@ rb_winevt_channel_set_force_enumerate(VALUE self, VALUE rb_force_enumerate_p)
  * is Debug and Analytical or not.
  *
  * @return [Boolean]
+ * @since 0.7.1
  */
 static VALUE
 rb_winevt_channel_get_force_enumerate(VALUE self)
