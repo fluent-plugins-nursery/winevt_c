@@ -9,7 +9,9 @@
  *  require 'winevt'
  *  channels = []
  *  @channel = Winevt::EventLog::Channel.new
- *  # If users want to retrive all channel name, it should be set as true.
+ *  # If users want to retrieve all channel names that
+ *  # including type of Debug and Analytical,
+ *  # it should be set as true.
  *  @channel.force_enumerate = false
  *  @channel.each do |channel|
  *    channels << channel
@@ -117,7 +119,7 @@ DWORD is_subscribable_channel_p(EVT_HANDLE hChannel, BOOL force_enumerate)
   DWORD status = ERROR_SUCCESS;
 
   for (int Id = 0; Id < EvtChannelConfigPropertyIdEND; Id++) {
-    if  (!EvtGetChannelConfigProperty(hChannel, (EVT_CHANNEL_CONFIG_PROPERTY_ID)Id, 0, dwBufferSize, pProperty, &dwBufferUsed)) {
+    if (!EvtGetChannelConfigProperty(hChannel, (EVT_CHANNEL_CONFIG_PROPERTY_ID)Id, 0, dwBufferSize, pProperty, &dwBufferUsed)) {
       status = GetLastError();
       if (ERROR_INSUFFICIENT_BUFFER == status) {
         dwBufferSize = dwBufferUsed;
@@ -126,18 +128,20 @@ DWORD is_subscribable_channel_p(EVT_HANDLE hChannel, BOOL force_enumerate)
           pProperty = pTemp;
           pTemp = NULL;
           EvtGetChannelConfigProperty(hChannel, (EVT_CHANNEL_CONFIG_PROPERTY_ID)Id, 0, dwBufferSize, pProperty, &dwBufferUsed);
+          status = GetLastError();
         } else {
           free(pProperty);
 
           status = ERROR_OUTOFMEMORY;
-          rb_raise(rb_eRuntimeError, "realloc failed with %ld\n", status);
+
+          goto cleanup;
         }
       }
 
-      if (ERROR_SUCCESS != (status = GetLastError())) {
+      if (ERROR_SUCCESS != status) {
         free(pProperty);
 
-        rb_raise(rb_eRuntimeError, "EvtGetChannelConfigProperty failed with %ld\n", GetLastError());
+        goto cleanup;
       }
     }
 
@@ -145,6 +149,8 @@ DWORD is_subscribable_channel_p(EVT_HANDLE hChannel, BOOL force_enumerate)
     if (status != ERROR_SUCCESS)
       break;
   }
+
+cleanup:
 
   free(pProperty);
 
@@ -246,6 +252,10 @@ rb_winevt_channel_each(VALUE self)
                   _TRUNCATE,
                   "EvtOpenChannelConfig failed with %lu.\n",
                   GetLastError());
+
+      EvtClose(winevtChannel->channels);
+      winevtChannel->channels = NULL;
+
       free(buffer);
       buffer = NULL;
       bufferSize = 0;
@@ -254,8 +264,35 @@ rb_winevt_channel_each(VALUE self)
     }
 
     status = is_subscribable_channel_p(hChannelConfig, winevtChannel->force_enumerate);
-    if (status != ERROR_SUCCESS)
+    EvtClose(hChannelConfig);
+
+    if (status == ERROR_INVALID_DATA) {
+      free(buffer);
+      buffer = NULL;
+      bufferSize = 0;
+
       continue;
+    }
+
+    if (status == ERROR_OUTOFMEMORY) {
+      EvtClose(winevtChannel->channels);
+      winevtChannel->channels = NULL;
+
+      free(buffer);
+      buffer = NULL;
+      bufferSize = 0;
+
+      rb_raise(rb_eRuntimeError, "realloc failed\n");
+    } else if (status != ERROR_SUCCESS) {
+      EvtClose(winevtChannel->channels);
+      winevtChannel->channels = NULL;
+
+      free(buffer);
+      buffer = NULL;
+      bufferSize = 0;
+
+      rb_raise(rb_eRuntimeError, "is_subscribe_channel_p is failed with %ld\n", status);
+    }
 
     utf8str = wstr_to_rb_str(CP_UTF8, buffer, -1);
 
