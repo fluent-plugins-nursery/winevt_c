@@ -9,7 +9,8 @@
  *  require 'winevt'
  *  channels = []
  *  @channel = Winevt::EventLog::Channel.new
- *  # If users want to retrieve all channel names including Debug and Analytical,
+ *  # If users want to retrieve all channel names that
+ *  # including type of Debug and Analytical,
  *  # it should be set as true.
  *  @channel.force_enumerate = false
  *  @channel.each do |channel|
