@@ -28,7 +28,7 @@ task 'gem:native' do
   # See RUBY_CC_VERSION in https://github.com/rake-compiler/rake-compiler-dock/blob/master/Dockerfile.mri
   RakeCompilerDock.sh <<-EOS
     gem install bundler yard --no-doc && bundle
-    rake cross native gem RUBY_CC_VERSION=2.4.0:2.5.0:2.6.0
+    rake cross native gem RUBY_CC_VERSION=2.4.0:2.5.0:2.6.0:2.7.0
 EOS
 end
 
