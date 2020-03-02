@@ -27,6 +27,9 @@ extern "C" {
 #endif /* __cplusplus */
 
 VALUE wstr_to_rb_str(UINT cp, const WCHAR* wstr, int clen);
+#if defined(__cplusplus)
+[[ noreturn ]]
+#endif /* __cplusplus */
 void  raise_system_error(VALUE error, DWORD errorCode);
 VALUE render_to_rb_str(EVT_HANDLE handle, DWORD flags);
 WCHAR* get_description(EVT_HANDLE handle);
