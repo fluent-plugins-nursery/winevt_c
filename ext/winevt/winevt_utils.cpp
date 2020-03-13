@@ -576,7 +576,7 @@ render_system_event(EVT_HANDLE hEvent)
     EventID = MAKELONG(pRenderedValues[EvtSystemEventID].UInt16Val,
                        pRenderedValues[EvtSystemQualifiers].UInt16Val);
   }
-  rb_hash_aset(hash, rb_str_new2("EventID"), LONG2NUM(EventID));
+  rb_hash_aset(hash, rb_str_new2("EventID"), ULONG2NUM(EventID));
 
   rb_hash_aset(hash,
                rb_str_new2("Version"),
