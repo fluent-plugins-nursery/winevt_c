@@ -94,6 +94,7 @@ rb_winevt_query_initialize(VALUE self, VALUE channel, VALUE xpath)
   winevtQuery->offset = 0L;
   winevtQuery->timeout = 0L;
   winevtQuery->renderAsXML = TRUE;
+  winevtQuery->preserveQualifiers = FALSE;
 
   ALLOCV_END(wchannelBuf);
   ALLOCV_END(wpathBuf);
@@ -212,7 +213,7 @@ rb_winevt_query_render(VALUE self, EVT_HANDLE event)
   if (winevtQuery->renderAsXML) {
     return render_to_rb_str(event, EvtRenderEventXml);
   } else {
-    return render_system_event(event);
+    return render_system_event(event, winevtQuery->preserveQualifiers);
   }
 }
 
@@ -394,6 +395,42 @@ rb_winevt_query_set_render_as_xml(VALUE self, VALUE rb_render_as_xml)
   return Qnil;
 }
 
+/*
+ * This method specifies whether preserving qualifiers key or not.
+ *
+ * @since 0.7.3
+ * @param rb_render_as_xml [Boolean]
+ */
+static VALUE
+rb_winevt_query_set_preserve_qualifiers(VALUE self, VALUE rb_preserve_qualifiers)
+{
+  struct WinevtQuery* winevtQuery;
+
+  TypedData_Get_Struct(
+    self, struct WinevtQuery, &rb_winevt_query_type, winevtQuery);
+
+  winevtQuery->preserveQualifiers = RTEST(rb_preserve_qualifiers);
+
+  return Qnil;
+}
+
+/*
+ * This method returns whether preserving qualifiers or not.
+ *
+ * @since 0.7.3
+ * @return [Integer]
+ */
+static VALUE
+rb_winevt_query_get_preserve_qualifiers_p(VALUE self)
+{
+  struct WinevtQuery* winevtQuery;
+
+  TypedData_Get_Struct(
+    self, struct WinevtQuery, &rb_winevt_query_type, winevtQuery);
+
+  return winevtQuery->preserveQualifiers ? Qtrue : Qfalse;
+}
+
 void
 Init_winevt_query(VALUE rb_cEventLog)
 {
@@ -451,4 +488,12 @@ Init_winevt_query(VALUE rb_cEventLog)
   rb_define_method(rb_cQuery, "each", rb_winevt_query_each, 0);
   rb_define_method(rb_cQuery, "render_as_xml?", rb_winevt_query_render_as_xml_p, 0);
   rb_define_method(rb_cQuery, "render_as_xml=", rb_winevt_query_set_render_as_xml, 1);
+  /*
+   * @since 0.7.3
+   */
+  rb_define_method(rb_cQuery, "preserve_qualifiers?", rb_winevt_query_get_preserve_qualifiers_p, 0);
+  /*
+   * @since 0.7.3
+   */
+  rb_define_method(rb_cQuery, "preserve_qualifiers=", rb_winevt_query_set_preserve_qualifiers, 1);
 }

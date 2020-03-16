@@ -497,7 +497,7 @@ cleanup:
 }
 
 VALUE
-render_system_event(EVT_HANDLE hEvent)
+render_system_event(EVT_HANDLE hEvent, BOOL does_preserve_qualifiers)
 {
   DWORD status = ERROR_SUCCESS;
   EVT_HANDLE hContext = NULL;
@@ -572,11 +572,24 @@ render_system_event(EVT_HANDLE hEvent)
   }
 
   EventID = pRenderedValues[EvtSystemEventID].UInt16Val;
-  if (EvtVarTypeNull != pRenderedValues[EvtSystemQualifiers].Type) {
-    EventID = MAKELONG(pRenderedValues[EvtSystemEventID].UInt16Val,
-                       pRenderedValues[EvtSystemQualifiers].UInt16Val);
+  // Default condition does not preserve qualifiers key.
+  if (!does_preserve_qualifiers) {
+    if (EvtVarTypeNull != pRenderedValues[EvtSystemQualifiers].Type) {
+      EventID = MAKELONG(pRenderedValues[EvtSystemEventID].UInt16Val,
+                         pRenderedValues[EvtSystemQualifiers].UInt16Val);
+    }
+
+    rb_hash_aset(hash, rb_str_new2("EventID"), ULONG2NUM(EventID));
+  } else {
+    if (EvtVarTypeNull != pRenderedValues[EvtSystemQualifiers].Type) {
+      rb_hash_aset(hash, rb_str_new2("Qualifiers"),
+                   INT2NUM(pRenderedValues[EvtSystemQualifiers].UInt16Val));
+    } else {
+      rb_hash_aset(hash, rb_str_new2("Qualifiers"), rb_str_new2(""));
+    }
+
+    rb_hash_aset(hash, rb_str_new2("EventID"), INT2NUM(EventID));
   }
-  rb_hash_aset(hash, rb_str_new2("EventID"), ULONG2NUM(EventID));
 
   rb_hash_aset(hash,
                rb_str_new2("Version"),
