@@ -89,6 +89,7 @@ rb_winevt_subscribe_initialize(VALUE self)
   winevtSubscribe->currentRate = 0;
   winevtSubscribe->renderAsXML = TRUE;
   winevtSubscribe->readExistingEvents = TRUE;
+  winevtSubscribe->preserveQualifiers = FALSE;
 
   return Qnil;
 }
@@ -339,7 +340,7 @@ rb_winevt_subscribe_render(VALUE self, EVT_HANDLE event)
   if (winevtSubscribe->renderAsXML) {
     return render_to_rb_str(event, EvtRenderEventXml);
   } else {
-    return render_system_event(event);
+    return render_system_event(event, winevtSubscribe->preserveQualifiers);
   }
 }
 
@@ -517,6 +518,42 @@ rb_winevt_subscribe_set_render_as_xml(VALUE self, VALUE rb_render_as_xml)
   return Qnil;
 }
 
+/*
+ * This method specifies whether preserving qualifiers key or not.
+ *
+ * @since 0.7.3
+ * @param rb_render_as_xml [Boolean]
+ */
+static VALUE
+rb_winevt_subscribe_set_preserve_qualifiers(VALUE self, VALUE rb_preserve_qualifiers)
+{
+  struct WinevtSubscribe* winevtSubscribe;
+
+  TypedData_Get_Struct(
+    self, struct WinevtSubscribe, &rb_winevt_subscribe_type, winevtSubscribe);
+
+  winevtSubscribe->preserveQualifiers = RTEST(rb_preserve_qualifiers);
+
+  return Qnil;
+}
+
+/*
+ * This method returns whether preserving qualifiers or not.
+ *
+ * @since 0.7.3
+ * @return [Integer]
+ */
+static VALUE
+rb_winevt_subscribe_get_preserve_qualifiers_p(VALUE self)
+{
+  struct WinevtSubscribe* winevtSubscribe;
+
+  TypedData_Get_Struct(
+    self, struct WinevtSubscribe, &rb_winevt_subscribe_type, winevtSubscribe);
+
+  return winevtSubscribe->preserveQualifiers ? Qtrue : Qfalse;
+}
+
 void
 Init_winevt_subscribe(VALUE rb_cEventLog)
 {
@@ -549,4 +586,14 @@ Init_winevt_subscribe(VALUE rb_cEventLog)
     rb_cSubscribe, "render_as_xml?", rb_winevt_subscribe_render_as_xml_p, 0);
   rb_define_method(
     rb_cSubscribe, "render_as_xml=", rb_winevt_subscribe_set_render_as_xml, 1);
+  /*
+   * @since 0.7.3
+   */
+  rb_define_method(
+    rb_cSubscribe, "preserve_qualifiers?", rb_winevt_subscribe_get_preserve_qualifiers_p, 0);
+  /*
+   * @since 0.7.3
+   */
+  rb_define_method(
+    rb_cSubscribe, "preserve_qualifiers=", rb_winevt_subscribe_set_preserve_qualifiers, 1);
 }

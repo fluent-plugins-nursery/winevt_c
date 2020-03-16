@@ -57,6 +57,12 @@ class WinevtTest < Test::Unit::TestCase
       end
       assert_equal("Unknown seek flag: hoge", error.message)
     end
+
+    def test_preserve_qualifiers
+      assert_false(@query.preserve_qualifiers?)
+      @query.preserve_qualifiers = true
+      assert_true(@query.preserve_qualifiers?)
+    end
   end
 
   class BookmarkTest < self
@@ -181,6 +187,12 @@ class WinevtTest < Test::Unit::TestCase
       assert_true(@subscribe.render_as_xml?)
       @subscribe.render_as_xml = false
       assert_false(@subscribe.render_as_xml?)
+    end
+
+    def test_preserve_qualifiers
+      assert_false(@subscribe.preserve_qualifiers?)
+      @subscribe.preserve_qualifiers = true
+      assert_true(@subscribe.preserve_qualifiers?)
     end
   end
 

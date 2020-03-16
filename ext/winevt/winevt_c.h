@@ -34,7 +34,7 @@ void  raise_system_error(VALUE error, DWORD errorCode);
 VALUE render_to_rb_str(EVT_HANDLE handle, DWORD flags);
 WCHAR* get_description(EVT_HANDLE handle);
 VALUE get_values(EVT_HANDLE handle);
-VALUE render_system_event(EVT_HANDLE handle);
+VALUE render_system_event(EVT_HANDLE handle, BOOL preserve_qualifiers);
 
 #ifdef __cplusplus
 }
@@ -69,6 +69,7 @@ struct WinevtQuery
   LONG offset;
   LONG timeout;
   BOOL renderAsXML;
+  BOOL preserveQualifiers;
 };
 
 #define SUBSCRIBE_ARRAY_SIZE 10
@@ -87,6 +88,7 @@ struct WinevtSubscribe
   time_t lastTime;
   DWORD currentRate;
   BOOL renderAsXML;
+  BOOL preserveQualifiers;
 };
 
 void Init_winevt_query(VALUE rb_cEventLog);
