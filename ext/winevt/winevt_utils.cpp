@@ -497,7 +497,7 @@ cleanup:
 }
 
 VALUE
-render_system_event(EVT_HANDLE hEvent, BOOL does_preserve_qualifiers)
+render_system_event(EVT_HANDLE hEvent, BOOL preserve_qualifiers)
 {
   DWORD status = ERROR_SUCCESS;
   EVT_HANDLE hContext = NULL;
@@ -573,7 +573,7 @@ render_system_event(EVT_HANDLE hEvent, BOOL does_preserve_qualifiers)
 
   EventID = pRenderedValues[EvtSystemEventID].UInt16Val;
   // Default condition does not preserve qualifiers key.
-  if (!does_preserve_qualifiers) {
+  if (!preserve_qualifiers) {
     if (EvtVarTypeNull != pRenderedValues[EvtSystemQualifiers].Type) {
       EventID = MAKELONG(pRenderedValues[EvtSystemEventID].UInt16Val,
                          pRenderedValues[EvtSystemQualifiers].UInt16Val);
