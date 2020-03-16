@@ -1,7 +1,7 @@
 require 'winevt'
 
 @subscribe = Winevt::EventLog::Subscribe.new
-@subscribe.tail = true
+@subscribe.read_existing_events = true
 @subscribe.rate_limit = 80
 @subscribe.subscribe(
   "Application", "*[System[(Level <= 4) and TimeCreated[timediff(@SystemTime) <= 86400000]]]"
