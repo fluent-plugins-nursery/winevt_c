@@ -572,15 +572,7 @@ render_system_event(EVT_HANDLE hEvent, BOOL preserve_qualifiers)
   }
 
   EventID = pRenderedValues[EvtSystemEventID].UInt16Val;
-  // Default condition does not preserve qualifiers key.
-  if (!preserve_qualifiers) {
-    if (EvtVarTypeNull != pRenderedValues[EvtSystemQualifiers].Type) {
-      EventID = MAKELONG(pRenderedValues[EvtSystemEventID].UInt16Val,
-                         pRenderedValues[EvtSystemQualifiers].UInt16Val);
-    }
-
-    rb_hash_aset(hash, rb_str_new2("EventID"), ULONG2NUM(EventID));
-  } else {
+  if (preserve_qualifiers) {
     if (EvtVarTypeNull != pRenderedValues[EvtSystemQualifiers].Type) {
       rb_hash_aset(hash, rb_str_new2("Qualifiers"),
                    INT2NUM(pRenderedValues[EvtSystemQualifiers].UInt16Val));
@@ -589,6 +581,13 @@ render_system_event(EVT_HANDLE hEvent, BOOL preserve_qualifiers)
     }
 
     rb_hash_aset(hash, rb_str_new2("EventID"), INT2NUM(EventID));
+  } else {
+    if (EvtVarTypeNull != pRenderedValues[EvtSystemQualifiers].Type) {
+      EventID = MAKELONG(pRenderedValues[EvtSystemEventID].UInt16Val,
+                         pRenderedValues[EvtSystemQualifiers].UInt16Val);
+    }
+
+    rb_hash_aset(hash, rb_str_new2("EventID"), ULONG2NUM(EventID));
   }
 
   rb_hash_aset(hash,
