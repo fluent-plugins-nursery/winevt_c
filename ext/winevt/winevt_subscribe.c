@@ -350,7 +350,7 @@ rb_winevt_subscribe_message(EVT_HANDLE event)
   WCHAR* wResult;
   VALUE utf8str;
 
-  wResult = get_description(event);
+  wResult = get_description(event, MAKELANGID(LANG_NEUTRAL, SUBLANG_NEUTRAL));
   utf8str = wstr_to_rb_str(CP_UTF8, wResult, -1);
   free(wResult);
 

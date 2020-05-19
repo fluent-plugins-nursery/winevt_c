@@ -433,7 +433,7 @@ cleanup:
 }
 
 WCHAR*
-get_description(EVT_HANDLE handle)
+get_description(EVT_HANDLE handle, LANGID langID)
 {
 #define BUFSIZE 4096
   std::vector<WCHAR> buffer(BUFSIZE);
@@ -473,7 +473,7 @@ get_description(EVT_HANDLE handle)
     nullptr,
     values[0].StringVal,
     nullptr,
-    MAKELCID(MAKELANGID(LANG_NEUTRAL, SUBLANG_NEUTRAL), SORT_DEFAULT),
+    MAKELCID(langID, SORT_DEFAULT),
     0);
   if (hMetadata == nullptr) {
     // When winevt_c cannot open metadata, then give up to obtain
