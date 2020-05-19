@@ -1,7 +1,10 @@
 #include <winevt_c.h>
 
 VALUE rb_mWinevt;
+VALUE rb_cQuery;
 VALUE rb_cEventLog;
+VALUE rb_cSubscribe;
+VALUE rb_eWinevtQueryError;
 
 static ID id_call;
 

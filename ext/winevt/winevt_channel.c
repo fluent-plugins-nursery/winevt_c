@@ -19,6 +19,8 @@
  *  print channels
  */
 
+VALUE rb_cChannel;
+
 DWORD is_subscribable_channel_p(EVT_HANDLE hChannel, BOOL force_enumerate);
 DWORD check_subscribable_with_channel_config_type(int Id, PEVT_VARIANT pProperty, BOOL force_enumerate);
 static void channel_free(void* ptr);

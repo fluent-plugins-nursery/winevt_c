@@ -19,6 +19,8 @@
  */
 /* clang-format pn */
 
+VALUE rb_cBookmark;
+
 static void bookmark_free(void* ptr);
 
 static const rb_data_type_t rb_winevt_bookmark_type = { "winevt/bookmark",

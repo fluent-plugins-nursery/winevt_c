@@ -17,6 +17,7 @@
  */
 /* clang-format on */
 
+VALUE rb_cFlag;
 
 static void query_free(void* ptr);
 
