@@ -40,12 +40,12 @@ VALUE render_system_event(EVT_HANDLE handle, BOOL preserve_qualifiers);
 }
 #endif /* __cplusplus */
 
-VALUE rb_cQuery;
-VALUE rb_cFlag;
-VALUE rb_cChannel;
-VALUE rb_cBookmark;
-VALUE rb_cSubscribe;
-VALUE rb_eWinevtQueryError;
+extern VALUE rb_cQuery;
+extern VALUE rb_cFlag;
+extern VALUE rb_cChannel;
+extern VALUE rb_cBookmark;
+extern VALUE rb_cSubscribe;
+extern VALUE rb_eWinevtQueryError;
 
 struct WinevtChannel
 {
