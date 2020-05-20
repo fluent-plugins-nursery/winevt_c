@@ -22,6 +22,12 @@
 #define EventBookMark(object) ((struct WinevtBookmark*)DATA_PTR(object))
 #define EventChannel(object) ((struct WinevtChannel*)DATA_PTR(object))
 
+
+typedef struct {
+    LANGID langID;
+    CHAR* langCode;
+} LocaleInfo;
+
 #ifdef __cplusplus
 extern "C" {
 #endif /* __cplusplus */
@@ -35,7 +41,7 @@ VALUE render_to_rb_str(EVT_HANDLE handle, DWORD flags);
 WCHAR* get_description(EVT_HANDLE handle, LANGID langID);
 VALUE get_values(EVT_HANDLE handle);
 VALUE render_system_event(EVT_HANDLE handle, BOOL preserve_qualifiers);
-
+LocaleInfo get_locale_from_rb_str(VALUE rb_locale_str);
 #ifdef __cplusplus
 }
 #endif /* __cplusplus */
@@ -46,6 +52,8 @@ extern VALUE rb_cChannel;
 extern VALUE rb_cBookmark;
 extern VALUE rb_cSubscribe;
 extern VALUE rb_eWinevtQueryError;
+
+extern const LocaleInfo default_locale;
 
 struct WinevtChannel
 {
@@ -89,6 +97,7 @@ struct WinevtSubscribe
   DWORD currentRate;
   BOOL renderAsXML;
   BOOL preserveQualifiers;
+  LocaleInfo localeInfo;
 };
 
 void Init_winevt_query(VALUE rb_cEventLog);

@@ -1,3 +1,4 @@
+# coding: utf-8
 require "helper"
 
 class WinevtTest < Test::Unit::TestCase
@@ -193,6 +194,27 @@ class WinevtTest < Test::Unit::TestCase
       assert_false(@subscribe.preserve_qualifiers?)
       @subscribe.preserve_qualifiers = true
       assert_true(@subscribe.preserve_qualifiers?)
+    end
+
+    data("Japanese"                       => "ja_JP",
+         "Italian (Italy)"                => "it_IT",
+         "English (United States)"        => "en_US",
+         "Spanish (Default: Traditional)" => "es_ES",
+         "Spanish (Traditional)"          => "es_ES_T",
+         "Spanish (Modern)"               => "es_ES_M",
+         "German"                         => "de_DE",
+         "German (Swiss)"                 => "de_CH",
+         "Norwegian (Default: Bokmål)"    => "no_NO",
+         "Norwegian (Bokmål)"             => "nb_NO",
+         "Norwegian (Nynorsk)"            => "nn_NO",
+         "Polish (Poland)"                => "pl_PL",
+         "Portugese (Brazil)"             => "pt_BR",
+         "Russian (Russia)"               => "ru_RU",
+        )
+    def test_locale(data)
+      assert_equal("neutral", @subscribe.locale)
+      @subscribe.locale = data
+      assert_equal(data, @subscribe.locale)
     end
   end
 
