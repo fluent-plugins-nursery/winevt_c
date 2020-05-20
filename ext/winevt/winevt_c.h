@@ -40,7 +40,7 @@ VALUE render_to_rb_str(EVT_HANDLE handle, DWORD flags);
 WCHAR* get_description(EVT_HANDLE handle, LANGID langID);
 VALUE get_values(EVT_HANDLE handle);
 VALUE render_system_event(EVT_HANDLE handle, BOOL preserve_qualifiers);
-LocaleInfo get_locale_from_rb_str(VALUE rb_locale_str);
+LocaleInfo* get_locale_from_rb_str(VALUE rb_locale_str);
 
 #ifdef __cplusplus
 }
@@ -53,7 +53,7 @@ extern VALUE rb_cBookmark;
 extern VALUE rb_cSubscribe;
 extern VALUE rb_eWinevtQueryError;
 
-extern const LocaleInfo default_locale;
+extern const LocaleInfo* default_locale;
 
 struct WinevtChannel
 {
@@ -78,7 +78,7 @@ struct WinevtQuery
   LONG timeout;
   BOOL renderAsXML;
   BOOL preserveQualifiers;
-  LocaleInfo localeInfo;
+  LocaleInfo *localeInfo;
 };
 
 #define SUBSCRIBE_ARRAY_SIZE 10
@@ -98,7 +98,7 @@ struct WinevtSubscribe
   DWORD currentRate;
   BOOL renderAsXML;
   BOOL preserveQualifiers;
-  LocaleInfo localeInfo;
+  LocaleInfo* localeInfo;
 };
 
 void Init_winevt_query(VALUE rb_cEventLog);

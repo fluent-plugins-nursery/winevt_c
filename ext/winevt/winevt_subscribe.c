@@ -90,7 +90,7 @@ rb_winevt_subscribe_initialize(VALUE self)
   winevtSubscribe->renderAsXML = TRUE;
   winevtSubscribe->readExistingEvents = TRUE;
   winevtSubscribe->preserveQualifiers = FALSE;
-  winevtSubscribe->localeInfo = default_locale;
+  winevtSubscribe->localeInfo = (LocaleInfo *)default_locale;
 
   return Qnil;
 }
@@ -346,12 +346,12 @@ rb_winevt_subscribe_render(VALUE self, EVT_HANDLE event)
 }
 
 static VALUE
-rb_winevt_subscribe_message(EVT_HANDLE event, LocaleInfo localeInfo)
+rb_winevt_subscribe_message(EVT_HANDLE event, LocaleInfo* localeInfo)
 {
   WCHAR* wResult;
   VALUE utf8str;
 
-  wResult = get_description(event, localeInfo.langID);
+  wResult = get_description(event, localeInfo->langID);
   utf8str = wstr_to_rb_str(CP_UTF8, wResult, -1);
   free(wResult);
 
@@ -565,7 +565,7 @@ static VALUE
 rb_winevt_subscribe_set_locale(VALUE self, VALUE rb_locale_str)
 {
   struct WinevtSubscribe* winevtSubscribe;
-  LocaleInfo locale_info = default_locale;
+  LocaleInfo* locale_info = (LocaleInfo *)default_locale;
 
   TypedData_Get_Struct(
     self, struct WinevtSubscribe, &rb_winevt_subscribe_type, winevtSubscribe);
@@ -590,10 +590,10 @@ rb_winevt_subscribe_get_locale(VALUE self)
   TypedData_Get_Struct(
     self, struct WinevtSubscribe, &rb_winevt_subscribe_type, winevtSubscribe);
 
-  if (winevtSubscribe->localeInfo.langCode) {
-    return rb_str_new2(winevtSubscribe->localeInfo.langCode);
+  if (winevtSubscribe->localeInfo->langCode) {
+    return rb_str_new2(winevtSubscribe->localeInfo->langCode);
   } else {
-    return rb_str_new2(default_locale.langCode);
+    return rb_str_new2(default_locale->langCode);
   }
 }
 

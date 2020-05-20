@@ -51,9 +51,10 @@ static LocaleInfo localeInfoTable [] = {
     { 0, NULL}
 };
 
-const LocaleInfo default_locale = {MAKELANGID(LANG_NEUTRAL, SUBLANG_NEUTRAL), "neutral"};
+const LocaleInfo mk_default_locale = {MAKELANGID(LANG_NEUTRAL, SUBLANG_NEUTRAL), "neutral"};
+const LocaleInfo *default_locale = &mk_default_locale;
 
-LocaleInfo
+LocaleInfo*
 get_locale_from_rb_str(VALUE rb_locale_str)
 {
   CHAR* locale_str = StringValuePtr(rb_locale_str);
@@ -61,9 +62,9 @@ get_locale_from_rb_str(VALUE rb_locale_str)
 
   for (int i = 0; i < localeInfoTableSize; i++) {
     if (stricmp(localeInfoTable[i].langCode, locale_str) == 0) {
-      return localeInfoTable[i];
+      return &localeInfoTable[i];
     }
   }
 
-  return default_locale;
+  return (LocaleInfo *)default_locale;
 }
