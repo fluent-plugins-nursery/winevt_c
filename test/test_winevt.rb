@@ -85,6 +85,12 @@ class WinevtTest < Test::Unit::TestCase
       @query.locale = data
       assert_equal(data, @query.locale)
     end
+
+    def test_invalid_locale
+      assert_equal("neutral", @query.locale)
+      @query.locale = "ex_EX" # Invalid Locale
+      assert_equal("neutral", @query.locale)
+    end
   end
 
   class BookmarkTest < self
@@ -236,6 +242,12 @@ class WinevtTest < Test::Unit::TestCase
       assert_equal("neutral", @subscribe.locale)
       @subscribe.locale = data
       assert_equal(data, @subscribe.locale)
+    end
+
+    def test_invalid_locale
+      assert_equal("neutral", @subscribe.locale)
+      @subscribe.locale = "ex_EX" # Invalid Locale
+      assert_equal("neutral", @subscribe.locale)
     end
   end
 
