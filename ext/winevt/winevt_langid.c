@@ -1,6 +1,6 @@
 #include <winevt_c.h>
 
-static LocaleInfo localeStrTable [] = {
+static LocaleInfo localeInfoTable [] = {
     { MAKELANGID(LANG_BULGARIAN,  SUBLANG_DEFAULT),              "bg_BG"},
     { MAKELANGID(LANG_CHINESE,    SUBLANG_CHINESE_SIMPLIFIED),   "zh_CN"},
     { MAKELANGID(LANG_CHINESE,    SUBLANG_CHINESE_TRADITIONAL),  "zh_TW"},
@@ -57,11 +57,11 @@ LocaleInfo
 get_locale_from_rb_str(VALUE rb_locale_str)
 {
   CHAR* locale_str = StringValuePtr(rb_locale_str);
-  int localeStrTableSize = _countof(localeStrTable);
+  int localeInfoTableSize = _countof(localeInfoTable);
 
-  for (int i = 0; i < localeStrTableSize; i++) {
-    if (stricmp(localeStrTable[i].langCode, locale_str) == 0) {
-      return localeStrTable[i];
+  for (int i = 0; i < localeInfoTableSize; i++) {
+    if (stricmp(localeInfoTable[i].langCode, locale_str) == 0) {
+      return localeInfoTable[i];
     }
   }
 
