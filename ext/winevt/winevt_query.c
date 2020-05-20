@@ -96,7 +96,7 @@ rb_winevt_query_initialize(VALUE self, VALUE channel, VALUE xpath)
   winevtQuery->timeout = 0L;
   winevtQuery->renderAsXML = TRUE;
   winevtQuery->preserveQualifiers = FALSE;
-  winevtQuery->localeInfo = (LocaleInfo *)default_locale;
+  winevtQuery->localeInfo = &default_locale;
 
   ALLOCV_END(wchannelBuf);
   ALLOCV_END(wpathBuf);
@@ -443,7 +443,7 @@ static VALUE
 rb_winevt_query_set_locale(VALUE self, VALUE rb_locale_str)
 {
   struct WinevtQuery* winevtQuery;
-  LocaleInfo* locale_info = (LocaleInfo *)default_locale;
+  LocaleInfo* locale_info = &default_locale;
 
   TypedData_Get_Struct(
     self, struct WinevtQuery, &rb_winevt_query_type, winevtQuery);
@@ -471,7 +471,7 @@ rb_winevt_query_get_locale(VALUE self)
   if (winevtQuery->localeInfo->langCode) {
     return rb_str_new2(winevtQuery->localeInfo->langCode);
   } else {
-    return rb_str_new2(default_locale->langCode);
+    return rb_str_new2(default_locale.langCode);
   }
 }
 

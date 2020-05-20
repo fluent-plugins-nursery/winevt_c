@@ -51,8 +51,7 @@ static LocaleInfo localeInfoTable [] = {
     { 0, NULL}
 };
 
-const LocaleInfo mk_default_locale = {MAKELANGID(LANG_NEUTRAL, SUBLANG_NEUTRAL), "neutral"};
-const LocaleInfo *default_locale = &mk_default_locale;
+LocaleInfo default_locale = {MAKELANGID(LANG_NEUTRAL, SUBLANG_NEUTRAL), "neutral"};
 
 LocaleInfo*
 get_locale_from_rb_str(VALUE rb_locale_str)
@@ -65,5 +64,5 @@ get_locale_from_rb_str(VALUE rb_locale_str)
     }
   }
 
-  return (LocaleInfo *)default_locale;
+  return &default_locale;
 }

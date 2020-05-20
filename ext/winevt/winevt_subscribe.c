@@ -90,7 +90,7 @@ rb_winevt_subscribe_initialize(VALUE self)
   winevtSubscribe->renderAsXML = TRUE;
   winevtSubscribe->readExistingEvents = TRUE;
   winevtSubscribe->preserveQualifiers = FALSE;
-  winevtSubscribe->localeInfo = (LocaleInfo *)default_locale;
+  winevtSubscribe->localeInfo = &default_locale;
 
   return Qnil;
 }
@@ -565,7 +565,7 @@ static VALUE
 rb_winevt_subscribe_set_locale(VALUE self, VALUE rb_locale_str)
 {
   struct WinevtSubscribe* winevtSubscribe;
-  LocaleInfo* locale_info = (LocaleInfo *)default_locale;
+  LocaleInfo* locale_info = &default_locale;
 
   TypedData_Get_Struct(
     self, struct WinevtSubscribe, &rb_winevt_subscribe_type, winevtSubscribe);
@@ -593,7 +593,7 @@ rb_winevt_subscribe_get_locale(VALUE self)
   if (winevtSubscribe->localeInfo->langCode) {
     return rb_str_new2(winevtSubscribe->localeInfo->langCode);
   } else {
-    return rb_str_new2(default_locale->langCode);
+    return rb_str_new2(default_locale.langCode);
   }
 }
 

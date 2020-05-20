@@ -53,7 +53,7 @@ extern VALUE rb_cBookmark;
 extern VALUE rb_cSubscribe;
 extern VALUE rb_eWinevtQueryError;
 
-extern const LocaleInfo* default_locale;
+extern LocaleInfo default_locale;
 
 struct WinevtChannel
 {
