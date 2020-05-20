@@ -78,6 +78,7 @@ struct WinevtQuery
   LONG timeout;
   BOOL renderAsXML;
   BOOL preserveQualifiers;
+  LocaleInfo localeInfo;
 };
 
 #define SUBSCRIBE_ARRAY_SIZE 10
