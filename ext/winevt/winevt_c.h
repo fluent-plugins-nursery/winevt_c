@@ -22,7 +22,6 @@
 #define EventBookMark(object) ((struct WinevtBookmark*)DATA_PTR(object))
 #define EventChannel(object) ((struct WinevtChannel*)DATA_PTR(object))
 
-
 typedef struct {
     LANGID langID;
     CHAR* langCode;
@@ -42,6 +41,7 @@ WCHAR* get_description(EVT_HANDLE handle, LANGID langID);
 VALUE get_values(EVT_HANDLE handle);
 VALUE render_system_event(EVT_HANDLE handle, BOOL preserve_qualifiers);
 LocaleInfo get_locale_from_rb_str(VALUE rb_locale_str);
+
 #ifdef __cplusplus
 }
 #endif /* __cplusplus */
