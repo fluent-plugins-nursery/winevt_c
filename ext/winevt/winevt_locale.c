@@ -58,9 +58,8 @@ LocaleInfo*
 get_locale_from_rb_str(VALUE rb_locale_str)
 {
   CHAR* locale_str = StringValuePtr(rb_locale_str);
-  int localeInfoTableSize = _countof(localeInfoTable);
 
-  for (int i = 0; i < localeInfoTableSize; i++) {
+  for (int i = 0; localeInfoTable[i].langCode != NULL; i++) {
     if (stricmp(localeInfoTable[i].langCode, locale_str) == 0) {
       return &localeInfoTable[i];
     }
