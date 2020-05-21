@@ -64,5 +64,5 @@ get_locale_from_rb_str(VALUE rb_locale_str)
     }
   }
 
-  return &default_locale;
+  rb_raise(rb_eArgError, "Unknown locale: %s", locale_str);
 }
