@@ -88,8 +88,9 @@ class WinevtTest < Test::Unit::TestCase
 
     def test_invalid_locale
       assert_equal("neutral", @query.locale)
-      @query.locale = "ex_EX" # Invalid Locale
-      assert_equal("neutral", @query.locale)
+      assert_raise(ArgumentError) do
+        @query.locale = "ex_EX" # Invalid Locale
+      end
     end
   end
 
@@ -246,8 +247,9 @@ class WinevtTest < Test::Unit::TestCase
 
     def test_invalid_locale
       assert_equal("neutral", @subscribe.locale)
-      @subscribe.locale = "ex_EX" # Invalid Locale
-      assert_equal("neutral", @subscribe.locale)
+      assert_raise(ArgumentError) do
+        @subscribe.locale = "ex_EX" # Invalid Locale
+      end
     end
   end
 
