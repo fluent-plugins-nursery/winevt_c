@@ -67,6 +67,22 @@ get_locale_from_rb_str(VALUE rb_locale_str)
   rb_raise(rb_eArgError, "Unknown locale: %s", locale_str);
 }
 
+/* clang-format off */
+/*
+ * Document-class: Winevt::EventLog::Locale
+ *
+ * handle locales for Windows EventLog's description.
+ *
+ * @example
+ *  require 'winevt'
+ *
+ *  @locale = Winevt::EventLog::Locale.new
+ *  @locale.each {|code, desc|
+ *    print code, desc
+ *  }
+ */
+/* clang-format on */
+
 VALUE rb_cLocale;
 
 static void locale_free(void* ptr);
