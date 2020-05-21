@@ -570,7 +570,7 @@ rb_winevt_subscribe_set_locale(VALUE self, VALUE rb_locale_str)
   TypedData_Get_Struct(
     self, struct WinevtSubscribe, &rb_winevt_subscribe_type, winevtSubscribe);
 
-  locale_info = get_locale_from_rb_str(rb_locale_str);
+  locale_info = get_locale_info_from_rb_str(rb_locale_str);
 
   winevtSubscribe->localeInfo = locale_info;
 

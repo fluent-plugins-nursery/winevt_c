@@ -41,7 +41,7 @@ VALUE render_to_rb_str(EVT_HANDLE handle, DWORD flags);
 WCHAR* get_description(EVT_HANDLE handle, LANGID langID);
 VALUE get_values(EVT_HANDLE handle);
 VALUE render_system_event(EVT_HANDLE handle, BOOL preserve_qualifiers);
-LocaleInfo* get_locale_from_rb_str(VALUE rb_locale_str);
+LocaleInfo* get_locale_info_from_rb_str(VALUE rb_locale_str);
 
 #ifdef __cplusplus
 }
@@ -55,6 +55,7 @@ extern VALUE rb_cSubscribe;
 extern VALUE rb_eWinevtQueryError;
 extern VALUE rb_cLocale;
 
+extern LocaleInfo localeInfoTable[];
 extern LocaleInfo default_locale;
 
 struct WinevtLocale {};
