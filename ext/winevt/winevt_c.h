@@ -23,8 +23,9 @@
 #define EventChannel(object) ((struct WinevtChannel*)DATA_PTR(object))
 
 typedef struct {
-    LANGID langID;
-    CHAR* langCode;
+  LANGID langID;
+  CHAR* langCode;
+  CHAR* description;
 } LocaleInfo;
 
 #ifdef __cplusplus
@@ -52,8 +53,11 @@ extern VALUE rb_cChannel;
 extern VALUE rb_cBookmark;
 extern VALUE rb_cSubscribe;
 extern VALUE rb_eWinevtQueryError;
+extern VALUE rb_cLocale;
 
 extern LocaleInfo default_locale;
+
+struct WinevtLocale {};
 
 struct WinevtChannel
 {
@@ -105,5 +109,6 @@ void Init_winevt_query(VALUE rb_cEventLog);
 void Init_winevt_channel(VALUE rb_cEventLog);
 void Init_winevt_bookmark(VALUE rb_cEventLog);
 void Init_winevt_subscribe(VALUE rb_cEventLog);
+void Init_winevt_locale(VALUE rb_cEventLog);
 
 #endif // _WINEVT_C_H
