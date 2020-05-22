@@ -14,6 +14,7 @@
  *  @locale.each {|code, desc|
  *    print code, desc
  *  }
+ * @since v0.8.1
  */
 /* clang-format on */
 
