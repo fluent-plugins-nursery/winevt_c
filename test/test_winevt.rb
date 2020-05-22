@@ -270,4 +270,16 @@ class WinevtTest < Test::Unit::TestCase
       assert_true(@channel.force_enumerate)
     end
   end
+
+  class LocaleTest < self
+    def setup
+      @locale = Winevt::EventLog::Locale.new
+    end
+
+    def test_each
+      assert do
+        @locale.each
+      end
+    end
+  end
 end

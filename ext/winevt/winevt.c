@@ -21,6 +21,7 @@ Init_winevt(void)
   Init_winevt_bookmark(rb_cEventLog);
   Init_winevt_query(rb_cEventLog);
   Init_winevt_subscribe(rb_cEventLog);
+  Init_winevt_locale(rb_cEventLog);
 
   id_call = rb_intern("call");
 }

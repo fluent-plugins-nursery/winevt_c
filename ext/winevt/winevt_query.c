@@ -448,7 +448,7 @@ rb_winevt_query_set_locale(VALUE self, VALUE rb_locale_str)
   TypedData_Get_Struct(
     self, struct WinevtQuery, &rb_winevt_query_type, winevtQuery);
 
-  locale_info = get_locale_from_rb_str(rb_locale_str);
+  locale_info = get_locale_info_from_rb_str(rb_locale_str);
 
   winevtQuery->localeInfo = locale_info;
 
