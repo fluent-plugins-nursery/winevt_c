@@ -359,12 +359,12 @@ rb_winevt_subscribe_render(VALUE self, EVT_HANDLE event)
 }
 
 static VALUE
-rb_winevt_subscribe_message(EVT_HANDLE event, LocaleInfo* localeInfo)
+rb_winevt_subscribe_message(EVT_HANDLE event, LocaleInfo* localeInfo, EVT_HANDLE hRemote)
 {
   WCHAR* wResult;
   VALUE utf8str;
 
-  wResult = get_description(event, localeInfo->langID);
+  wResult = get_description(event, localeInfo->langID, hRemote);
   utf8str = wstr_to_rb_str(CP_UTF8, wResult, -1);
   free(wResult);
 
@@ -407,7 +407,8 @@ rb_winevt_subscribe_each_yield(VALUE self)
   for (int i = 0; i < winevtSubscribe->count; i++) {
     rb_yield_values(3,
                     rb_winevt_subscribe_render(self, winevtSubscribe->hEvents[i]),
-                    rb_winevt_subscribe_message(winevtSubscribe->hEvents[i], winevtSubscribe->localeInfo),
+                    rb_winevt_subscribe_message(winevtSubscribe->hEvents[i], winevtSubscribe->localeInfo,
+                                                winevtSubscribe->remoteHandle),
                     rb_winevt_subscribe_string_inserts(winevtSubscribe->hEvents[i]));
   }
 

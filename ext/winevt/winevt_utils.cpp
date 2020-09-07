@@ -453,7 +453,7 @@ cleanup:
 }
 
 WCHAR*
-get_description(EVT_HANDLE handle, LANGID langID)
+get_description(EVT_HANDLE handle, LANGID langID, EVT_HANDLE hRemote)
 {
 #define BUFSIZE 4096
   std::vector<WCHAR> buffer(BUFSIZE);
@@ -490,7 +490,7 @@ get_description(EVT_HANDLE handle, LANGID langID)
 
   // Open publisher metadata
   hMetadata = EvtOpenPublisherMetadata(
-    nullptr,
+    hRemote,
     values[0].StringVal,
     nullptr,
     MAKELCID(langID, SORT_DEFAULT),

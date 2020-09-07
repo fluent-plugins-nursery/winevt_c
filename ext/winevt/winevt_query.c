@@ -237,12 +237,12 @@ rb_winevt_query_render(VALUE self, EVT_HANDLE event)
 }
 
 static VALUE
-rb_winevt_query_message(EVT_HANDLE event, LocaleInfo* localeInfo)
+rb_winevt_query_message(EVT_HANDLE event, LocaleInfo* localeInfo, EVT_HANDLE hRemote)
 {
   WCHAR* wResult;
   VALUE utf8str;
 
-  wResult = get_description(event, localeInfo->langID);
+  wResult = get_description(event, localeInfo->langID, hRemote);
   utf8str = wstr_to_rb_str(CP_UTF8, wResult, -1);
   free(wResult);
 
@@ -354,7 +354,8 @@ rb_winevt_query_each_yield(VALUE self)
   for (int i = 0; i < winevtQuery->count; i++) {
     rb_yield_values(3,
                     rb_winevt_query_render(self, winevtQuery->hEvents[i]),
-                    rb_winevt_query_message(winevtQuery->hEvents[i], winevtQuery->localeInfo),
+                    rb_winevt_query_message(winevtQuery->hEvents[i], winevtQuery->localeInfo,
+                                            winevtQuery->remoteHandle),
                     rb_winevt_query_string_inserts(winevtQuery->hEvents[i]));
   }
   return Qnil;
