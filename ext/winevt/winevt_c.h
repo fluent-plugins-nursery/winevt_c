@@ -21,6 +21,7 @@
 #define EventQuery(object) ((struct WinevtQuery*)DATA_PTR(object))
 #define EventBookMark(object) ((struct WinevtBookmark*)DATA_PTR(object))
 #define EventChannel(object) ((struct WinevtChannel*)DATA_PTR(object))
+#define EventSession(object) ((struct WinevtSession*)DATA_PTR(object))
 
 typedef struct {
   LANGID langID;
@@ -54,6 +55,14 @@ extern VALUE rb_cBookmark;
 extern VALUE rb_cSubscribe;
 extern VALUE rb_eWinevtQueryError;
 extern VALUE rb_cLocale;
+extern VALUE rb_cSession;
+
+struct WinevtSession {
+  WCHAR* computerName;
+  WCHAR* domain;
+  WCHAR* username;
+  WCHAR* password;
+};
 
 extern LocaleInfo localeInfoTable[];
 extern LocaleInfo default_locale;
@@ -111,5 +120,6 @@ void Init_winevt_channel(VALUE rb_cEventLog);
 void Init_winevt_bookmark(VALUE rb_cEventLog);
 void Init_winevt_subscribe(VALUE rb_cEventLog);
 void Init_winevt_locale(VALUE rb_cEventLog);
+void Init_winevt_session(VALUE rb_cEventLog);
 
 #endif // _WINEVT_C_H
