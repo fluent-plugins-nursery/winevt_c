@@ -76,6 +76,26 @@ render_to_rb_str(EVT_HANDLE handle, DWORD flags)
   return result;
 }
 
+EVT_HANDLE
+connect_to_remote(WCHAR* computerName, WCHAR* domain, WCHAR* username, WCHAR* password)
+{
+  EVT_HANDLE hRemote = NULL;
+  EVT_RPC_LOGIN Credentials;
+
+  RtlZeroMemory(&Credentials, sizeof(EVT_RPC_LOGIN));
+  Credentials.Server = computerName;
+  Credentials.Domain = domain;
+  Credentials.User = username;
+  Credentials.Password = password;
+  Credentials.Flags = EvtRpcLoginAuthNegotiate;
+
+  hRemote = EvtOpenSession(EvtRpcLogin, &Credentials, 0, 0);
+
+  SecureZeroMemory(&Credentials, sizeof(EVT_RPC_LOGIN));
+
+  return hRemote;
+}
+
 static std::wstring
 guid_to_wstr(const GUID& guid)
 {
