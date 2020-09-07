@@ -95,6 +95,7 @@ struct WinevtQuery
   BOOL renderAsXML;
   BOOL preserveQualifiers;
   LocaleInfo *localeInfo;
+  EVT_HANDLE remoteHandle;
 };
 
 #define SUBSCRIBE_ARRAY_SIZE 10

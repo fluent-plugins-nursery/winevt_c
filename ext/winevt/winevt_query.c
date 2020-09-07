@@ -42,6 +42,10 @@ query_free(void* ptr)
     if (winevtQuery->hEvents[i])
       EvtClose(winevtQuery->hEvents[i]);
   }
+
+  if (winevtQuery->remoteHandle)
+    EvtClose(winevtQuery->remoteHandle);
+
   xfree(ptr);
 }
 
@@ -64,15 +68,27 @@ rb_winevt_query_alloc(VALUE klass)
  *
  */
 static VALUE
-rb_winevt_query_initialize(VALUE self, VALUE channel, VALUE xpath)
+rb_winevt_query_initialize(VALUE argc, VALUE* argv, VALUE self)
 {
   PWSTR evtChannel, evtXPath;
+  VALUE channel, xpath, session;
   struct WinevtQuery* winevtQuery;
+  struct WinevtSession* winevtSession;
+  EVT_HANDLE hRemoteHandle = NULL;
   DWORD len;
   VALUE wchannelBuf, wpathBuf;
 
+  rb_scan_args(argc, argv, "21", &channel, &xpath, &session);
   Check_Type(channel, T_STRING);
   Check_Type(xpath, T_STRING);
+
+  if (rb_obj_is_kind_of(session, rb_cSession)) {
+    winevtSession = EventSession(rb_cSession);
+    hRemoteHandle = connect_to_remote(winevtSession->computerName,
+                                      winevtSession->domain,
+                                      winevtSession->username,
+                                      winevtSession->password);
+  }
 
   // channel : To wide char
   len =
@@ -91,12 +107,13 @@ rb_winevt_query_initialize(VALUE self, VALUE channel, VALUE xpath)
   TypedData_Get_Struct(self, struct WinevtQuery, &rb_winevt_query_type, winevtQuery);
 
   winevtQuery->query = EvtQuery(
-    NULL, evtChannel, evtXPath, EvtQueryChannelPath | EvtQueryTolerateQueryErrors);
+    hRemoteHandle, evtChannel, evtXPath, EvtQueryChannelPath | EvtQueryTolerateQueryErrors);
   winevtQuery->offset = 0L;
   winevtQuery->timeout = 0L;
   winevtQuery->renderAsXML = TRUE;
   winevtQuery->preserveQualifiers = FALSE;
   winevtQuery->localeInfo = &default_locale;
+  winevtQuery->remoteHandle = hRemoteHandle;
 
   ALLOCV_END(wchannelBuf);
   ALLOCV_END(wpathBuf);
@@ -522,7 +539,7 @@ Init_winevt_query(VALUE rb_cEventLog)
   rb_define_const(rb_cFlag, "Strict", LONG2NUM(EvtSeekStrict));
   /* clang-format on */
 
-  rb_define_method(rb_cQuery, "initialize", rb_winevt_query_initialize, 2);
+  rb_define_method(rb_cQuery, "initialize", rb_winevt_query_initialize, -1);
   rb_define_method(rb_cQuery, "next", rb_winevt_query_next, 0);
   rb_define_method(rb_cQuery, "seek", rb_winevt_query_seek, 1);
   rb_define_method(rb_cQuery, "offset", rb_winevt_query_get_offset, 0);
