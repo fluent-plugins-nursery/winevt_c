@@ -116,6 +116,7 @@ struct WinevtSubscribe
   BOOL renderAsXML;
   BOOL preserveQualifiers;
   LocaleInfo* localeInfo;
+  EVT_HANDLE remoteHandle;
 };
 
 void Init_winevt_query(VALUE rb_cEventLog);

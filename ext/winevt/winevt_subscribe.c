@@ -57,6 +57,9 @@ subscribe_free(void* ptr)
     }
   }
 
+  if (winevtSubscribe->remoteHandle)
+    EvtClose(winevtSubscribe->remoteHandle);
+
   xfree(ptr);
 }
 
@@ -142,13 +145,15 @@ rb_winevt_subscribe_read_existing_events_p(VALUE self)
 static VALUE
 rb_winevt_subscribe_subscribe(int argc, VALUE* argv, VALUE self)
 {
-  VALUE rb_path, rb_query, rb_bookmark;
+  VALUE rb_path, rb_query, rb_bookmark, rb_session;
   EVT_HANDLE hSubscription = NULL, hBookmark = NULL;
   HANDLE hSignalEvent;
+  EVT_HANDLE hRemoteHandle = NULL;
   DWORD len, flags = 0L;
   VALUE wpathBuf, wqueryBuf, wBookmarkBuf;
   PWSTR path, query, bookmarkXml;
   DWORD status = ERROR_SUCCESS;
+  struct WinevtSession* winevtSession;
   struct WinevtSubscribe* winevtSubscribe;
 
   hSignalEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
@@ -156,7 +161,7 @@ rb_winevt_subscribe_subscribe(int argc, VALUE* argv, VALUE self)
   TypedData_Get_Struct(
     self, struct WinevtSubscribe, &rb_winevt_subscribe_type, winevtSubscribe);
 
-  rb_scan_args(argc, argv, "21", &rb_path, &rb_query, &rb_bookmark);
+  rb_scan_args(argc, argv, "22", &rb_path, &rb_query, &rb_bookmark, &rb_session);
   Check_Type(rb_path, T_STRING);
   Check_Type(rb_query, T_STRING);
 
@@ -178,6 +183,13 @@ rb_winevt_subscribe_subscribe(int argc, VALUE* argv, VALUE self)
       status = GetLastError();
       raise_system_error(rb_eWinevtQueryError, status);
     }
+  }
+  if (rb_obj_is_kind_of(rb_session, rb_cSession)) {
+    winevtSession = EventSession(rb_cSession);
+    hRemoteHandle = connect_to_remote(winevtSession->computerName,
+                                      winevtSession->domain,
+                                      winevtSession->username,
+                                      winevtSession->password);
   }
 
   // path : To wide char
@@ -204,7 +216,7 @@ rb_winevt_subscribe_subscribe(int argc, VALUE* argv, VALUE self)
   }
 
   hSubscription =
-    EvtSubscribe(NULL, hSignalEvent, path, query, hBookmark, NULL, NULL, flags);
+    EvtSubscribe(hRemoteHandle, hSignalEvent, path, query, hBookmark, NULL, NULL, flags);
   if (!hSubscription) {
     if (hBookmark != NULL) {
       EvtClose(hBookmark);
@@ -226,6 +238,7 @@ rb_winevt_subscribe_subscribe(int argc, VALUE* argv, VALUE self)
 
   winevtSubscribe->signalEvent = hSignalEvent;
   winevtSubscribe->subscription = hSubscription;
+  winevtSubscribe->remoteHandle = hRemoteHandle;
   if (hBookmark) {
     winevtSubscribe->bookmark = hBookmark;
   } else {
