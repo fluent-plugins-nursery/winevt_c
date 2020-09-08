@@ -77,12 +77,13 @@ render_to_rb_str(EVT_HANDLE handle, DWORD flags)
 }
 
 EVT_HANDLE
-connect_to_remote(WCHAR* computerName, WCHAR* domain, WCHAR* username, WCHAR* password)
+connect_to_remote(LPWSTR computerName, LPWSTR domain, LPWSTR username, LPWSTR password)
 {
   EVT_HANDLE hRemote = NULL;
   EVT_RPC_LOGIN Credentials;
 
   RtlZeroMemory(&Credentials, sizeof(EVT_RPC_LOGIN));
+
   Credentials.Server = computerName;
   Credentials.Domain = domain;
   Credentials.User = username;

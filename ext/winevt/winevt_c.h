@@ -39,8 +39,8 @@ VALUE wstr_to_rb_str(UINT cp, const WCHAR* wstr, int clen);
 #endif /* __cplusplus */
 void  raise_system_error(VALUE error, DWORD errorCode);
 VALUE render_to_rb_str(EVT_HANDLE handle, DWORD flags);
-EVT_HANDLE connect_to_remote(WCHAR* computerName, WCHAR* domain,
-                             WCHAR* username, WCHAR* password);
+EVT_HANDLE connect_to_remote(LPWSTR computerName, LPWSTR domain,
+                             LPWSTR username, LPWSTR password);
 WCHAR* get_description(EVT_HANDLE handle, LANGID langID, EVT_HANDLE hRemote);
 VALUE get_values(EVT_HANDLE handle);
 VALUE render_system_event(EVT_HANDLE handle, BOOL preserve_qualifiers);
@@ -60,10 +60,10 @@ extern VALUE rb_cLocale;
 extern VALUE rb_cSession;
 
 struct WinevtSession {
-  WCHAR* computerName;
-  WCHAR* domain;
-  WCHAR* username;
-  WCHAR* password;
+  LPWSTR server;
+  LPWSTR domain;
+  LPWSTR username;
+  LPWSTR password;
 };
 
 extern LocaleInfo localeInfoTable[];
