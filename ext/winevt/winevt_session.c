@@ -44,60 +44,62 @@ rb_winevt_session_initialize(VALUE self)
   TypedData_Get_Struct(
       self, struct WinevtSession, &rb_winevt_session_type, winevtSession);
 
-  winevtSession->computerName = NULL;
+  winevtSession->server = NULL;
   winevtSession->domain = NULL;
   winevtSession->username = NULL;
-  winevtSession->password= NULL;
+  winevtSession->password = NULL;
 
   return Qnil;
 }
 
 /*
- * This method returns computer name for remoting access.
+ * This method returns server for remoting access.
  *
  * @return [String]
  */
 static VALUE
-rb_winevt_session_get_computer_name(VALUE self)
+rb_winevt_session_get_server(VALUE self)
 {
   struct WinevtSession* winevtSession;
 
   TypedData_Get_Struct(self, struct WinevtSession, &rb_winevt_session_type, winevtSession);
 
-  if (winevtSession->computerName) {
-    return wstr_to_rb_str(CP_UTF8, winevtSession->computerName, -1);
+  if (winevtSession->server) {
+    return wstr_to_rb_str(CP_UTF8, winevtSession->server, -1);
   } else {
     return rb_str_new2("(NULL)");
   }
 }
 
 /*
- * This method specifies computer name for remoting access.
+ * This method specifies server for remoting access.
  *
- * @param rb_computer_name [String] computer name
+ * @param rb_server [String] server
  */
 static VALUE
-rb_winevt_session_set_computer_name(VALUE self, VALUE rb_computer_name)
+rb_winevt_session_set_server(VALUE self, VALUE rb_server)
 {
   struct WinevtSession* winevtSession;
   DWORD len;
-  VALUE wcomputerName;
-  WCHAR* evtComputerName;
+  VALUE vserverBuf;
+  PWSTR wServer;
 
-  Check_Type(rb_computer_name, T_STRING);
+  Check_Type(rb_server, T_STRING);
 
   TypedData_Get_Struct(self, struct WinevtSession, &rb_winevt_session_type, winevtSession);
 
   len =
     MultiByteToWideChar(CP_UTF8, 0,
-                        RSTRING_PTR(rb_computer_name), RSTRING_LEN(rb_computer_name),
+                        RSTRING_PTR(rb_server), RSTRING_LEN(rb_server),
                         NULL, 0);
-  evtComputerName = ALLOCV_N(WCHAR, wcomputerName, len + 1);
+  wServer = ALLOCV_N(WCHAR, vserverBuf, len + 1);
   MultiByteToWideChar(CP_UTF8, 0,
-                      RSTRING_PTR(rb_computer_name), RSTRING_LEN(rb_computer_name),
-                      evtComputerName, len);
+                      RSTRING_PTR(rb_server), RSTRING_LEN(rb_server),
+                      wServer, len);
+  winevtSession->server = _wcsdup(wServer);
+  wServer[len] = L'\0';
 
-  winevtSession->computerName = evtComputerName;
+  ALLOCV_END(vserverBuf);
 
   return Qnil;
 }
@@ -131,8 +133,8 @@ rb_winevt_session_set_domain(VALUE self, VALUE rb_domain)
 {
   struct WinevtSession* winevtSession;
   DWORD len;
-  VALUE wdomain;
-  WCHAR* evtDomain;
+  VALUE vdomainBuf;
+  PWSTR wDomain;
 
   Check_Type(rb_domain, T_STRING);
 
@@ -142,12 +144,15 @@ rb_winevt_session_set_domain(VALUE self, VALUE rb_domain)
     MultiByteToWideChar(CP_UTF8, 0,
                         RSTRING_PTR(rb_domain), RSTRING_LEN(rb_domain),
                         NULL, 0);
-  evtDomain = ALLOCV_N(WCHAR, wdomain, len + 1);
+  wDomain = ALLOCV_N(WCHAR, vdomainBuf, len + 1);
   MultiByteToWideChar(CP_UTF8, 0,
                       RSTRING_PTR(rb_domain), RSTRING_LEN(rb_domain),
-                      evtDomain, len);
+                      wDomain, len);
+  wDomain[len] = L'\0';
 
-  winevtSession->domain = evtDomain;
+  winevtSession->domain = _wcsdup(wDomain);
+
+  ALLOCV_END(vdomainBuf);
 
   return Qnil;
 }
@@ -181,8 +186,8 @@ rb_winevt_session_set_username(VALUE self, VALUE rb_username)
 {
   struct WinevtSession* winevtSession;
   DWORD len;
-  VALUE wusername;
-  WCHAR* evtUsername;
+  VALUE vusernameBuf;
+  PWSTR wUsername;
 
   Check_Type(rb_username, T_STRING);
 
@@ -192,12 +197,15 @@ rb_winevt_session_set_username(VALUE self, VALUE rb_username)
     MultiByteToWideChar(CP_UTF8, 0,
                         RSTRING_PTR(rb_username), RSTRING_LEN(rb_username),
                         NULL, 0);
-  evtUsername = ALLOCV_N(WCHAR, wusername, len + 1);
+  wUsername = ALLOCV_N(WCHAR, vusernameBuf, len + 1);
   MultiByteToWideChar(CP_UTF8, 0,
                       RSTRING_PTR(rb_username), RSTRING_LEN(rb_username),
-                      evtUsername, len);
+                      wUsername, len);
+  wUsername[len] = L'\0';
 
-  winevtSession->username = evtUsername;
+  winevtSession->username = _wcsdup(wUsername);
+
+  ALLOCV_END(vusernameBuf);
 
   return Qnil;
 }
@@ -231,8 +239,8 @@ rb_winevt_session_set_password(VALUE self, VALUE rb_password)
 {
   struct WinevtSession* winevtSession;
   DWORD len;
-  VALUE wpassword;
-  WCHAR* evtPassword;
+  VALUE vpasswordBuf;
+  PWSTR wPassword;
 
   Check_Type(rb_password, T_STRING);
 
@@ -242,12 +250,15 @@ rb_winevt_session_set_password(VALUE self, VALUE rb_password)
     MultiByteToWideChar(CP_UTF8, 0,
                         RSTRING_PTR(rb_password), RSTRING_LEN(rb_password),
                         NULL, 0);
-  evtPassword = ALLOCV_N(WCHAR, wpassword, len + 1);
+  wPassword = ALLOCV_N(WCHAR, vpasswordBuf, len + 1);
   MultiByteToWideChar(CP_UTF8, 0,
                       RSTRING_PTR(rb_password), RSTRING_LEN(rb_password),
-                      evtPassword, len);
+                      wPassword, len);
+  wPassword[len] = L'\0';
 
-  winevtSession->password = evtPassword;
+  winevtSession->password = _wcsdup(wPassword);
+
+  ALLOCV_END(vpasswordBuf);
 
   return Qnil;
 }
@@ -260,8 +271,8 @@ Init_winevt_session(VALUE rb_cEventLog)
   rb_define_alloc_func(rb_cSession, rb_winevt_session_alloc);
 
   rb_define_method(rb_cSession, "initialize", rb_winevt_session_initialize, 0);
-  rb_define_method(rb_cSession, "computer_name", rb_winevt_session_get_computer_name, 0);
-  rb_define_method(rb_cSession, "computer_name=", rb_winevt_session_set_computer_name, 1);
+  rb_define_method(rb_cSession, "server", rb_winevt_session_get_server, 0);
+  rb_define_method(rb_cSession, "server=", rb_winevt_session_set_server, 1);
   rb_define_method(rb_cSession, "domain", rb_winevt_session_get_domain, 0);
   rb_define_method(rb_cSession, "domain=", rb_winevt_session_set_domain, 1);
   rb_define_method(rb_cSession, "username", rb_winevt_session_get_username, 0);
