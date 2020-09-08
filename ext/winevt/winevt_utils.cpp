@@ -88,7 +88,7 @@ connect_to_remote(LPWSTR computerName, LPWSTR domain, LPWSTR username, LPWSTR pa
   Credentials.Domain = domain;
   Credentials.User = username;
   Credentials.Password = password;
-  Credentials.Flags = EvtRpcLoginAuthNegotiate;
+  Credentials.Flags = EvtRpcLoginAuthDefault;
 
   hRemote = EvtOpenSession(EvtRpcLogin, &Credentials, 0, 0);
 
