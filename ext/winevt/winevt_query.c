@@ -77,17 +77,23 @@ rb_winevt_query_initialize(VALUE argc, VALUE* argv, VALUE self)
   EVT_HANDLE hRemoteHandle = NULL;
   DWORD len;
   VALUE wchannelBuf, wpathBuf;
+  DWORD err;
 
   rb_scan_args(argc, argv, "21", &channel, &xpath, &session);
   Check_Type(channel, T_STRING);
   Check_Type(xpath, T_STRING);
 
   if (rb_obj_is_kind_of(session, rb_cSession)) {
-    winevtSession = EventSession(rb_cSession);
-    hRemoteHandle = connect_to_remote(winevtSession->computerName,
+    winevtSession = EventSession(session);
+
+    hRemoteHandle = connect_to_remote(winevtSession->server,
                                       winevtSession->domain,
                                       winevtSession->username,
                                       winevtSession->password);
+    err = GetLastError();
+    if (err != ERROR_SUCCESS) {
+      rb_raise(rb_eArgError, "Cannot authorize remote server. Error: %ld", err);
+    }
   }
 
   // channel : To wide char

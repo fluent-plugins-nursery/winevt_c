@@ -185,8 +185,8 @@ rb_winevt_subscribe_subscribe(int argc, VALUE* argv, VALUE self)
     }
   }
   if (rb_obj_is_kind_of(rb_session, rb_cSession)) {
-    winevtSession = EventSession(rb_cSession);
-    hRemoteHandle = connect_to_remote(winevtSession->computerName,
+    winevtSession = EventSession(rb_session);
+    hRemoteHandle = connect_to_remote(winevtSession->server,
                                       winevtSession->domain,
                                       winevtSession->username,
                                       winevtSession->password);
