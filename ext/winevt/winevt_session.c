@@ -17,6 +17,17 @@ static const rb_data_type_t rb_winevt_session_type = { "winevt/session",
 static void
 session_free(void* ptr)
 {
+  struct WinevtSession* winevtSession = (struct WinevtSession*)ptr;
+
+  if (winevtSession->server)
+    free(winevtSession->server);
+  if (winevtSession->domain)
+    free(winevtSession->domain);
+  if (winevtSession->username)
+    free(winevtSession->username);
+  if (winevtSession->password)
+    free(winevtSession->password);
+
   xfree(ptr);
 }
 
