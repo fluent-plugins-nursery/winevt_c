@@ -90,9 +90,10 @@ rb_winevt_query_initialize(VALUE argc, VALUE* argv, VALUE self)
                                       winevtSession->domain,
                                       winevtSession->username,
                                       winevtSession->password);
+
     err = GetLastError();
     if (err != ERROR_SUCCESS) {
-      rb_raise(rb_eArgError, "Cannot authorize remote server. Error: %ld", err);
+      raise_system_error(rb_eRuntimeError, err);
     }
   }
 
