@@ -150,6 +150,7 @@ rb_winevt_subscribe_subscribe(int argc, VALUE* argv, VALUE self)
   HANDLE hSignalEvent;
   EVT_HANDLE hRemoteHandle = NULL;
   DWORD len, flags = 0L;
+  DWORD err = ERROR_SUCCESS;
   VALUE wpathBuf, wqueryBuf, wBookmarkBuf;
   PWSTR path, query, bookmarkXml;
   DWORD status = ERROR_SUCCESS;
@@ -190,6 +191,11 @@ rb_winevt_subscribe_subscribe(int argc, VALUE* argv, VALUE self)
                                       winevtSession->domain,
                                       winevtSession->username,
                                       winevtSession->password);
+
+    err = GetLastError();
+    if (err != ERROR_SUCCESS) {
+      raise_system_error(rb_eRuntimeError, err);
+    }
   }
 
   // path : To wide char
