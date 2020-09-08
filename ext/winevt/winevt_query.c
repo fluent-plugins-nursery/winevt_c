@@ -114,6 +114,10 @@ rb_winevt_query_initialize(VALUE argc, VALUE* argv, VALUE self)
 
   winevtQuery->query = EvtQuery(
     hRemoteHandle, evtChannel, evtXPath, EvtQueryChannelPath | EvtQueryTolerateQueryErrors);
+  err = GetLastError();
+  if (err != ERROR_SUCCESS) {
+    raise_system_error(rb_eRuntimeError, err);
+  }
   winevtQuery->offset = 0L;
   winevtQuery->timeout = 0L;
   winevtQuery->renderAsXML = TRUE;
