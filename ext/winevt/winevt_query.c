@@ -62,13 +62,15 @@ rb_winevt_query_alloc(VALUE klass)
 /*
  * Initalize Query class.
  *
- * @param channel [String] Querying EventLog channel.
- * @param xpath [String] Querying XPath.
+ * @overload initialize(channel, xpath, session=nil)
+ *   @param channel [String] Querying EventLog channel.
+ *   @param xpath [String] Querying XPath.
+ *   @param session [Session] Session information for remoting access.
  * @return [Query]
  *
  */
 static VALUE
-rb_winevt_query_initialize(VALUE argc, VALUE* argv, VALUE self)
+rb_winevt_query_initialize(VALUE argc, VALUE *argv, VALUE self)
 {
   PWSTR evtChannel, evtXPath;
   VALUE channel, xpath, session;
@@ -431,7 +433,7 @@ rb_winevt_query_set_render_as_xml(VALUE self, VALUE rb_render_as_xml)
  * This method specifies whether preserving qualifiers key or not.
  *
  * @since 0.7.3
- * @param rb_render_as_xml [Boolean]
+ * @param rb_preserve_qualifiers [Boolean]
  */
 static VALUE
 rb_winevt_query_set_preserve_qualifiers(VALUE self, VALUE rb_preserve_qualifiers)
