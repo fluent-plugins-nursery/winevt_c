@@ -282,4 +282,34 @@ class WinevtTest < Test::Unit::TestCase
       end
     end
   end
+
+  class SessionTest < self
+    def setup
+      @session = Winevt::EventLog::Session.new
+    end
+
+    def test_server
+      assert_equal("(NULL)", @session.server)
+      @session.server = "127.0.0.1"
+      assert_equal("127.0.0.1", @session.server)
+    end
+
+    def test_domain
+      assert_equal("(NULL)", @session.domain)
+      @session.domain = "EXAMPLEGROUP"
+      assert_equal("EXAMPLEGROUP", @session.domain)
+    end
+
+    def test_username
+      assert_equal("(NULL)", @session.username)
+      @session.username = "testuser"
+      assert_equal("testuser", @session.username)
+    end
+
+    def test_password
+      assert_equal("(NULL)", @session.password)
+      @session.password = "changeme!"
+      assert_equal("changeme!", @session.password)
+    end
+  end
 end
