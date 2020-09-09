@@ -231,7 +231,11 @@ rb_winevt_subscribe_subscribe(int argc, VALUE* argv, VALUE self)
       CloseHandle(hSignalEvent);
     }
     status = GetLastError();
-    raise_system_error(rb_eWinevtQueryError, status);
+    if (rb_obj_is_kind_of(rb_session, rb_cSession)) {
+      rb_raise(rb_eRuntimeError, "Remoting subscription is not working. errCode: %ld\n", status);
+    } else {
+      raise_system_error(rb_eWinevtQueryError, status);
+    }
   }
 
   if (winevtSubscribe->subscription != NULL) {
