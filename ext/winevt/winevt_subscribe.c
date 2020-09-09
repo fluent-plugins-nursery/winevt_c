@@ -135,10 +135,11 @@ rb_winevt_subscribe_read_existing_events_p(VALUE self)
 /*
  * Subscribe into a Windows EventLog channel.
  *
- * @overload subscribe(path, query, options={})
+ * @overload subscribe(path, query, bookmark=nil, session=nil)
  *   @param path [String] Subscribe Channel
  *   @param query [String] Query string for channel
- *   @option options [Bookmark] bookmark Bookmark class instance.
+ *   @param bookmark [Bookmark] bookmark Bookmark class instance.
+ *   @param session [Session] Session information for remoting access.
  * @return [Boolean]
  *
  */
@@ -548,7 +549,7 @@ rb_winevt_subscribe_set_render_as_xml(VALUE self, VALUE rb_render_as_xml)
  * This method specifies whether preserving qualifiers key or not.
  *
  * @since 0.7.3
- * @param rb_render_as_xml [Boolean]
+ * @param rb_preserve_qualifiers [Boolean]
  */
 static VALUE
 rb_winevt_subscribe_set_preserve_qualifiers(VALUE self, VALUE rb_preserve_qualifiers)
