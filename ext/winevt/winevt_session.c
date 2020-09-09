@@ -1,5 +1,39 @@
 #include <winevt_c.h>
 
+/* clang-format off */
+/*
+ * Document-class: Winevt::EventLog::Session
+ *
+ * Manage Session information for Windows EventLog.
+ *
+ * @example
+ *  require 'winevt'
+ *
+ *  @session = Winevt::EventLog::Session.new("127.0.0.1")
+ *
+ *  @session.domain = "<EXAMPLEGROUP>"
+ *  @session.username = "<username>"
+ *  @session.password = "<password>"
+ *  # Then pass @session veriable into Winevt::EventLog::Query or
+ *  # Winevt::EventLog::Subscribe#subscribe
+ *  @query = Winevt::EventLog::Query.new(
+ *    "Application",
+ *    "*[System[(Level <= 3) and TimeCreated[timediff(@SystemTime) <= 86400000]]]",
+ *    @session
+ *  )
+ *  # some stuff.
+ *
+ *  @subscribe = Winevt::EventLog::Subscribe.new
+ *  @subscribe.subscribe(
+ *    "Application",
+ *    "*[System[(Level <= 4) and TimeCreated[timediff(@SystemTime) <= 86400000]]]",
+ *    @session
+ *  )
+ *  # And some stuff.
+ * @since v0.9.0
+ */
+/* clang-format on */
+
 VALUE rb_cSession;
 VALUE rb_cRpcLoginFlag;
 
@@ -45,9 +79,16 @@ rb_winevt_session_alloc(VALUE klass)
 /*
  * Initalize Session class.
  *
+ * @overload initialize(server, domain=nil, username=nil, password=nil, flags=Winevt::EventLog::Session::RpcLoginFlag::AuthDefault)
+ *   @param server [String] Server ip address or fqdn.
+ *   @param domain [String] Domain name.
+ *   @param username [String] username on remote server.
+ *   @param password [String] Remote server user password.
+ *   @param flags [Integer] Flags for authentication method choices.
  * @return [Session]
  *
  */
+
 static VALUE
 rb_winevt_session_initialize(VALUE self)
 {
@@ -361,8 +402,24 @@ Init_winevt_session(VALUE rb_cEventLog)
   rb_define_method(rb_cSession, "flags", rb_winevt_session_get_flags, 0);
   rb_define_method(rb_cSession, "flags=", rb_winevt_session_set_flags, 1);
 
+  /*
+   * EVT_RPC_LOGIN_FLAGS enumeration: EvtRpcLoginAuthDefault
+   * @see https://docs.microsoft.com/en-us/windows/win32/api/winevt/ne-winevt-evt_rpc_login_flags
+   */
   rb_define_const(rb_cRpcLoginFlag, "AuthDefault", LONG2NUM(EvtRpcLoginAuthDefault));
+  /*
+   * EVT_RPC_LOGIN_FLAGS enumeration: EvtRpcLoginAuthNegociate
+   * @see https://docs.microsoft.com/en-us/windows/win32/api/winevt/ne-winevt-evt_rpc_login_flags
+   */
   rb_define_const(rb_cRpcLoginFlag, "AuthNegociate", LONG2NUM(EvtRpcLoginAuthNegotiate));
+  /*
+   * EVT_RPC_LOGIN_FLAGS enumeration: EvtRpcLoginAuthKerberos
+   * @see https://docs.microsoft.com/en-us/windows/win32/api/winevt/ne-winevt-evt_rpc_login_flags
+   */
   rb_define_const(rb_cRpcLoginFlag, "AuthKerberos", LONG2NUM(EvtRpcLoginAuthKerberos));
+  /*
+   * EVT_RPC_LOGIN_FLAGS enumeration: EvtRpcLoginAuthNTLM
+   * @see https://docs.microsoft.com/en-us/windows/win32/api/winevt/ne-winevt-evt_rpc_login_flags
+   */
   rb_define_const(rb_cRpcLoginFlag, "AuthNTLM", LONG2NUM(EvtRpcLoginAuthNTLM));
 }
