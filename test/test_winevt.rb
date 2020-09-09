@@ -311,5 +311,17 @@ class WinevtTest < Test::Unit::TestCase
       @session.password = "changeme!"
       assert_equal("changeme!", @session.password)
     end
+
+    def test_flags
+      @session.flags = Winevt::EventLog::Session::RpcLoginFlag::AuthNTLM
+      assert_equal(Winevt::EventLog::Session::RpcLoginFlag::AuthNTLM,
+                   @session.flags)
+      @session.flags = :kerberos
+      assert_equal(Winevt::EventLog::Session::RpcLoginFlag::AuthKerberos,
+                   @session.flags)
+      @session.flags = "ntlm"
+      assert_equal(Winevt::EventLog::Session::RpcLoginFlag::AuthNTLM,
+                   @session.flags)
+    end
   end
 end

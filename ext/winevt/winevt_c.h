@@ -64,6 +64,7 @@ struct WinevtSession {
   LPWSTR domain;
   LPWSTR username;
   LPWSTR password;
+  EVT_RPC_LOGIN_FLAGS flags;
 };
 
 extern LocaleInfo localeInfoTable[];

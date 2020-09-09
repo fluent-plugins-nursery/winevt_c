@@ -1,6 +1,7 @@
 #include <winevt_c.h>
 
 VALUE rb_cSession;
+VALUE rb_cRpcLoginFlag;
 
 static void session_free(void* ptr);
 
@@ -59,6 +60,7 @@ rb_winevt_session_initialize(VALUE self)
   winevtSession->domain = NULL;
   winevtSession->username = NULL;
   winevtSession->password = NULL;
+  winevtSession->flags = EvtRpcLoginAuthDefault;
 
   return Qnil;
 }
@@ -274,12 +276,78 @@ rb_winevt_session_set_password(VALUE self, VALUE rb_password)
   return Qnil;
 }
 
+/*
+ * This method returns flags for remoting access.
+ *
+ * @return [Integer]
+ */
+static VALUE
+rb_winevt_session_get_flags(VALUE self)
+{
+  struct WinevtSession* winevtSession;
+
+  TypedData_Get_Struct(self, struct WinevtSession, &rb_winevt_session_type, winevtSession);
+
+  return LONG2NUM(winevtSession->flags);
+}
+
+static DWORD
+get_session_rpc_login_flag_from_cstr(char* flag_str)
+{
+  if (strcmp(flag_str, "default") == 0)
+    return EvtRpcLoginAuthDefault;
+  else if (strcmp(flag_str, "negociate") == 0)
+    return EvtRpcLoginAuthNegotiate;
+  else if (strcmp(flag_str, "kerberos") == 0)
+    return EvtRpcLoginAuthKerberos;
+  else if (strcmp(flag_str, "ntlm") == 0)
+    return EvtRpcLoginAuthNTLM;
+  else
+    rb_raise(rb_eArgError, "Unknown rpc login flag: %s", flag_str);
+
+  return 0;
+}
+
+
+/*
+ * This method specifies flags for remoting access.
+ *
+ * @param rb_flags [Integer] flags
+ */
+static VALUE
+rb_winevt_session_set_flags(VALUE self, VALUE rb_flags)
+{
+  struct WinevtSession* winevtSession;
+  EVT_RPC_LOGIN_FLAGS flags = EvtRpcLoginAuthDefault;
+
+  TypedData_Get_Struct(self, struct WinevtSession, &rb_winevt_session_type, winevtSession);
+
+  switch(TYPE(rb_flags)) {
+    case T_SYMBOL:
+      flags = get_session_rpc_login_flag_from_cstr(RSTRING_PTR(rb_sym2str(rb_flags)));
+      break;
+    case T_STRING:
+      flags = get_session_rpc_login_flag_from_cstr(StringValuePtr(rb_flags));
+      break;
+    case T_FIXNUM:
+      flags = NUM2LONG(rb_flags);
+      break;
+    default:
+      rb_raise(rb_eArgError, "Expected Symbol, String or Fixnum in flags");
+  }
+  winevtSession->flags = flags;
+
+  return Qnil;
+}
+
 void
 Init_winevt_session(VALUE rb_cEventLog)
 {
   rb_cSession = rb_define_class_under(rb_cEventLog, "Session", rb_cObject);
 
   rb_define_alloc_func(rb_cSession, rb_winevt_session_alloc);
+
+  rb_cRpcLoginFlag = rb_define_module_under(rb_cSession, "RpcLoginFlag");
 
   rb_define_method(rb_cSession, "initialize", rb_winevt_session_initialize, 0);
   rb_define_method(rb_cSession, "server", rb_winevt_session_get_server, 0);
@@ -290,4 +358,11 @@ Init_winevt_session(VALUE rb_cEventLog)
   rb_define_method(rb_cSession, "username=", rb_winevt_session_set_username, 1);
   rb_define_method(rb_cSession, "password", rb_winevt_session_get_password, 0);
   rb_define_method(rb_cSession, "password=", rb_winevt_session_set_password, 1);
+  rb_define_method(rb_cSession, "flags", rb_winevt_session_get_flags, 0);
+  rb_define_method(rb_cSession, "flags=", rb_winevt_session_set_flags, 1);
+
+  rb_define_const(rb_cRpcLoginFlag, "AuthDefault", LONG2NUM(EvtRpcLoginAuthDefault));
+  rb_define_const(rb_cRpcLoginFlag, "AuthNegociate", LONG2NUM(EvtRpcLoginAuthNegotiate));
+  rb_define_const(rb_cRpcLoginFlag, "AuthKerberos", LONG2NUM(EvtRpcLoginAuthKerberos));
+  rb_define_const(rb_cRpcLoginFlag, "AuthNTLM", LONG2NUM(EvtRpcLoginAuthNTLM));
 }
