@@ -285,12 +285,10 @@ class WinevtTest < Test::Unit::TestCase
 
   class SessionTest < self
     def setup
-      @session = Winevt::EventLog::Session.new
+      @session = Winevt::EventLog::Session.new("127.0.0.1")
     end
 
     def test_server
-      assert_equal("(NULL)", @session.server)
-      @session.server = "127.0.0.1"
       assert_equal("127.0.0.1", @session.server)
     end
 

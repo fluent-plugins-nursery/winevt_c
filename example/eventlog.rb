@@ -1,7 +1,6 @@
 require 'winevt'
 
-@session = Winevt::EventLog::Session.new
-@session.server = "127.0.0.1" # Or remote box ip
+@session = Winevt::EventLog::Session.new("127.0.0.1") # Or remote box ip
 # @session.domain = "<EXAMPLEGROUP>"
 # @session.username = "<username>"
 # @session.password = "<password>"
