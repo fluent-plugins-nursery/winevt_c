@@ -15,6 +15,14 @@ class WinevtTest < Test::Unit::TestCase
       end
     end
 
+    def test_query_with_session
+      query = "*[System[(Level <= 3) and TimeCreated[timediff(@SystemTime) <= 86400000]]]"
+      session = Winevt::EventLog::Session.new("127.0.0.1")
+      assert do
+        Winevt::EventLog::Query.new("Application", query, session)
+      end
+    end
+
     def test_next
       assert_true(@query.next)
     end
@@ -146,6 +154,14 @@ class WinevtTest < Test::Unit::TestCase
       end
     end
 
+    def test_query_with_session
+      query = "*[System[(Level <= 3) and TimeCreated[timediff(@SystemTime) <= 86400000]]]"
+      session = Winevt::EventLog::Session.new("127.0.0.1")
+      assert do
+        @subscribe.subscribe("Application", query, session)
+      end
+    end
+
     def test_subscribe_twice
       subscribe = Winevt::EventLog::Subscribe.new
       subscribe.subscribe("Application", "*")
@@ -157,6 +173,13 @@ class WinevtTest < Test::Unit::TestCase
     def test_subscribe_with_bookmark
       subscribe = Winevt::EventLog::Subscribe.new
       subscribe.subscribe("Application", "*", @bookmark)
+      assert_true(subscribe.next)
+    end
+
+    def test_subscribe_with_bookmark_and_session
+      subscribe = Winevt::EventLog::Subscribe.new
+      session = Winevt::EventLog::Session.new("127.0.0.1")
+      subscribe.subscribe("Application", "*", @bookmark, session)
       assert_true(subscribe.next)
     end
 
