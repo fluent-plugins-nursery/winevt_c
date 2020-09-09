@@ -1,6 +1,11 @@
 require 'winevt'
 
-@query = Winevt::EventLog::Query.new("Application", "*[System[(Level <= 3) and TimeCreated[timediff(@SystemTime) <= 86400000]]]")
+@session = Winevt::EventLog::Session.new
+@session.server = "127.0.0.1" # Or remote box ip
+# @session.domain = "<EXAMPLEGROUP>"
+# @session.username = "<username>"
+# @session.password = "<password>"
+@query = Winevt::EventLog::Query.new("Application", "*[System[(Level <= 4) and TimeCreated[timediff(@SystemTime) <= 86400000]]]", @session)
 
 @query.render_as_xml = true
 @query.preserve_qualifiers = true
