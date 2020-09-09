@@ -190,7 +190,8 @@ rb_winevt_subscribe_subscribe(int argc, VALUE* argv, VALUE self)
     hRemoteHandle = connect_to_remote(winevtSession->server,
                                       winevtSession->domain,
                                       winevtSession->username,
-                                      winevtSession->password);
+                                      winevtSession->password,
+                                      winevtSession->flags);
 
     err = GetLastError();
     if (err != ERROR_SUCCESS) {

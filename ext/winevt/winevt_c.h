@@ -40,7 +40,8 @@ VALUE wstr_to_rb_str(UINT cp, const WCHAR* wstr, int clen);
 void  raise_system_error(VALUE error, DWORD errorCode);
 VALUE render_to_rb_str(EVT_HANDLE handle, DWORD flags);
 EVT_HANDLE connect_to_remote(LPWSTR computerName, LPWSTR domain,
-                             LPWSTR username, LPWSTR password);
+                             LPWSTR username, LPWSTR password,
+                             EVT_RPC_LOGIN_FLAGS flags);
 WCHAR* get_description(EVT_HANDLE handle, LANGID langID, EVT_HANDLE hRemote);
 VALUE get_values(EVT_HANDLE handle);
 VALUE render_system_event(EVT_HANDLE handle, BOOL preserve_qualifiers);

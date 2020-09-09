@@ -77,7 +77,8 @@ render_to_rb_str(EVT_HANDLE handle, DWORD flags)
 }
 
 EVT_HANDLE
-connect_to_remote(LPWSTR computerName, LPWSTR domain, LPWSTR username, LPWSTR password)
+connect_to_remote(LPWSTR computerName, LPWSTR domain, LPWSTR username, LPWSTR password,
+                  EVT_RPC_LOGIN_FLAGS flags)
 {
   EVT_HANDLE hRemote = NULL;
   EVT_RPC_LOGIN Credentials;
@@ -88,7 +89,7 @@ connect_to_remote(LPWSTR computerName, LPWSTR domain, LPWSTR username, LPWSTR pa
   Credentials.Domain = domain;
   Credentials.User = username;
   Credentials.Password = password;
-  Credentials.Flags = EvtRpcLoginAuthDefault;
+  Credentials.Flags = flags;
 
   hRemote = EvtOpenSession(EvtRpcLogin, &Credentials, 0, 0);
 
