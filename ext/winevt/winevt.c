@@ -5,6 +5,7 @@ VALUE rb_cQuery;
 VALUE rb_cEventLog;
 VALUE rb_cSubscribe;
 VALUE rb_eWinevtQueryError;
+VALUE rb_eRemoteHandlerError;
 
 static ID id_call;
 
@@ -16,6 +17,7 @@ Init_winevt(void)
   rb_cQuery = rb_define_class_under(rb_cEventLog, "Query", rb_cObject);
   rb_cSubscribe = rb_define_class_under(rb_cEventLog, "Subscribe", rb_cObject);
   rb_eWinevtQueryError = rb_define_class_under(rb_cQuery, "Error", rb_eStandardError);
+  rb_eRemoteHandlerError = rb_define_class_under(rb_cSubscribe, "RemoteHandlerError", rb_eRuntimeError);
 
   Init_winevt_channel(rb_cEventLog);
   Init_winevt_bookmark(rb_cEventLog);
