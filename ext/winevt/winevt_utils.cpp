@@ -76,6 +76,28 @@ render_to_rb_str(EVT_HANDLE handle, DWORD flags)
   return result;
 }
 
+EVT_HANDLE
+connect_to_remote(LPWSTR computerName, LPWSTR domain, LPWSTR username, LPWSTR password,
+                  EVT_RPC_LOGIN_FLAGS flags)
+{
+  EVT_HANDLE hRemote = NULL;
+  EVT_RPC_LOGIN Credentials;
+
+  RtlZeroMemory(&Credentials, sizeof(EVT_RPC_LOGIN));
+
+  Credentials.Server = computerName;
+  Credentials.Domain = domain;
+  Credentials.User = username;
+  Credentials.Password = password;
+  Credentials.Flags = flags;
+
+  hRemote = EvtOpenSession(EvtRpcLogin, &Credentials, 0, 0);
+
+  SecureZeroMemory(&Credentials, sizeof(EVT_RPC_LOGIN));
+
+  return hRemote;
+}
+
 static std::wstring
 guid_to_wstr(const GUID& guid)
 {
@@ -433,7 +455,7 @@ cleanup:
 }
 
 WCHAR*
-get_description(EVT_HANDLE handle, LANGID langID)
+get_description(EVT_HANDLE handle, LANGID langID, EVT_HANDLE hRemote)
 {
 #define BUFSIZE 4096
   std::vector<WCHAR> buffer(BUFSIZE);
@@ -470,7 +492,7 @@ get_description(EVT_HANDLE handle, LANGID langID)
 
   // Open publisher metadata
   hMetadata = EvtOpenPublisherMetadata(
-    nullptr,
+    hRemote,
     values[0].StringVal,
     nullptr,
     MAKELCID(langID, SORT_DEFAULT),

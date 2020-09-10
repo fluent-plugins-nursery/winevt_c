@@ -15,6 +15,14 @@ class WinevtTest < Test::Unit::TestCase
       end
     end
 
+    def test_query_with_session
+      query = "*[System[(Level <= 3) and TimeCreated[timediff(@SystemTime) <= 86400000]]]"
+      session = Winevt::EventLog::Session.new("127.0.0.1")
+      assert do
+        Winevt::EventLog::Query.new("Application", query, session)
+      end
+    end
+
     def test_next
       assert_true(@query.next)
     end
@@ -146,6 +154,14 @@ class WinevtTest < Test::Unit::TestCase
       end
     end
 
+    def test_query_with_session
+      query = "*[System[(Level <= 3) and TimeCreated[timediff(@SystemTime) <= 86400000]]]"
+      session = Winevt::EventLog::Session.new("127.0.0.1")
+      assert do
+        @subscribe.subscribe("Application", query, session)
+      end
+    end
+
     def test_subscribe_twice
       subscribe = Winevt::EventLog::Subscribe.new
       subscribe.subscribe("Application", "*")
@@ -157,6 +173,13 @@ class WinevtTest < Test::Unit::TestCase
     def test_subscribe_with_bookmark
       subscribe = Winevt::EventLog::Subscribe.new
       subscribe.subscribe("Application", "*", @bookmark)
+      assert_true(subscribe.next)
+    end
+
+    def test_subscribe_with_bookmark_and_session
+      subscribe = Winevt::EventLog::Subscribe.new
+      session = Winevt::EventLog::Session.new("127.0.0.1")
+      subscribe.subscribe("Application", "*", @bookmark, session)
       assert_true(subscribe.next)
     end
 
@@ -280,6 +303,46 @@ class WinevtTest < Test::Unit::TestCase
       assert do
         @locale.each
       end
+    end
+  end
+
+  class SessionTest < self
+    def setup
+      @session = Winevt::EventLog::Session.new("127.0.0.1")
+    end
+
+    def test_server
+      assert_equal("127.0.0.1", @session.server)
+    end
+
+    def test_domain
+      assert_equal("(NULL)", @session.domain)
+      @session.domain = "EXAMPLEGROUP"
+      assert_equal("EXAMPLEGROUP", @session.domain)
+    end
+
+    def test_username
+      assert_equal("(NULL)", @session.username)
+      @session.username = "testuser"
+      assert_equal("testuser", @session.username)
+    end
+
+    def test_password
+      assert_equal("(NULL)", @session.password)
+      @session.password = "changeme!"
+      assert_equal("changeme!", @session.password)
+    end
+
+    def test_flags
+      @session.flags = Winevt::EventLog::Session::RpcLoginFlag::AuthNTLM
+      assert_equal(Winevt::EventLog::Session::RpcLoginFlag::AuthNTLM,
+                   @session.flags)
+      @session.flags = :kerberos
+      assert_equal(Winevt::EventLog::Session::RpcLoginFlag::AuthKerberos,
+                   @session.flags)
+      @session.flags = "ntlm"
+      assert_equal(Winevt::EventLog::Session::RpcLoginFlag::AuthNTLM,
+                   @session.flags)
     end
   end
 end

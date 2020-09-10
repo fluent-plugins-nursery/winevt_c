@@ -7,6 +7,7 @@ require "winevt/bookmark"
 require "winevt/query"
 require "winevt/subscribe"
 require "winevt/version"
+require "winevt/session"
 
 module Winevt
   # Your code goes here...

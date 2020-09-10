@@ -42,6 +42,10 @@ query_free(void* ptr)
     if (winevtQuery->hEvents[i])
       EvtClose(winevtQuery->hEvents[i]);
   }
+
+  if (winevtQuery->remoteHandle)
+    EvtClose(winevtQuery->remoteHandle);
+
   xfree(ptr);
 }
 
@@ -58,21 +62,43 @@ rb_winevt_query_alloc(VALUE klass)
 /*
  * Initalize Query class.
  *
- * @param channel [String] Querying EventLog channel.
- * @param xpath [String] Querying XPath.
+ * @overload initialize(channel, xpath, session=nil)
+ *   @param channel [String] Querying EventLog channel.
+ *   @param xpath [String] Querying XPath.
+ *   @param session [Session] Session information for remoting access.
  * @return [Query]
  *
  */
 static VALUE
-rb_winevt_query_initialize(VALUE self, VALUE channel, VALUE xpath)
+rb_winevt_query_initialize(VALUE argc, VALUE *argv, VALUE self)
 {
   PWSTR evtChannel, evtXPath;
+  VALUE channel, xpath, session;
   struct WinevtQuery* winevtQuery;
+  struct WinevtSession* winevtSession;
+  EVT_HANDLE hRemoteHandle = NULL;
   DWORD len;
   VALUE wchannelBuf, wpathBuf;
+  DWORD err;
 
+  rb_scan_args(argc, argv, "21", &channel, &xpath, &session);
   Check_Type(channel, T_STRING);
   Check_Type(xpath, T_STRING);
+
+  if (rb_obj_is_kind_of(session, rb_cSession)) {
+    winevtSession = EventSession(session);
+
+    hRemoteHandle = connect_to_remote(winevtSession->server,
+                                      winevtSession->domain,
+                                      winevtSession->username,
+                                      winevtSession->password,
+                                      winevtSession->flags);
+
+    err = GetLastError();
+    if (err != ERROR_SUCCESS) {
+      raise_system_error(rb_eRuntimeError, err);
+    }
+  }
 
   // channel : To wide char
   len =
@@ -91,12 +117,17 @@ rb_winevt_query_initialize(VALUE self, VALUE channel, VALUE xpath)
   TypedData_Get_Struct(self, struct WinevtQuery, &rb_winevt_query_type, winevtQuery);
 
   winevtQuery->query = EvtQuery(
-    NULL, evtChannel, evtXPath, EvtQueryChannelPath | EvtQueryTolerateQueryErrors);
+    hRemoteHandle, evtChannel, evtXPath, EvtQueryChannelPath | EvtQueryTolerateQueryErrors);
+  err = GetLastError();
+  if (err != ERROR_SUCCESS) {
+    raise_system_error(rb_eRuntimeError, err);
+  }
   winevtQuery->offset = 0L;
   winevtQuery->timeout = 0L;
   winevtQuery->renderAsXML = TRUE;
   winevtQuery->preserveQualifiers = FALSE;
   winevtQuery->localeInfo = &default_locale;
+  winevtQuery->remoteHandle = hRemoteHandle;
 
   ALLOCV_END(wchannelBuf);
   ALLOCV_END(wpathBuf);
@@ -220,12 +251,12 @@ rb_winevt_query_render(VALUE self, EVT_HANDLE event)
 }
 
 static VALUE
-rb_winevt_query_message(EVT_HANDLE event, LocaleInfo* localeInfo)
+rb_winevt_query_message(EVT_HANDLE event, LocaleInfo* localeInfo, EVT_HANDLE hRemote)
 {
   WCHAR* wResult;
   VALUE utf8str;
 
-  wResult = get_description(event, localeInfo->langID);
+  wResult = get_description(event, localeInfo->langID, hRemote);
   utf8str = wstr_to_rb_str(CP_UTF8, wResult, -1);
   free(wResult);
 
@@ -337,7 +368,8 @@ rb_winevt_query_each_yield(VALUE self)
   for (int i = 0; i < winevtQuery->count; i++) {
     rb_yield_values(3,
                     rb_winevt_query_render(self, winevtQuery->hEvents[i]),
-                    rb_winevt_query_message(winevtQuery->hEvents[i], winevtQuery->localeInfo),
+                    rb_winevt_query_message(winevtQuery->hEvents[i], winevtQuery->localeInfo,
+                                            winevtQuery->remoteHandle),
                     rb_winevt_query_string_inserts(winevtQuery->hEvents[i]));
   }
   return Qnil;
@@ -401,7 +433,7 @@ rb_winevt_query_set_render_as_xml(VALUE self, VALUE rb_render_as_xml)
  * This method specifies whether preserving qualifiers key or not.
  *
  * @since 0.7.3
- * @param rb_render_as_xml [Boolean]
+ * @param rb_preserve_qualifiers [Boolean]
  */
 static VALUE
 rb_winevt_query_set_preserve_qualifiers(VALUE self, VALUE rb_preserve_qualifiers)
@@ -522,7 +554,7 @@ Init_winevt_query(VALUE rb_cEventLog)
   rb_define_const(rb_cFlag, "Strict", LONG2NUM(EvtSeekStrict));
   /* clang-format on */
 
-  rb_define_method(rb_cQuery, "initialize", rb_winevt_query_initialize, 2);
+  rb_define_method(rb_cQuery, "initialize", rb_winevt_query_initialize, -1);
   rb_define_method(rb_cQuery, "next", rb_winevt_query_next, 0);
   rb_define_method(rb_cQuery, "seek", rb_winevt_query_seek, 1);
   rb_define_method(rb_cQuery, "offset", rb_winevt_query_get_offset, 0);

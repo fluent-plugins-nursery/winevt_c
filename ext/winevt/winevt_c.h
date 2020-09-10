@@ -21,6 +21,7 @@
 #define EventQuery(object) ((struct WinevtQuery*)DATA_PTR(object))
 #define EventBookMark(object) ((struct WinevtBookmark*)DATA_PTR(object))
 #define EventChannel(object) ((struct WinevtChannel*)DATA_PTR(object))
+#define EventSession(object) ((struct WinevtSession*)DATA_PTR(object))
 
 typedef struct {
   LANGID langID;
@@ -38,7 +39,10 @@ VALUE wstr_to_rb_str(UINT cp, const WCHAR* wstr, int clen);
 #endif /* __cplusplus */
 void  raise_system_error(VALUE error, DWORD errorCode);
 VALUE render_to_rb_str(EVT_HANDLE handle, DWORD flags);
-WCHAR* get_description(EVT_HANDLE handle, LANGID langID);
+EVT_HANDLE connect_to_remote(LPWSTR computerName, LPWSTR domain,
+                             LPWSTR username, LPWSTR password,
+                             EVT_RPC_LOGIN_FLAGS flags);
+WCHAR* get_description(EVT_HANDLE handle, LANGID langID, EVT_HANDLE hRemote);
 VALUE get_values(EVT_HANDLE handle);
 VALUE render_system_event(EVT_HANDLE handle, BOOL preserve_qualifiers);
 LocaleInfo* get_locale_info_from_rb_str(VALUE rb_locale_str);
@@ -53,7 +57,17 @@ extern VALUE rb_cChannel;
 extern VALUE rb_cBookmark;
 extern VALUE rb_cSubscribe;
 extern VALUE rb_eWinevtQueryError;
+extern VALUE rb_eRemoteHandlerError;
 extern VALUE rb_cLocale;
+extern VALUE rb_cSession;
+
+struct WinevtSession {
+  LPWSTR server;
+  LPWSTR domain;
+  LPWSTR username;
+  LPWSTR password;
+  EVT_RPC_LOGIN_FLAGS flags;
+};
 
 extern LocaleInfo localeInfoTable[];
 extern LocaleInfo default_locale;
@@ -84,6 +98,7 @@ struct WinevtQuery
   BOOL renderAsXML;
   BOOL preserveQualifiers;
   LocaleInfo *localeInfo;
+  EVT_HANDLE remoteHandle;
 };
 
 #define SUBSCRIBE_ARRAY_SIZE 10
@@ -104,6 +119,7 @@ struct WinevtSubscribe
   BOOL renderAsXML;
   BOOL preserveQualifiers;
   LocaleInfo* localeInfo;
+  EVT_HANDLE remoteHandle;
 };
 
 void Init_winevt_query(VALUE rb_cEventLog);
@@ -111,5 +127,6 @@ void Init_winevt_channel(VALUE rb_cEventLog);
 void Init_winevt_bookmark(VALUE rb_cEventLog);
 void Init_winevt_subscribe(VALUE rb_cEventLog);
 void Init_winevt_locale(VALUE rb_cEventLog);
+void Init_winevt_session(VALUE rb_cEventLog);
 
 #endif // _WINEVT_C_H

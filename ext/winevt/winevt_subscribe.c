@@ -57,6 +57,9 @@ subscribe_free(void* ptr)
     }
   }
 
+  if (winevtSubscribe->remoteHandle)
+    EvtClose(winevtSubscribe->remoteHandle);
+
   xfree(ptr);
 }
 
@@ -132,23 +135,27 @@ rb_winevt_subscribe_read_existing_events_p(VALUE self)
 /*
  * Subscribe into a Windows EventLog channel.
  *
- * @overload subscribe(path, query, options={})
+ * @overload subscribe(path, query, bookmark=nil, session=nil)
  *   @param path [String] Subscribe Channel
  *   @param query [String] Query string for channel
- *   @option options [Bookmark] bookmark Bookmark class instance.
+ *   @param bookmark [Bookmark] bookmark Bookmark class instance.
+ *   @param session [Session] Session information for remoting access.
  * @return [Boolean]
  *
  */
 static VALUE
 rb_winevt_subscribe_subscribe(int argc, VALUE* argv, VALUE self)
 {
-  VALUE rb_path, rb_query, rb_bookmark;
+  VALUE rb_path, rb_query, rb_bookmark, rb_session;
   EVT_HANDLE hSubscription = NULL, hBookmark = NULL;
   HANDLE hSignalEvent;
+  EVT_HANDLE hRemoteHandle = NULL;
   DWORD len, flags = 0L;
+  DWORD err = ERROR_SUCCESS;
   VALUE wpathBuf, wqueryBuf, wBookmarkBuf;
   PWSTR path, query, bookmarkXml;
   DWORD status = ERROR_SUCCESS;
+  struct WinevtSession* winevtSession;
   struct WinevtSubscribe* winevtSubscribe;
 
   hSignalEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
@@ -156,7 +163,7 @@ rb_winevt_subscribe_subscribe(int argc, VALUE* argv, VALUE self)
   TypedData_Get_Struct(
     self, struct WinevtSubscribe, &rb_winevt_subscribe_type, winevtSubscribe);
 
-  rb_scan_args(argc, argv, "21", &rb_path, &rb_query, &rb_bookmark);
+  rb_scan_args(argc, argv, "22", &rb_path, &rb_query, &rb_bookmark, &rb_session);
   Check_Type(rb_path, T_STRING);
   Check_Type(rb_query, T_STRING);
 
@@ -177,6 +184,19 @@ rb_winevt_subscribe_subscribe(int argc, VALUE* argv, VALUE self)
     if (hBookmark == NULL) {
       status = GetLastError();
       raise_system_error(rb_eWinevtQueryError, status);
+    }
+  }
+  if (rb_obj_is_kind_of(rb_session, rb_cSession)) {
+    winevtSession = EventSession(rb_session);
+    hRemoteHandle = connect_to_remote(winevtSession->server,
+                                      winevtSession->domain,
+                                      winevtSession->username,
+                                      winevtSession->password,
+                                      winevtSession->flags);
+
+    err = GetLastError();
+    if (err != ERROR_SUCCESS) {
+      raise_system_error(rb_eRuntimeError, err);
     }
   }
 
@@ -204,7 +224,7 @@ rb_winevt_subscribe_subscribe(int argc, VALUE* argv, VALUE self)
   }
 
   hSubscription =
-    EvtSubscribe(NULL, hSignalEvent, path, query, hBookmark, NULL, NULL, flags);
+    EvtSubscribe(hRemoteHandle, hSignalEvent, path, query, hBookmark, NULL, NULL, flags);
   if (!hSubscription) {
     if (hBookmark != NULL) {
       EvtClose(hBookmark);
@@ -213,7 +233,11 @@ rb_winevt_subscribe_subscribe(int argc, VALUE* argv, VALUE self)
       CloseHandle(hSignalEvent);
     }
     status = GetLastError();
-    raise_system_error(rb_eWinevtQueryError, status);
+    if (rb_obj_is_kind_of(rb_session, rb_cSession)) {
+      rb_raise(rb_eRemoteHandlerError, "Remoting subscription is not working. errCode: %ld\n", status);
+    } else {
+      raise_system_error(rb_eWinevtQueryError, status);
+    }
   }
 
   if (winevtSubscribe->subscription != NULL) {
@@ -226,6 +250,7 @@ rb_winevt_subscribe_subscribe(int argc, VALUE* argv, VALUE self)
 
   winevtSubscribe->signalEvent = hSignalEvent;
   winevtSubscribe->subscription = hSubscription;
+  winevtSubscribe->remoteHandle = hRemoteHandle;
   if (hBookmark) {
     winevtSubscribe->bookmark = hBookmark;
   } else {
@@ -346,12 +371,12 @@ rb_winevt_subscribe_render(VALUE self, EVT_HANDLE event)
 }
 
 static VALUE
-rb_winevt_subscribe_message(EVT_HANDLE event, LocaleInfo* localeInfo)
+rb_winevt_subscribe_message(EVT_HANDLE event, LocaleInfo* localeInfo, EVT_HANDLE hRemote)
 {
   WCHAR* wResult;
   VALUE utf8str;
 
-  wResult = get_description(event, localeInfo->langID);
+  wResult = get_description(event, localeInfo->langID, hRemote);
   utf8str = wstr_to_rb_str(CP_UTF8, wResult, -1);
   free(wResult);
 
@@ -394,7 +419,8 @@ rb_winevt_subscribe_each_yield(VALUE self)
   for (int i = 0; i < winevtSubscribe->count; i++) {
     rb_yield_values(3,
                     rb_winevt_subscribe_render(self, winevtSubscribe->hEvents[i]),
-                    rb_winevt_subscribe_message(winevtSubscribe->hEvents[i], winevtSubscribe->localeInfo),
+                    rb_winevt_subscribe_message(winevtSubscribe->hEvents[i], winevtSubscribe->localeInfo,
+                                                winevtSubscribe->remoteHandle),
                     rb_winevt_subscribe_string_inserts(winevtSubscribe->hEvents[i]));
   }
 
@@ -523,7 +549,7 @@ rb_winevt_subscribe_set_render_as_xml(VALUE self, VALUE rb_render_as_xml)
  * This method specifies whether preserving qualifiers key or not.
  *
  * @since 0.7.3
- * @param rb_render_as_xml [Boolean]
+ * @param rb_preserve_qualifiers [Boolean]
  */
 static VALUE
 rb_winevt_subscribe_set_preserve_qualifiers(VALUE self, VALUE rb_preserve_qualifiers)
