@@ -27,6 +27,11 @@ class WinevtTest < Test::Unit::TestCase
       assert_true(@query.next)
     end
 
+    def test_cancel
+      assert_true(@query.cancel)
+      assert_false(@query.next)
+    end
+
     def test_timeout
       @query.timeout = 1
       assert_equal(1, @query.timeout)
@@ -199,6 +204,11 @@ class WinevtTest < Test::Unit::TestCase
 
     def test_next
       assert_true(@subscribe.next)
+    end
+
+    def test_cancel
+      assert_true(@subscribe.cancel)
+      assert_false(@subscribe.next)
     end
 
     def test_read_existing_events
