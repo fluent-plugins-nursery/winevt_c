@@ -32,19 +32,31 @@ static const rb_data_type_t rb_winevt_query_type = { "winevt/query",
                                                      RUBY_TYPED_FREE_IMMEDIATELY };
 
 static void
+close_handles(struct WinevtQuery* winevtQuery)
+{
+  if (winevtQuery->query) {
+    EvtClose(winevtQuery->query);
+    winevtQuery->query = NULL;
+  }
+
+  for (int i = 0; i < winevtQuery->count; i++) {
+    if (winevtQuery->hEvents[i]) {
+      EvtClose(winevtQuery->hEvents[i]);
+      winevtQuery->hEvents[i] = NULL;
+    }
+  }
+
+  if (winevtQuery->remoteHandle) {
+    EvtClose(winevtQuery->remoteHandle);
+    winevtQuery->remoteHandle = NULL;
+  }
+}
+
+static void
 query_free(void* ptr)
 {
   struct WinevtQuery* winevtQuery = (struct WinevtQuery*)ptr;
-  if (winevtQuery->query)
-    EvtClose(winevtQuery->query);
-
-  for (int i = 0; i < winevtQuery->count; i++) {
-    if (winevtQuery->hEvents[i])
-      EvtClose(winevtQuery->hEvents[i]);
-  }
-
-  if (winevtQuery->remoteHandle)
-    EvtClose(winevtQuery->remoteHandle);
+  close_handles(winevtQuery);
 
   xfree(ptr);
 }
@@ -219,6 +231,9 @@ rb_winevt_query_next(VALUE self)
 
   if (!EvtNext(winevtQuery->query, QUERY_ARRAY_SIZE, hEvents, INFINITE, 0, &count)) {
     status = GetLastError();
+    if (ERROR_CANCELLED == status) {
+      return Qfalse;
+    }
     if (ERROR_NO_MORE_ITEMS != status) {
       return Qfalse;
     }
@@ -507,6 +522,50 @@ rb_winevt_query_get_locale(VALUE self)
   }
 }
 
+/*
+ * This method cancels channel query.
+ *
+ * @return [Boolean]
+ * @since 0.9.1
+ */
+static VALUE
+rb_winevt_query_cancel(VALUE self)
+{
+  struct WinevtQuery* winevtQuery;
+  BOOL result = FALSE;
+
+  TypedData_Get_Struct(
+    self, struct WinevtQuery, &rb_winevt_query_type, winevtQuery);
+
+  if (winevtQuery->query) {
+    result = EvtCancel(winevtQuery->query);
+  }
+
+  if (result) {
+    return Qtrue;
+  } else {
+    return Qfalse;
+  }
+}
+
+/*
+ * This method closes channel handles forcibly.
+ *
+ * @since 0.9.1
+ */
+static VALUE
+rb_winevt_query_close(VALUE self)
+{
+  struct WinevtQuery* winevtQuery;
+
+  TypedData_Get_Struct(
+    self, struct WinevtQuery, &rb_winevt_query_type, winevtQuery);
+
+  close_handles(winevtQuery);
+
+  return Qnil;
+}
+
 void
 Init_winevt_query(VALUE rb_cEventLog)
 {
@@ -580,4 +639,12 @@ Init_winevt_query(VALUE rb_cEventLog)
    * @since 0.8.0
    */
   rb_define_method(rb_cQuery, "locale=", rb_winevt_query_set_locale, 1);
+  /*
+   * @since 0.9.1
+   */
+  rb_define_method(rb_cQuery, "cancel", rb_winevt_query_cancel, 0);
+  /*
+   * @since 0.9.1
+   */
+  rb_define_method(rb_cQuery, "close", rb_winevt_query_close, 0);
 }

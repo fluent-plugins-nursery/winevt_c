@@ -39,26 +39,42 @@ static const rb_data_type_t rb_winevt_subscribe_type = { "winevt/subscribe",
                                                          RUBY_TYPED_FREE_IMMEDIATELY };
 
 static void
-subscribe_free(void* ptr)
+close_handles(struct WinevtSubscribe* winevtSubscribe)
 {
-  struct WinevtSubscribe* winevtSubscribe = (struct WinevtSubscribe*)ptr;
-  if (winevtSubscribe->signalEvent)
+  if (winevtSubscribe->signalEvent) {
     CloseHandle(winevtSubscribe->signalEvent);
+    winevtSubscribe->signalEvent = NULL;
+  }
 
-  if (winevtSubscribe->subscription)
+  if (winevtSubscribe->subscription) {
     EvtClose(winevtSubscribe->subscription);
+    winevtSubscribe->subscription = NULL;
+  }
 
-  if (winevtSubscribe->bookmark)
+  if (winevtSubscribe->bookmark) {
     EvtClose(winevtSubscribe->bookmark);
+    winevtSubscribe->bookmark = NULL;
+  }
 
   for (int i = 0; i < winevtSubscribe->count; i++) {
     if (winevtSubscribe->hEvents[i]) {
       EvtClose(winevtSubscribe->hEvents[i]);
+      winevtSubscribe->hEvents[i] = NULL;
     }
   }
+  winevtSubscribe->count = 0;
 
-  if (winevtSubscribe->remoteHandle)
+  if (winevtSubscribe->remoteHandle) {
     EvtClose(winevtSubscribe->remoteHandle);
+    winevtSubscribe->remoteHandle = NULL;
+  }
+}
+
+static void
+subscribe_free(void* ptr)
+{
+  struct WinevtSubscribe* winevtSubscribe = (struct WinevtSubscribe*)ptr;
+  close_handles(winevtSubscribe);
 
   xfree(ptr);
 }
@@ -328,6 +344,11 @@ rb_winevt_subscribe_next(VALUE self)
     return Qfalse;
   }
 
+  /* If subscription handle is NULL, it should return false. */
+  if (!winevtSubscribe->subscription) {
+    return Qfalse;
+  }
+
   if (!EvtNext(winevtSubscribe->subscription,
                SUBSCRIBE_ARRAY_SIZE,
                hEvents,
@@ -335,6 +356,9 @@ rb_winevt_subscribe_next(VALUE self)
                0,
                &count)) {
     status = GetLastError();
+    if (ERROR_CANCELLED == status) {
+      return Qfalse;
+    }
     if (ERROR_NO_MORE_ITEMS != status) {
       return Qfalse;
     }
@@ -623,6 +647,51 @@ rb_winevt_subscribe_get_locale(VALUE self)
   }
 }
 
+/*
+ * This method cancels channel subscription.
+ *
+ * @return [Boolean]
+ * @since 0.9.1
+ */
+static VALUE
+rb_winevt_subscribe_cancel(VALUE self)
+{
+  struct WinevtSubscribe* winevtSubscribe;
+  BOOL result = FALSE;
+
+  TypedData_Get_Struct(
+    self, struct WinevtSubscribe, &rb_winevt_subscribe_type, winevtSubscribe);
+
+  if (winevtSubscribe->subscription) {
+    result = EvtCancel(winevtSubscribe->subscription);
+  }
+
+  if (result) {
+    return Qtrue;
+  } else {
+    return Qfalse;
+  }
+}
+
+/*
+ * This method closes channel handles forcibly.
+ *
+ * @since 0.9.1
+ */
+static VALUE
+rb_winevt_subscribe_close(VALUE self)
+{
+  struct WinevtSubscribe* winevtSubscribe;
+
+  TypedData_Get_Struct(
+    self, struct WinevtSubscribe, &rb_winevt_subscribe_type, winevtSubscribe);
+
+  close_handles(winevtSubscribe);
+
+  return Qnil;
+}
+
+
 void
 Init_winevt_subscribe(VALUE rb_cEventLog)
 {
@@ -675,4 +744,14 @@ Init_winevt_subscribe(VALUE rb_cEventLog)
    */
   rb_define_method(
     rb_cSubscribe, "locale=", rb_winevt_subscribe_set_locale, 1);
+  /*
+   * @since 0.9.1
+   */
+  rb_define_method(
+    rb_cSubscribe, "cancel", rb_winevt_subscribe_cancel, 0);
+  /*
+   * @since 0.9.1
+   */
+  rb_define_method(
+    rb_cSubscribe, "close", rb_winevt_subscribe_close, 0);
 }
