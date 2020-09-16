@@ -41,23 +41,33 @@ static const rb_data_type_t rb_winevt_subscribe_type = { "winevt/subscribe",
 static void
 close_handles(struct WinevtSubscribe* winevtSubscribe)
 {
-  if (winevtSubscribe->signalEvent)
+  if (winevtSubscribe->signalEvent) {
     CloseHandle(winevtSubscribe->signalEvent);
+    winevtSubscribe->signalEvent = NULL;
+  }
 
-  if (winevtSubscribe->subscription)
+  if (winevtSubscribe->subscription) {
     EvtClose(winevtSubscribe->subscription);
+    winevtSubscribe->subscription = NULL;
+  }
 
-  if (winevtSubscribe->bookmark)
+  if (winevtSubscribe->bookmark) {
     EvtClose(winevtSubscribe->bookmark);
+    winevtSubscribe->bookmark = NULL;
+  }
 
   for (int i = 0; i < winevtSubscribe->count; i++) {
     if (winevtSubscribe->hEvents[i]) {
       EvtClose(winevtSubscribe->hEvents[i]);
+      winevtSubscribe->hEvents[i] = NULL;
     }
   }
+  winevtSubscribe->count = 0;
 
-  if (winevtSubscribe->remoteHandle)
+  if (winevtSubscribe->remoteHandle) {
     EvtClose(winevtSubscribe->remoteHandle);
+    winevtSubscribe->remoteHandle = NULL;
+  }
 }
 
 static void

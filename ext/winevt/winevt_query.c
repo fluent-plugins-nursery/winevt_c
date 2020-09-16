@@ -34,16 +34,22 @@ static const rb_data_type_t rb_winevt_query_type = { "winevt/query",
 static void
 close_handles(struct WinevtQuery* winevtQuery)
 {
-  if (winevtQuery->query)
+  if (winevtQuery->query) {
     EvtClose(winevtQuery->query);
-
-  for (int i = 0; i < winevtQuery->count; i++) {
-    if (winevtQuery->hEvents[i])
-      EvtClose(winevtQuery->hEvents[i]);
+    winevtQuery->query = NULL;
   }
 
-  if (winevtQuery->remoteHandle)
+  for (int i = 0; i < winevtQuery->count; i++) {
+    if (winevtQuery->hEvents[i]) {
+      EvtClose(winevtQuery->hEvents[i]);
+      winevtQuery->hEvents[i] = NULL;
+    }
+  }
+
+  if (winevtQuery->remoteHandle) {
     EvtClose(winevtQuery->remoteHandle);
+    winevtQuery->remoteHandle = NULL;
+  }
 }
 
 static void
@@ -554,6 +560,7 @@ rb_winevt_query_close(VALUE self)
 
   TypedData_Get_Struct(
     self, struct WinevtQuery, &rb_winevt_query_type, winevtQuery);
+
   close_handles(winevtQuery);
 
   return Qnil;
