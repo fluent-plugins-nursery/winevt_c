@@ -39,7 +39,7 @@ static const rb_data_type_t rb_winevt_subscribe_type = { "winevt/subscribe",
                                                          RUBY_TYPED_FREE_IMMEDIATELY };
 
 static void
-dispose_handles(struct WinevtSubscribe* winevtSubscribe)
+close_handles(struct WinevtSubscribe* winevtSubscribe)
 {
   if (winevtSubscribe->signalEvent)
     CloseHandle(winevtSubscribe->signalEvent);
@@ -64,7 +64,7 @@ static void
 subscribe_free(void* ptr)
 {
   struct WinevtSubscribe* winevtSubscribe = (struct WinevtSubscribe*)ptr;
-  dispose_handles(winevtSubscribe);
+  close_handles(winevtSubscribe);
 
   xfree(ptr);
 }
@@ -331,6 +331,11 @@ rb_winevt_subscribe_next(VALUE self)
     self, struct WinevtSubscribe, &rb_winevt_subscribe_type, winevtSubscribe);
 
   if (is_rate_limit_exceeded(winevtSubscribe)) {
+    return Qfalse;
+  }
+
+  /* If subscription handle is NULL, it should return false. */
+  if (!winevtSubscribe->subscription) {
     return Qfalse;
   }
 
@@ -658,6 +663,24 @@ rb_winevt_subscribe_cancel(VALUE self)
   }
 }
 
+/*
+ * This method closes channel handles forcibly.
+ *
+ * @since 0.9.1
+ */
+static VALUE
+rb_winevt_subscribe_close(VALUE self)
+{
+  struct WinevtSubscribe* winevtSubscribe;
+
+  TypedData_Get_Struct(
+    self, struct WinevtSubscribe, &rb_winevt_subscribe_type, winevtSubscribe);
+
+  close_handles(winevtSubscribe);
+
+  return Qnil;
+}
+
 
 void
 Init_winevt_subscribe(VALUE rb_cEventLog)
@@ -716,4 +739,9 @@ Init_winevt_subscribe(VALUE rb_cEventLog)
    */
   rb_define_method(
     rb_cSubscribe, "cancel", rb_winevt_subscribe_cancel, 0);
+  /*
+   * @since 0.9.1
+   */
+  rb_define_method(
+    rb_cSubscribe, "close", rb_winevt_subscribe_close, 0);
 }

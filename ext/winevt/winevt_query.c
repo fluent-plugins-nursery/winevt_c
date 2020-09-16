@@ -32,7 +32,7 @@ static const rb_data_type_t rb_winevt_query_type = { "winevt/query",
                                                      RUBY_TYPED_FREE_IMMEDIATELY };
 
 static void
-dispose_handles(struct WinevtQuery* winevtQuery)
+close_handles(struct WinevtQuery* winevtQuery)
 {
   if (winevtQuery->query)
     EvtClose(winevtQuery->query);
@@ -50,7 +50,7 @@ static void
 query_free(void* ptr)
 {
   struct WinevtQuery* winevtQuery = (struct WinevtQuery*)ptr;
-  dispose_handles(winevtQuery);
+  close_handles(winevtQuery);
 
   xfree(ptr);
 }
@@ -542,6 +542,23 @@ rb_winevt_query_cancel(VALUE self)
   }
 }
 
+/*
+ * This method closes channel handles forcibly.
+ *
+ * @since 0.9.1
+ */
+static VALUE
+rb_winevt_query_close(VALUE self)
+{
+  struct WinevtQuery* winevtQuery;
+
+  TypedData_Get_Struct(
+    self, struct WinevtQuery, &rb_winevt_query_type, winevtQuery);
+  close_handles(winevtQuery);
+
+  return Qnil;
+}
+
 void
 Init_winevt_query(VALUE rb_cEventLog)
 {
@@ -619,4 +636,8 @@ Init_winevt_query(VALUE rb_cEventLog)
    * @since 0.9.1
    */
   rb_define_method(rb_cQuery, "cancel", rb_winevt_query_cancel, 0);
+  /*
+   * @since 0.9.1
+   */
+  rb_define_method(rb_cQuery, "close", rb_winevt_query_close, 0);
 }
