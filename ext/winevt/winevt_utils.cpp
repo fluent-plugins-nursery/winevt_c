@@ -267,7 +267,12 @@ extract_user_evt_variants(PEVT_VARIANT pRenderedValues, DWORD propCount)
         rb_ary_push(userValues, rbObj);
         break;
       case EvtVarTypeHexInt64:
-        rbObj = rb_sprintf("%#I64x", pRenderedValues[i].UInt64Val);
+        uint32_t  high;
+        uint32_t  low;
+
+        high = pRenderedValues[i].UInt64Val >> 32;
+        low = pRenderedValues[i].UInt64Val & 0x00000000FFFFFFFF;
+        rbObj = rb_sprintf("0x%08x%08x", high, low);
         rb_ary_push(userValues, rbObj);
         break;
       case EvtVarTypeEvtXml:

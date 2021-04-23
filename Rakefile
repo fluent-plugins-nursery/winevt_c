@@ -25,11 +25,11 @@ end
 
 desc 'Build gems for Windows per rake-compiler-dock'
 task 'gem:native' do
+  sh "bundle package"
   # See RUBY_CC_VERSION in https://github.com/rake-compiler/rake-compiler-dock/blob/master/Dockerfile.mri
-  RakeCompilerDock.sh <<-EOS
-    gem install bundler yard --no-doc && bundle
-    rake cross native gem RUBY_CC_VERSION=2.4.0:2.5.0:2.6.0:2.7.0
-EOS
+  %w[ x86-mingw32 x64-mingw32 ].each do |plat|
+    RakeCompilerDock.sh "bundle --local && bundle exec rake native:#{plat} gem RUBY_CC_VERSION=2.4.0:2.5.0:2.6.0:2.7.0:3.0.0", platform: plat
+  end
 end
 
 CLEAN.include('lib/winevt/winevt.*')
