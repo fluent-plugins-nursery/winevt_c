@@ -272,7 +272,7 @@ extract_user_evt_variants(PEVT_VARIANT pRenderedValues, DWORD propCount)
 
         high = pRenderedValues[i].UInt64Val >> 32;
         low = pRenderedValues[i].UInt64Val & 0x00000000FFFFFFFF;
-        rbObj = rb_sprintf("0x%04x%08x", high, low);
+        rbObj = rb_sprintf("0x%08x%08x", high, low);
         rb_ary_push(userValues, rbObj);
         break;
       case EvtVarTypeEvtXml:
