@@ -208,9 +208,8 @@ rb_winevt_subscribe_subscribe(int argc, VALUE* argv, VALUE self)
                                       winevtSession->domain,
                                       winevtSession->username,
                                       winevtSession->password,
-                                      winevtSession->flags);
-
-    err = GetLastError();
+                                      winevtSession->flags,
+                                      &err);
     if (err != ERROR_SUCCESS) {
       raise_system_error(rb_eRuntimeError, err);
     }
@@ -242,13 +241,13 @@ rb_winevt_subscribe_subscribe(int argc, VALUE* argv, VALUE self)
   hSubscription =
     EvtSubscribe(hRemoteHandle, hSignalEvent, path, query, hBookmark, NULL, NULL, flags);
   if (!hSubscription) {
+    status = GetLastError();
     if (hBookmark != NULL) {
       EvtClose(hBookmark);
     }
     if (hSignalEvent != NULL) {
       CloseHandle(hSignalEvent);
     }
-    status = GetLastError();
     if (rb_obj_is_kind_of(rb_session, rb_cSession)) {
       rb_raise(rb_eRemoteHandlerError, "Remoting subscription is not working. errCode: %ld\n", status);
     } else {
@@ -272,13 +271,13 @@ rb_winevt_subscribe_subscribe(int argc, VALUE* argv, VALUE self)
   } else {
     winevtSubscribe->bookmark = EvtCreateBookmark(NULL);
     if (winevtSubscribe->bookmark == NULL) {
+      status = GetLastError();
       if (hSubscription != NULL) {
         EvtClose(hSubscription);
       }
       if (hSignalEvent != NULL) {
         CloseHandle(hSignalEvent);
       }
-      status = GetLastError();
       raise_system_error(rb_eWinevtQueryError, status);
     }
   }
