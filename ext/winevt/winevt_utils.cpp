@@ -564,13 +564,13 @@ render_system_event(EVT_HANDLE hEvent, BOOL preserve_qualifiers)
                   pRenderedValues,
                   &dwBufferUsed,
                   &dwPropertyCount);
+        status = GetLastError();
       } else {
         EvtClose(hContext);
         rb_raise(rb_eRuntimeError, "Failed to malloc memory with %lu\n", status);
       }
     }
 
-    status = GetLastError();
     if (ERROR_SUCCESS != status) {
       EvtClose(hContext);
       ALLOCV_END(vRenderedValues);
