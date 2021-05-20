@@ -91,7 +91,7 @@ rb_winevt_query_initialize(VALUE argc, VALUE *argv, VALUE self)
   EVT_HANDLE hRemoteHandle = NULL;
   DWORD len;
   VALUE wchannelBuf, wpathBuf;
-  DWORD err;
+  DWORD err = ERROR_SUCCESS;
 
   rb_scan_args(argc, argv, "21", &channel, &xpath, &session);
   Check_Type(channel, T_STRING);
@@ -104,9 +104,8 @@ rb_winevt_query_initialize(VALUE argc, VALUE *argv, VALUE self)
                                       winevtSession->domain,
                                       winevtSession->username,
                                       winevtSession->password,
-                                      winevtSession->flags);
-
-    err = GetLastError();
+                                      winevtSession->flags,
+                                      &err);
     if (err != ERROR_SUCCESS) {
       raise_system_error(rb_eRuntimeError, err);
     }

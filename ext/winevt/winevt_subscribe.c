@@ -208,9 +208,8 @@ rb_winevt_subscribe_subscribe(int argc, VALUE* argv, VALUE self)
                                       winevtSession->domain,
                                       winevtSession->username,
                                       winevtSession->password,
-                                      winevtSession->flags);
-
-    err = GetLastError();
+                                      winevtSession->flags,
+                                      &err);
     if (err != ERROR_SUCCESS) {
       raise_system_error(rb_eRuntimeError, err);
     }

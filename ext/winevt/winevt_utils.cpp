@@ -78,7 +78,7 @@ render_to_rb_str(EVT_HANDLE handle, DWORD flags)
 
 EVT_HANDLE
 connect_to_remote(LPWSTR computerName, LPWSTR domain, LPWSTR username, LPWSTR password,
-                  EVT_RPC_LOGIN_FLAGS flags)
+                  EVT_RPC_LOGIN_FLAGS flags, DWORD *error_code)
 {
   EVT_HANDLE hRemote = NULL;
   EVT_RPC_LOGIN Credentials;
@@ -92,6 +92,10 @@ connect_to_remote(LPWSTR computerName, LPWSTR domain, LPWSTR username, LPWSTR pa
   Credentials.Flags = flags;
 
   hRemote = EvtOpenSession(EvtRpcLogin, &Credentials, 0, 0);
+  if (!hRemote) {
+    *error_code = GetLastError();
+    return hRemote;
+  }
 
   SecureZeroMemory(&Credentials, sizeof(EVT_RPC_LOGIN));
 
