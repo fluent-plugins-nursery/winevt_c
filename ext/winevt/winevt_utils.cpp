@@ -10,9 +10,24 @@ wstr_to_rb_str(UINT cp, const WCHAR* wstr, int clen)
 {
   VALUE vstr;
   CHAR* ptr;
+  int ret = -1;
+  DWORD err = ERROR_SUCCESS;
+  if (wstr == NULL) {
+    return rb_utf8_str_new_cstr("");
+  }
+
   int len = WideCharToMultiByte(cp, 0, wstr, clen, nullptr, 0, nullptr, nullptr);
   ptr = ALLOCV_N(CHAR, vstr, len);
-  WideCharToMultiByte(cp, 0, wstr, clen, ptr, len, nullptr, nullptr);
+  // For memory safety.
+  ZeroMemory(ptr, sizeof(CHAR) * len);
+  ret = WideCharToMultiByte(cp, 0, wstr, clen, ptr, len, nullptr, nullptr);
+  // return 0 should be failure.
+  // ref: https://docs.microsoft.com/en-us/windows/win32/api/stringapiset/nf-stringapiset-widechartomultibyte#return-value
+  if (ret == 0) {
+    err = GetLastError();
+    ALLOCV_END(vstr);
+    raise_system_error(rb_eRuntimeError, err);
+  }
   VALUE str = rb_utf8_str_new_cstr(ptr);
   ALLOCV_END(vstr);
 
