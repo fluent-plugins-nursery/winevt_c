@@ -667,30 +667,34 @@ render_system_event(EVT_HANDLE hEvent, BOOL preserve_qualifiers)
                  ? Qnil
                  : rb_str_new2(buffer));
 
-  ullTimeStamp = pRenderedValues[EvtSystemTimeCreated].FileTimeVal;
-  ft.dwHighDateTime = (DWORD)((ullTimeStamp >> 32) & 0xFFFFFFFF);
-  ft.dwLowDateTime = (DWORD)(ullTimeStamp & 0xFFFFFFFF);
+  if (EvtVarTypeNull != pRenderedValues[EvtSystemTimeCreated].Type) {
+    ullTimeStamp = pRenderedValues[EvtSystemTimeCreated].FileTimeVal;
+    ft.dwHighDateTime = (DWORD)((ullTimeStamp >> 32) & 0xFFFFFFFF);
+    ft.dwLowDateTime = (DWORD)(ullTimeStamp & 0xFFFFFFFF);
 
-  FileTimeToSystemTime(&ft, &st);
-  ullNanoseconds =
-    (ullTimeStamp % 10000000) *
-    100; // Display nanoseconds instead of milliseconds for higher resolution
-  _snprintf_s(buffer,
-              _countof(buffer),
-              _TRUNCATE,
-              "%02d/%02d/%02d %02d:%02d:%02d.%llu",
-              st.wYear,
-              st.wMonth,
-              st.wDay,
-              st.wHour,
-              st.wMinute,
-              st.wSecond,
-              ullNanoseconds);
-  rb_hash_aset(hash,
-               rb_str_new2("TimeCreated"),
-               (EvtVarTypeNull == pRenderedValues[EvtSystemKeywords].Type)
-                 ? Qnil
-                 : rb_str_new2(buffer));
+    FileTimeToSystemTime(&ft, &st);
+    ullNanoseconds =
+        (ullTimeStamp % 10000000) *
+        100; // Display nanoseconds instead of milliseconds for higher resolution
+    _snprintf_s(buffer,
+                _countof(buffer),
+                _TRUNCATE,
+                "%02d/%02d/%02d %02d:%02d:%02d.%llu",
+                st.wYear,
+                st.wMonth,
+                st.wDay,
+                st.wHour,
+                st.wMinute,
+                st.wSecond,
+                ullNanoseconds);
+    rb_hash_aset(hash,
+                 rb_str_new2("TimeCreated"),
+                 rb_str_new2(buffer));
+  } else {
+    rb_hash_aset(hash,
+                 rb_str_new2("TimeCreated"),
+                 Qnil);
+  }
   _snprintf_s(buffer,
               _countof(buffer),
               _TRUNCATE,
