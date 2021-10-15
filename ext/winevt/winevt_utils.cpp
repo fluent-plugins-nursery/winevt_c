@@ -134,7 +134,7 @@ make_displayable_binary_string(PBYTE bin, size_t length)
 {
   const char *HEX_TABLE = "0123456789ABCDEF";
   CHAR *buffer;
-  int size = length * 2;
+  int size = length * 2 + 1;
   size_t i, j;
   unsigned int idx = 0;
   VALUE vbuffer;
@@ -144,8 +144,6 @@ make_displayable_binary_string(PBYTE bin, size_t length)
   }
 
   buffer = ALLOCV_N(CHAR, vbuffer, size);
-  // For memory safety.
-  ZeroMemory(buffer, sizeof(CHAR) * size);
 
   for (i = 0; i < length; i++) {
     for (j = 0; j < 2; j++) {
@@ -153,6 +151,7 @@ make_displayable_binary_string(PBYTE bin, size_t length)
       buffer[2*i+(1-j)] = HEX_TABLE[idx];
     }
   }
+  buffer[size - 1] = '\0';
 
   VALUE str = rb_str_new2(buffer);
   ALLOCV_END(vbuffer);
