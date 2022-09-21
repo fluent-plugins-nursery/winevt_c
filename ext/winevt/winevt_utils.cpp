@@ -56,6 +56,16 @@ raise_system_error(VALUE error, DWORD errorCode)
 #pragma GCC diagnostic pop
 }
 
+void
+raise_channel_not_found_error(VALUE channelPath)
+{
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat="
+#pragma GCC diagnostic ignored "-Wformat-extra-args"
+  rb_raise(rb_eChannelNotFoundError, "Channel Not Found: %" PRIsVALUE, channelPath);
+#pragma GCC diagnostic pop
+}
+
 VALUE
 render_to_rb_str(EVT_HANDLE handle, DWORD flags)
 {

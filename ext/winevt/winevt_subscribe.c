@@ -248,10 +248,17 @@ rb_winevt_subscribe_subscribe(int argc, VALUE* argv, VALUE self)
     if (hSignalEvent != NULL) {
       CloseHandle(hSignalEvent);
     }
+
     if (rb_obj_is_kind_of(rb_session, rb_cSession)) {
       rb_raise(rb_eRemoteHandlerError, "Remoting subscription is not working. errCode: %ld\n", status);
-    } else {
+    }
+
+    switch (status) {
+    case ERROR_EVT_CHANNEL_NOT_FOUND:
+      raise_channel_not_found_error(rb_path);
+    default:
       raise_system_error(rb_eWinevtQueryError, status);
+      break;
     }
   }
 

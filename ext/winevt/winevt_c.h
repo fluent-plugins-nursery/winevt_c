@@ -37,7 +37,8 @@ VALUE wstr_to_rb_str(UINT cp, const WCHAR* wstr, int clen);
 #if defined(__cplusplus)
 [[ noreturn ]]
 #endif /* __cplusplus */
-void  raise_system_error(VALUE error, DWORD errorCode);
+void raise_system_error(VALUE error, DWORD errorCode);
+void raise_channel_not_found_error(VALUE channelPath);
 VALUE render_to_rb_str(EVT_HANDLE handle, DWORD flags);
 EVT_HANDLE connect_to_remote(LPWSTR computerName, LPWSTR domain,
                              LPWSTR username, LPWSTR password,
@@ -58,6 +59,7 @@ extern VALUE rb_cChannel;
 extern VALUE rb_cBookmark;
 extern VALUE rb_cSubscribe;
 extern VALUE rb_eWinevtQueryError;
+extern VALUE rb_eChannelNotFoundError;
 extern VALUE rb_eRemoteHandlerError;
 extern VALUE rb_cLocale;
 extern VALUE rb_cSession;
