@@ -300,6 +300,14 @@ class WinevtTest < Test::Unit::TestCase
         @subscribe.locale = "ex_EX" # Invalid Locale
       end
     end
+
+    def test_channel_not_found
+      bookmark = Winevt::EventLog::Bookmark.new
+      subscribe = Winevt::EventLog::Subscribe.new
+      assert_raise(Winevt::EventLog::ChannelNotFoundError) do
+        subscribe.subscribe("NonExistentChannel", "*")
+      end
+    end
   end
 
   class ChannelTest < self

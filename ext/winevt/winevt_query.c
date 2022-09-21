@@ -131,6 +131,9 @@ rb_winevt_query_initialize(VALUE argc, VALUE *argv, VALUE self)
     hRemoteHandle, evtChannel, evtXPath, EvtQueryChannelPath | EvtQueryTolerateQueryErrors);
   err = GetLastError();
   if (err != ERROR_SUCCESS) {
+    if (err == ERROR_EVT_CHANNEL_NOT_FOUND) {
+      raise_channel_not_found_error(channel);
+    }
     raise_system_error(rb_eRuntimeError, err);
   }
   winevtQuery->offset = 0L;
