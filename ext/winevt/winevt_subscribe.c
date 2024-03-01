@@ -64,6 +64,8 @@ close_handles(struct WinevtSubscribe* winevtSubscribe)
   }
   winevtSubscribe->count = 0;
 
+  ResetEvent(winevtSubscribe->signalEvent);
+
   if (winevtSubscribe->remoteHandle) {
     EvtClose(winevtSubscribe->remoteHandle);
     winevtSubscribe->remoteHandle = NULL;
@@ -174,7 +176,7 @@ rb_winevt_subscribe_subscribe(int argc, VALUE* argv, VALUE self)
   struct WinevtSession* winevtSession;
   struct WinevtSubscribe* winevtSubscribe;
 
-  hSignalEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
+  hSignalEvent = CreateEvent(NULL, TRUE, TRUE, NULL);
 
   TypedData_Get_Struct(
     self, struct WinevtSubscribe, &rb_winevt_subscribe_type, winevtSubscribe);
@@ -341,6 +343,8 @@ rb_winevt_subscribe_next(VALUE self)
   EVT_HANDLE hEvents[SUBSCRIBE_ARRAY_SIZE];
   ULONG count = 0;
   DWORD status = ERROR_SUCCESS;
+  DWORD dwWait = 0;
+
   struct WinevtSubscribe* winevtSubscribe;
 
   TypedData_Get_Struct(
@@ -352,6 +356,13 @@ rb_winevt_subscribe_next(VALUE self)
 
   /* If subscription handle is NULL, it should return false. */
   if (!winevtSubscribe->subscription) {
+    return Qfalse;
+  }
+
+  dwWait = WaitForSingleObject(winevtSubscribe->signalEvent, INFINITE);
+  if (dwWait == WAIT_FAILED) {
+    raise_system_error(rb_eSubscribeHandlerError, GetLastError());
+  } else if (dwWait != WAIT_OBJECT_0) {
     return Qfalse;
   }
 
