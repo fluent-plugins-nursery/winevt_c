@@ -64,8 +64,6 @@ close_handles(struct WinevtSubscribe* winevtSubscribe)
   }
   winevtSubscribe->count = 0;
 
-  ResetEvent(winevtSubscribe->signalEvent);
-
   if (winevtSubscribe->remoteHandle) {
     EvtClose(winevtSubscribe->remoteHandle);
     winevtSubscribe->remoteHandle = NULL;
@@ -359,7 +357,7 @@ rb_winevt_subscribe_next(VALUE self)
     return Qfalse;
   }
 
-  dwWait = WaitForSingleObject(winevtSubscribe->signalEvent, INFINITE);
+  dwWait = WaitForSingleObject(winevtSubscribe->signalEvent, 0);
   if (dwWait == WAIT_FAILED) {
     raise_system_error(rb_eSubscribeHandlerError, GetLastError());
   } else if (dwWait != WAIT_OBJECT_0) {
@@ -379,6 +377,8 @@ rb_winevt_subscribe_next(VALUE self)
     if (ERROR_NO_MORE_ITEMS != status) {
       return Qfalse;
     }
+
+    ResetEvent(winevtSubscribe->signalEvent);
   }
 
   if (status == ERROR_SUCCESS) {
