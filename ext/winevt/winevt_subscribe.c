@@ -357,6 +357,12 @@ rb_winevt_subscribe_next(VALUE self)
     return Qfalse;
   }
 
+  /* If a signalEvent notifies a failure, raise
+   * SubscribeHandlerError to detect stale subscription.
+   * Note that we don't need to wait explicitly here.
+   * Because this function is inside of each enumerator.
+   * So, WaitForSingleObject should return immediately and should be
+   * processed with the latter each loop if there is no more items. */
   dwWait = WaitForSingleObject(winevtSubscribe->signalEvent, 0);
   if (dwWait == WAIT_FAILED) {
     raise_system_error(rb_eSubscribeHandlerError, GetLastError());
