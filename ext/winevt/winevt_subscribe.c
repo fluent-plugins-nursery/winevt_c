@@ -174,7 +174,7 @@ rb_winevt_subscribe_subscribe(int argc, VALUE* argv, VALUE self)
   struct WinevtSession* winevtSession;
   struct WinevtSubscribe* winevtSubscribe;
 
-  hSignalEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
+  hSignalEvent = CreateEvent(NULL, TRUE, TRUE, NULL);
 
   TypedData_Get_Struct(
     self, struct WinevtSubscribe, &rb_winevt_subscribe_type, winevtSubscribe);
@@ -341,6 +341,8 @@ rb_winevt_subscribe_next(VALUE self)
   EVT_HANDLE hEvents[SUBSCRIBE_ARRAY_SIZE];
   ULONG count = 0;
   DWORD status = ERROR_SUCCESS;
+  DWORD dwWait = 0;
+
   struct WinevtSubscribe* winevtSubscribe;
 
   TypedData_Get_Struct(
@@ -352,6 +354,23 @@ rb_winevt_subscribe_next(VALUE self)
 
   /* If subscription handle is NULL, it should return false. */
   if (!winevtSubscribe->subscription) {
+    return Qfalse;
+  }
+
+  /* If a signalEvent notifies whether a state of processed event(s)
+   * is existing or not.
+   * For checking for a result of WaitForSingleObject,
+   * we need to raise SubscribeHandlerError exception when
+   * WAIT_FAILED is detected for further investigations.
+   * Note that we don't need to wait explicitly here.
+   * Because this function is inside of each enumerator.
+   * So, WaitForSingleObject should return immediately and should be
+   * processed with the latter each loops if there is no more items.
+   * Just intended to check that there is no errors here. */
+  dwWait = WaitForSingleObject(winevtSubscribe->signalEvent, 0);
+  if (dwWait == WAIT_FAILED) {
+    raise_system_error(rb_eSubscribeHandlerError, GetLastError());
+  } else if (dwWait != WAIT_OBJECT_0) {
     return Qfalse;
   }
 
@@ -368,6 +387,8 @@ rb_winevt_subscribe_next(VALUE self)
     if (ERROR_NO_MORE_ITEMS != status) {
       return Qfalse;
     }
+
+    ResetEvent(winevtSubscribe->signalEvent);
   }
 
   if (status == ERROR_SUCCESS) {

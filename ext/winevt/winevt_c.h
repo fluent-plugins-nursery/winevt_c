@@ -61,6 +61,7 @@ extern VALUE rb_cSubscribe;
 extern VALUE rb_eWinevtQueryError;
 extern VALUE rb_eChannelNotFoundError;
 extern VALUE rb_eRemoteHandlerError;
+extern VALUE rb_eSubscribeHandlerError;
 extern VALUE rb_cLocale;
 extern VALUE rb_cSession;
 
