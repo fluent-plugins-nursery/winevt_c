@@ -71,6 +71,26 @@ rb_winevt_query_alloc(VALUE klass)
   return obj;
 }
 
+static DWORD
+get_evt_query_flag_from_cstr(char* flag_str)
+{
+  if (strcmp(flag_str, "channel") == 0)
+    return EvtQueryChannelPath;
+  else if (strcmp(flag_str, "file") == 0)
+    return EvtQueryFilePath;
+  else if (strcmp(flag_str, "forward") == 0)
+    return EvtQueryForwardDirection;
+  else if (strcmp(flag_str, "reverse") == 0)
+    return EvtQueryReverseDirection;
+  else if (strcmp(flag_str, "tolerate_query_errors") == 0 ||
+           strcmp(flag_str, "tolerate_errors") == 0)
+    return EvtQueryTolerateQueryErrors;
+  else
+    rb_raise(rb_eArgError, "Unknown query flag: %s", flag_str);
+
+  return 0;
+}
+
 /*
  * Initalize Query class.
  *
@@ -85,15 +105,15 @@ static VALUE
 rb_winevt_query_initialize(VALUE argc, VALUE *argv, VALUE self)
 {
   PWSTR evtChannel, evtXPath;
-  VALUE channel, xpath, session;
+  VALUE channel, xpath, session, rb_flags;
   struct WinevtQuery* winevtQuery;
   struct WinevtSession* winevtSession;
   EVT_HANDLE hRemoteHandle = NULL;
-  DWORD len;
+  DWORD len, flags = 0;
   VALUE wchannelBuf, wpathBuf;
   DWORD err = ERROR_SUCCESS;
 
-  rb_scan_args(argc, argv, "21", &channel, &xpath, &session);
+  rb_scan_args(argc, argv, "22", &channel, &xpath, &session, &rb_flags);
   Check_Type(channel, T_STRING);
   Check_Type(xpath, T_STRING);
 
@@ -109,6 +129,23 @@ rb_winevt_query_initialize(VALUE argc, VALUE *argv, VALUE self)
     if (err != ERROR_SUCCESS) {
       raise_system_error(rb_eRuntimeError, err);
     }
+  }
+
+  switch (TYPE(rb_flags)) {
+  case T_SYMBOL:
+    flags = get_evt_query_flag_from_cstr(RSTRING_PTR(rb_sym2str(rb_flags)));
+    break;
+  case T_STRING:
+    flags = get_evt_query_flag_from_cstr(StringValuePtr(rb_flags));
+    break;
+  case T_FIXNUM:
+    flags = NUM2LONG(rb_flags);
+    break;
+  case T_NIL:
+    flags = EvtQueryChannelPath | EvtQueryTolerateQueryErrors;
+    break;
+  default:
+    rb_raise(rb_eArgError, "Expected a String, a Symbol, a Fixnum, or a NilClass instance");
   }
 
   // channel : To wide char
@@ -128,7 +165,7 @@ rb_winevt_query_initialize(VALUE argc, VALUE *argv, VALUE self)
   TypedData_Get_Struct(self, struct WinevtQuery, &rb_winevt_query_type, winevtQuery);
 
   winevtQuery->query = EvtQuery(
-    hRemoteHandle, evtChannel, evtXPath, EvtQueryChannelPath | EvtQueryTolerateQueryErrors);
+    hRemoteHandle, evtChannel, evtXPath, flags);
   err = GetLastError();
   if (err != ERROR_SUCCESS) {
     if (err == ERROR_EVT_CHANNEL_NOT_FOUND) {
@@ -613,6 +650,37 @@ Init_winevt_query(VALUE rb_cEventLog)
    * @see https://msdn.microsoft.com/en-us/windows/desktop/aa385575#EvtSeekStrict
    */
   rb_define_const(rb_cFlag, "Strict", LONG2NUM(EvtSeekStrict));
+
+  /*
+   * EVT_QUERY_FLAGS enumeration: EvtQueryChannelPath
+   * @since 0.10.3
+   * @see https://learn.microsoft.com/en-us/windows/win32/api/winevt/ne-winevt-evt_query_flags
+   */
+  rb_define_const(rb_cFlag, "ChannelPath", LONG2NUM(EvtQueryChannelPath));
+  /*
+   * EVT_QUERY_FLAGS enumeration: EvtQueryFilePath
+   * @since 0.10.3
+   * @see https://learn.microsoft.com/en-us/windows/win32/api/winevt/ne-winevt-evt_query_flags
+   */
+  rb_define_const(rb_cFlag, "FilePath", LONG2NUM(EvtQueryFilePath));
+  /*
+   * EVT_QUERY_FLAGS enumeration: EvtQueryForwardDirection
+   * @since 0.10.3
+   * @see https://learn.microsoft.com/en-us/windows/win32/api/winevt/ne-winevt-evt_query_flags
+   */
+  rb_define_const(rb_cFlag, "ForwardDirection", LONG2NUM(EvtQueryForwardDirection));
+  /*
+   * EVT_QUERY_FLAGS enumeration: EvtQueryReverseDirection
+   * @since 0.10.3
+   * @see https://learn.microsoft.com/en-us/windows/win32/api/winevt/ne-winevt-evt_query_flags
+   */
+  rb_define_const(rb_cFlag, "ReverseDirection", LONG2NUM(EvtQueryReverseDirection));
+  /*
+   * EVT_QUERY_FLAGS enumeration: EvtSeekOriginMask
+   * @since 0.10.3
+   * @see https://learn.microsoft.com/en-us/windows/win32/api/winevt/ne-winevt-evt_query_flags
+   */
+  rb_define_const(rb_cFlag, "TolerateQueryErrors", LONG2NUM(EvtQueryTolerateQueryErrors));
   /* clang-format on */
 
   rb_define_method(rb_cQuery, "initialize", rb_winevt_query_initialize, -1);
