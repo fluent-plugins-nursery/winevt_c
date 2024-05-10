@@ -20,6 +20,8 @@ test_script:
 # https://www.appveyor.com/docs/installed-software/#ruby
 environment:
   matrix:
+    - ruby_version: "32-x64"
+    - ruby_version: "32"
     - ruby_version: "31-x64"
     - ruby_version: "31"
     - ruby_version: "30-x64"
@@ -38,6 +40,7 @@ for:
   matrix:
     only:
       - ruby_version: "31-x64"
+      - ruby_version: "32-x64"
   install:
     - SET PATH=C:\Ruby%ruby_version%\bin;%PATH%
     - ruby --version
