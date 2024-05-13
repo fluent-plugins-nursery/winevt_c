@@ -71,26 +71,6 @@ rb_winevt_query_alloc(VALUE klass)
   return obj;
 }
 
-static DWORD
-get_evt_query_flag_from_cstr(char* flag_str)
-{
-  if (strcmp(flag_str, "channel") == 0)
-    return EvtQueryChannelPath;
-  else if (strcmp(flag_str, "file") == 0)
-    return EvtQueryFilePath;
-  else if (strcmp(flag_str, "forward") == 0)
-    return EvtQueryForwardDirection;
-  else if (strcmp(flag_str, "reverse") == 0)
-    return EvtQueryReverseDirection;
-  else if (strcmp(flag_str, "tolerate_query_errors") == 0 ||
-           strcmp(flag_str, "tolerate_errors") == 0)
-    return EvtQueryTolerateQueryErrors;
-  else
-    rb_raise(rb_eArgError, "Unknown query flag: %s", flag_str);
-
-  return 0;
-}
-
 /*
  * Initalize Query class.
  *
@@ -132,12 +112,6 @@ rb_winevt_query_initialize(VALUE argc, VALUE *argv, VALUE self)
   }
 
   switch (TYPE(rb_flags)) {
-  case T_SYMBOL:
-    flags = get_evt_query_flag_from_cstr(RSTRING_PTR(rb_sym2str(rb_flags)));
-    break;
-  case T_STRING:
-    flags = get_evt_query_flag_from_cstr(StringValuePtr(rb_flags));
-    break;
   case T_FIXNUM:
     flags = NUM2LONG(rb_flags);
     break;
