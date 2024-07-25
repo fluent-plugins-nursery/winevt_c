@@ -646,7 +646,7 @@ error:
 }
 
 VALUE
-render_system_event(EVT_HANDLE hEvent, BOOL preserve_qualifiers)
+render_system_event(EVT_HANDLE hEvent, BOOL preserve_qualifiers, BOOL expandSID_p)
 {
   DWORD status = ERROR_SUCCESS;
   EVT_HANDLE hContext = NULL;
@@ -837,7 +837,8 @@ render_system_event(EVT_HANDLE hEvent, BOOL preserve_qualifiers)
   if (EvtVarTypeNull != pRenderedValues[EvtSystemUserID].Type) {
     if (ConvertSidToStringSid(pRenderedValues[EvtSystemUserID].SidVal, &pwsSid)) {
       CHAR *expandSID;
-      if (ExpandSIDWString(pRenderedValues[EvtSystemUserID].SidVal,
+      if (expandSID_p &&
+          ExpandSIDWString(pRenderedValues[EvtSystemUserID].SidVal,
                            &expandSID) == 0) {
         rbstr = rb_utf8_str_new_cstr(expandSID);
       } else {

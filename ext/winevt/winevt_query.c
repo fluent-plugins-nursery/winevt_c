@@ -153,6 +153,7 @@ rb_winevt_query_initialize(VALUE argc, VALUE *argv, VALUE self)
   winevtQuery->preserveQualifiers = FALSE;
   winevtQuery->localeInfo = &default_locale;
   winevtQuery->remoteHandle = hRemoteHandle;
+  winevtQuery->expandSID = TRUE;
 
   ALLOCV_END(wchannelBuf);
   ALLOCV_END(wpathBuf);
@@ -274,7 +275,8 @@ rb_winevt_query_render(VALUE self, EVT_HANDLE event)
   if (winevtQuery->renderAsXML) {
     return render_to_rb_str(event, EvtRenderEventXml);
   } else {
-    return render_system_event(event, winevtQuery->preserveQualifiers);
+    return render_system_event(event, winevtQuery->preserveQualifiers,
+                               winevtQuery->expandSID);
   }
 }
 
@@ -536,6 +538,40 @@ rb_winevt_query_get_locale(VALUE self)
 }
 
 /*
+ * This method specifies whether expanding SID or not.
+ *
+ * @param rb_expand_sid_p [Boolean]
+ */
+static VALUE
+rb_winevt_query_set_expand_sid(VALUE self, VALUE rb_expand_sid_p)
+{
+  struct WinevtQuery* winevtQuery;
+
+  TypedData_Get_Struct(
+    self, struct WinevtQuery, &rb_winevt_query_type, winevtQuery);
+
+  winevtQuery->expandSID = RTEST(rb_expand_sid_p);
+
+  return Qnil;
+}
+
+/*
+ * This method returns whether expanding SID or not.
+ *
+ * @return [Boolean]
+ */
+static VALUE
+rb_winevt_query_expand_sid_p(VALUE self)
+{
+  struct WinevtQuery* winevtQuery;
+
+  TypedData_Get_Struct(
+    self, struct WinevtQuery, &rb_winevt_query_type, winevtQuery);
+
+  return winevtQuery->expandSID ? Qtrue : Qfalse;
+}
+
+/*
  * This method cancels channel query.
  *
  * @return [Boolean]
@@ -683,6 +719,14 @@ Init_winevt_query(VALUE rb_cEventLog)
    * @since 0.8.0
    */
   rb_define_method(rb_cQuery, "locale=", rb_winevt_query_set_locale, 1);
+  /*
+   * @since 0.10.3
+   */
+  rb_define_method(rb_cQuery, "expand_sid?", rb_winevt_query_expand_sid_p, 0);
+  /*
+   * @since 0.10.3
+   */
+  rb_define_method(rb_cQuery, "expand_sid=", rb_winevt_query_set_expand_sid, 1);
   /*
    * @since 0.9.1
    */
