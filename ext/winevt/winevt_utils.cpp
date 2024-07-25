@@ -596,6 +596,55 @@ cleanup:
   return _wcsdup(result.data());
 }
 
+static int ExpandSIDWString(PSID sid, CHAR **out_expanded)
+{
+#define MAX_NAME 256
+  DWORD len = MAX_NAME, err = ERROR_SUCCESS;
+  SID_NAME_USE sid_type = SidTypeUnknown;
+  char account[MAX_NAME];
+  char domain[MAX_NAME];
+  DWORD result_len = 0;
+  CHAR *formatted = NULL;
+  VALUE vformatted;
+
+  if (!LookupAccountSidA(NULL, sid,
+                         account, &len, domain,
+                         &len, &sid_type)) {
+    err = GetLastError();
+    if (err == ERROR_NONE_MAPPED) {
+      goto not_mapped_error;
+    }
+    else {
+      return -2;
+    }
+
+    goto error;
+  }
+
+  result_len = strlen(domain) + 1 + strlen(account) + 1;
+  formatted = (CHAR *)ALLOCV(vformatted, result_len);
+  if (formatted == NULL) {
+    goto error;
+  }
+
+  _snprintf_s(formatted, result_len, _TRUNCATE, "%s\\%s", domain, account);
+
+  *out_expanded = strdup(formatted);
+
+  ALLOCV_END(vformatted);
+
+  return 0;
+
+not_mapped_error:
+
+  return -1;
+
+error:
+  err = GetLastError();
+  ALLOCV_END(vformatted);
+  raise_system_error(rb_eRuntimeError, err);
+}
+
 VALUE
 render_system_event(EVT_HANDLE hEvent, BOOL preserve_qualifiers)
 {
@@ -787,7 +836,13 @@ render_system_event(EVT_HANDLE hEvent, BOOL preserve_qualifiers)
 
   if (EvtVarTypeNull != pRenderedValues[EvtSystemUserID].Type) {
     if (ConvertSidToStringSid(pRenderedValues[EvtSystemUserID].SidVal, &pwsSid)) {
-      rbstr = rb_utf8_str_new_cstr(pwsSid);
+      CHAR *expandSID;
+      if (ExpandSIDWString(pRenderedValues[EvtSystemUserID].SidVal,
+                           &expandSID) == 0) {
+        rbstr = rb_utf8_str_new_cstr(expandSID);
+      } else {
+        rbstr = rb_utf8_str_new_cstr(pwsSid);
+      }
       rb_hash_aset(hash, rb_str_new2("UserID"), rbstr);
       LocalFree(pwsSid);
     }
