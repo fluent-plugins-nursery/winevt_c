@@ -38,11 +38,16 @@ for:
   matrix:
     only:
       - ruby_version: "31-x64"
+      - ruby_version: "27-x64"
+      - ruby_version: "27"
+      - ruby_version: "26-x64"
+      - ruby_version: "26"
   install:
+    - ps: if ($ENV:ruby_version -ne "31-x64") { .\ruby_install.ps1 }
     - SET PATH=C:\Ruby%ruby_version%\bin;%PATH%
     - ruby --version
     - gem --version
     - bundle --version
-    - ridk.cmd install 1 3
+    - ps: if ($ENV:ruby_version -eq "31-x64") { ridk.ps1 install 1 3 }
     - ridk.cmd exec bundle install
     - ridk.cmd exec bundle exec rake compile
