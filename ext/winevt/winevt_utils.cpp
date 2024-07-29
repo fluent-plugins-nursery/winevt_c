@@ -596,19 +596,48 @@ cleanup:
   return _wcsdup(result.data());
 }
 
+static char* convert_wstr(wchar_t *wstr)
+{
+  VALUE vstr;
+  int len = 0;
+  CHAR *ptr = NULL;
+  DWORD err = ERROR_SUCCESS;
+
+  len = WideCharToMultiByte(CP_UTF8, 0, wstr, -1, NULL, 0, NULL, NULL);
+  if (len == 0) {
+    return NULL;
+  }
+
+  ptr = ALLOCV_N(CHAR, vstr, len);
+  // For memory safety.
+  ZeroMemory(ptr, sizeof(CHAR) * len);
+
+  len = WideCharToMultiByte(CP_UTF8, 0, wstr, -1, ptr, len, NULL, NULL);
+  // return 0 should be failure.
+  // ref: https://docs.microsoft.com/en-us/windows/win32/api/stringapiset/nf-stringapiset-widechartomultibyte#return-value
+  if (len == 0) {
+    err = GetLastError();
+    ALLOCV_END(vstr);
+    raise_system_error(rb_eRuntimeError, err);
+  }
+
+  return strdup(ptr);
+}
+
 static int ExpandSIDWString(PSID sid, CHAR **out_expanded)
 {
 #define MAX_NAME 256
   DWORD len = MAX_NAME, err = ERROR_SUCCESS;
   SID_NAME_USE sid_type = SidTypeUnknown;
-  char account[MAX_NAME];
-  char domain[MAX_NAME];
+  WCHAR wAccount[MAX_NAME];
+  WCHAR wDomain[MAX_NAME];
+  CHAR *account, *domain;
   DWORD result_len = 0;
   CHAR *formatted = NULL;
   VALUE vformatted;
 
-  if (!LookupAccountSidA(NULL, sid,
-                         account, &len, domain,
+  if (!LookupAccountSidW(NULL, sid,
+                         wAccount, &len, wDomain,
                          &len, &sid_type)) {
     err = GetLastError();
     if (err == ERROR_NONE_MAPPED) {
@@ -618,6 +647,15 @@ static int ExpandSIDWString(PSID sid, CHAR **out_expanded)
       return -2;
     }
 
+    goto error;
+  }
+
+  domain = convert_wstr(wDomain);
+  if (domain == NULL) {
+    goto error;
+  }
+  account = convert_wstr(wAccount);
+  if (account == NULL) {
     goto error;
   }
 
@@ -631,7 +669,14 @@ static int ExpandSIDWString(PSID sid, CHAR **out_expanded)
 
   *out_expanded = strdup(formatted);
 
+  if (domain != NULL) {
+    free(domain);
+  }
+  if (account != NULL) {
+    free(account);
+  }
   ALLOCV_END(vformatted);
+
 
   return 0;
 
@@ -641,7 +686,14 @@ not_mapped_error:
 
 error:
   err = GetLastError();
+
   ALLOCV_END(vformatted);
+  if (domain != NULL) {
+    free(domain);
+  }
+  if (account != NULL) {
+    free(account);
+  }
   raise_system_error(rb_eRuntimeError, err);
 }
 
