@@ -51,7 +51,7 @@ EVT_HANDLE connect_to_remote(LPWSTR computerName, LPWSTR domain,
                              DWORD *error_code);
 WCHAR* get_description(EVT_HANDLE handle, LANGID langID, EVT_HANDLE hRemote);
 VALUE get_values(EVT_HANDLE handle);
-VALUE render_system_event(EVT_HANDLE handle, BOOL preserve_qualifiers, BOOL expandSID);
+VALUE render_system_event(EVT_HANDLE handle, BOOL preserve_qualifiers, BOOL preserveSID);
 LocaleInfo* get_locale_info_from_rb_str(VALUE rb_locale_str);
 
 #ifdef __cplusplus
@@ -106,7 +106,7 @@ struct WinevtQuery
   LONG timeout;
   BOOL renderAsXML;
   BOOL preserveQualifiers;
-  BOOL expandSID;
+  BOOL preserveSID;
   LocaleInfo *localeInfo;
   EVT_HANDLE remoteHandle;
 };
@@ -128,7 +128,7 @@ struct WinevtSubscribe
   DWORD currentRate;
   BOOL renderAsXML;
   BOOL preserveQualifiers;
-  BOOL expandSID;
+  BOOL preserveSID;
   LocaleInfo* localeInfo;
   EVT_HANDLE remoteHandle;
 };

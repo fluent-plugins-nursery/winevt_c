@@ -153,7 +153,7 @@ rb_winevt_query_initialize(VALUE argc, VALUE *argv, VALUE self)
   winevtQuery->preserveQualifiers = FALSE;
   winevtQuery->localeInfo = &default_locale;
   winevtQuery->remoteHandle = hRemoteHandle;
-  winevtQuery->expandSID = TRUE;
+  winevtQuery->preserveSID = FALSE;
 
   ALLOCV_END(wchannelBuf);
   ALLOCV_END(wpathBuf);
@@ -276,7 +276,7 @@ rb_winevt_query_render(VALUE self, EVT_HANDLE event)
     return render_to_rb_str(event, EvtRenderEventXml);
   } else {
     return render_system_event(event, winevtQuery->preserveQualifiers,
-                               winevtQuery->expandSID);
+                               winevtQuery->preserveSID);
   }
 }
 
@@ -538,37 +538,37 @@ rb_winevt_query_get_locale(VALUE self)
 }
 
 /*
- * This method specifies whether expanding SID or not.
+ * This method specifies whether preserving SID or not.
  *
- * @param rb_expand_sid_p [Boolean]
+ * @param rb_preserve_sid_p [Boolean]
  */
 static VALUE
-rb_winevt_query_set_expand_sid(VALUE self, VALUE rb_expand_sid_p)
+rb_winevt_query_set_preserve_sid(VALUE self, VALUE rb_preserve_sid_p)
 {
   struct WinevtQuery* winevtQuery;
 
   TypedData_Get_Struct(
     self, struct WinevtQuery, &rb_winevt_query_type, winevtQuery);
 
-  winevtQuery->expandSID = RTEST(rb_expand_sid_p);
+  winevtQuery->preserveSID = RTEST(rb_preserve_sid_p);
 
   return Qnil;
 }
 
 /*
- * This method returns whether expanding SID or not.
+ * This method returns whether preserving SID or not.
  *
  * @return [Boolean]
  */
 static VALUE
-rb_winevt_query_expand_sid_p(VALUE self)
+rb_winevt_query_preserve_sid_p(VALUE self)
 {
   struct WinevtQuery* winevtQuery;
 
   TypedData_Get_Struct(
     self, struct WinevtQuery, &rb_winevt_query_type, winevtQuery);
 
-  return winevtQuery->expandSID ? Qtrue : Qfalse;
+  return winevtQuery->preserveSID ? Qtrue : Qfalse;
 }
 
 /*
@@ -722,11 +722,11 @@ Init_winevt_query(VALUE rb_cEventLog)
   /*
    * @since 0.10.3
    */
-  rb_define_method(rb_cQuery, "expand_sid?", rb_winevt_query_expand_sid_p, 0);
+  rb_define_method(rb_cQuery, "preserve_sid?", rb_winevt_query_preserve_sid_p, 0);
   /*
    * @since 0.10.3
    */
-  rb_define_method(rb_cQuery, "expand_sid=", rb_winevt_query_set_expand_sid, 1);
+  rb_define_method(rb_cQuery, "preserve_sid=", rb_winevt_query_set_preserve_sid, 1);
   /*
    * @since 0.9.1
    */
