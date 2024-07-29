@@ -153,7 +153,7 @@ rb_winevt_query_initialize(VALUE argc, VALUE *argv, VALUE self)
   winevtQuery->preserveQualifiers = FALSE;
   winevtQuery->localeInfo = &default_locale;
   winevtQuery->remoteHandle = hRemoteHandle;
-  winevtQuery->preserveSID = FALSE;
+  winevtQuery->preserveSID = TRUE;
 
   ALLOCV_END(wchannelBuf);
   ALLOCV_END(wpathBuf);

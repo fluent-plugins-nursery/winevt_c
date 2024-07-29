@@ -110,7 +110,7 @@ rb_winevt_subscribe_initialize(VALUE self)
   winevtSubscribe->readExistingEvents = TRUE;
   winevtSubscribe->preserveQualifiers = FALSE;
   winevtSubscribe->localeInfo = &default_locale;
-  winevtSubscribe->preserveSID = FALSE;
+  winevtSubscribe->preserveSID = TRUE;
 
   return Qnil;
 }
