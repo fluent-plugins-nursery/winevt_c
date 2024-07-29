@@ -660,7 +660,7 @@ static int ExpandSIDWString(PSID sid, CHAR **out_expanded)
   }
 
   result_len = strlen(domain) + 1 + strlen(account) + 1;
-  formatted = (CHAR *)ALLOCV(vformatted, result_len);
+  formatted = (CHAR *)RB_ALLOCV(vformatted, result_len);
   if (formatted == NULL) {
     goto error;
   }
@@ -675,7 +675,7 @@ static int ExpandSIDWString(PSID sid, CHAR **out_expanded)
   if (account != NULL) {
     free(account);
   }
-  ALLOCV_END(vformatted);
+  RB_ALLOCV_END(vformatted);
 
 
   return 0;

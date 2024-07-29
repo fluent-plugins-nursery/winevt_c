@@ -14,6 +14,9 @@ have_library("wevtapi")
 have_func("EvtQuery", "winevt.h")
 have_library("advapi32")
 have_library("ole32")
+if have_macro("RB_ALLOCV")
+  $CFLAGS << " -DHAVE_RB_ALLOCV=1 "
+end
 
 $LDFLAGS << " -lwevtapi -ladvapi32 -lole32"
 $CFLAGS << " -Wall -std=c99 -fPIC -fms-extensions "

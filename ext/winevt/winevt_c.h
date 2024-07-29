@@ -16,6 +16,11 @@
 #endif /* WIN32_WINNT */
 #define _WIN32_WINNT MINIMUM_WINDOWS_VERSION
 
+#if !defined(HAVE_RB_ALLOCV)
+#define ALLOCV     RB_ALLOCV
+#define ALLOCV_N   RB_ALLOCV_N
+#endif
+
 #include <time.h>
 #include <winevt.h>
 #define EventQuery(object) ((struct WinevtQuery*)DATA_PTR(object))
