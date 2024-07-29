@@ -17,7 +17,7 @@ wstr_to_rb_str(UINT cp, const WCHAR* wstr, int clen)
   }
 
   int len = WideCharToMultiByte(cp, 0, wstr, clen, nullptr, 0, nullptr, nullptr);
-  ptr = ALLOCV_N(CHAR, vstr, len);
+  ptr = RB_ALLOCV_N(CHAR, vstr, len);
   // For memory safety.
   ZeroMemory(ptr, sizeof(CHAR) * len);
   ret = WideCharToMultiByte(cp, 0, wstr, clen, ptr, len, nullptr, nullptr);
@@ -25,11 +25,11 @@ wstr_to_rb_str(UINT cp, const WCHAR* wstr, int clen)
   // ref: https://docs.microsoft.com/en-us/windows/win32/api/stringapiset/nf-stringapiset-widechartomultibyte#return-value
   if (ret == 0) {
     err = GetLastError();
-    ALLOCV_END(vstr);
+    RB_ALLOCV_END(vstr);
     raise_system_error(rb_eRuntimeError, err);
   }
   VALUE str = rb_utf8_str_new_cstr(ptr);
-  ALLOCV_END(vstr);
+  RB_ALLOCV_END(vstr);
 
   return str;
 }
@@ -85,18 +85,18 @@ render_to_rb_str(EVT_HANDLE handle, DWORD flags)
   EvtRender(nullptr, handle, flags, 0, NULL, &bufferSize, &count);
 
   // bufferSize is in bytes, not characters
-  buffer = (WCHAR*)ALLOCV(vbuffer, bufferSize);
+  buffer = (WCHAR*)RB_ALLOCV(vbuffer, bufferSize);
 
   succeeded =
     EvtRender(nullptr, handle, flags, bufferSize, buffer, &bufferSizeUsed, &count);
   if (!succeeded) {
     DWORD status = GetLastError();
-    ALLOCV_END(vbuffer);
+    RB_ALLOCV_END(vbuffer);
     raise_system_error(rb_eWinevtQueryError, status);
   }
 
   result = wstr_to_rb_str(CP_UTF8, buffer, -1);
-  ALLOCV_END(vbuffer);
+  RB_ALLOCV_END(vbuffer);
 
   return result;
 }
@@ -153,7 +153,7 @@ make_displayable_binary_string(PBYTE bin, size_t length)
     return rb_str_new2("(NULL)");
   }
 
-  buffer = ALLOCV_N(CHAR, vbuffer, size);
+  buffer = RB_ALLOCV_N(CHAR, vbuffer, size);
 
   for (i = 0; i < length; i++) {
     for (j = 0; j < 2; j++) {
@@ -164,7 +164,7 @@ make_displayable_binary_string(PBYTE bin, size_t length)
   buffer[size - 1] = '\0';
 
   VALUE str = rb_str_new2(buffer);
-  ALLOCV_END(vbuffer);
+  RB_ALLOCV_END(vbuffer);
 
   return str;
 }
@@ -380,7 +380,7 @@ get_values(EVT_HANDLE handle)
     renderContext, handle, EvtRenderEventValues, 0, NULL, &bufferSize, &propCount);
 
   // bufferSize is in bytes, not array size
-  pRenderedValues = (PEVT_VARIANT)ALLOCV(vbuffer, bufferSize);
+  pRenderedValues = (PEVT_VARIANT)RB_ALLOCV(vbuffer, bufferSize);
 
   succeeded = EvtRender(renderContext,
                         handle,
@@ -391,14 +391,14 @@ get_values(EVT_HANDLE handle)
                         &propCount);
   if (!succeeded) {
     DWORD status = GetLastError();
-    ALLOCV_END(vbuffer);
+    RB_ALLOCV_END(vbuffer);
     EvtClose(renderContext);
     raise_system_error(rb_eWinevtQueryError, status);
   }
 
   userValues = extract_user_evt_variants(pRenderedValues, propCount);
 
-  ALLOCV_END(vbuffer);
+  RB_ALLOCV_END(vbuffer);
   EvtClose(renderContext);
 
   return userValues;
@@ -608,7 +608,7 @@ static char* convert_wstr(wchar_t *wstr)
     return NULL;
   }
 
-  ptr = ALLOCV_N(CHAR, vstr, len);
+  ptr = RB_ALLOCV_N(CHAR, vstr, len);
   // For memory safety.
   ZeroMemory(ptr, sizeof(CHAR) * len);
 
@@ -617,7 +617,7 @@ static char* convert_wstr(wchar_t *wstr)
   // ref: https://docs.microsoft.com/en-us/windows/win32/api/stringapiset/nf-stringapiset-widechartomultibyte#return-value
   if (len == 0) {
     err = GetLastError();
-    ALLOCV_END(vstr);
+    RB_ALLOCV_END(vstr);
     raise_system_error(rb_eRuntimeError, err);
   }
 
@@ -687,7 +687,7 @@ not_mapped_error:
 error:
   err = GetLastError();
 
-  ALLOCV_END(vformatted);
+  RB_ALLOCV_END(vformatted);
   if (domain != NULL) {
     free(domain);
   }
@@ -734,7 +734,7 @@ render_system_event(EVT_HANDLE hEvent, BOOL preserve_qualifiers, BOOL preserveSI
     status = GetLastError();
     if (ERROR_INSUFFICIENT_BUFFER == status) {
       dwBufferSize = dwBufferUsed;
-      pRenderedValues = (PEVT_VARIANT)ALLOCV(vRenderedValues, dwBufferSize);
+      pRenderedValues = (PEVT_VARIANT)RB_ALLOCV(vRenderedValues, dwBufferSize);
       if (pRenderedValues) {
         EvtRender(hContext,
                   hEvent,
@@ -752,7 +752,7 @@ render_system_event(EVT_HANDLE hEvent, BOOL preserve_qualifiers, BOOL preserveSI
 
     if (ERROR_SUCCESS != status) {
       EvtClose(hContext);
-      ALLOCV_END(vRenderedValues);
+      RB_ALLOCV_END(vRenderedValues);
 
       rb_raise(rb_eWinevtQueryError, "EvtRender failed with %lu\n", status);
     }
@@ -904,7 +904,7 @@ render_system_event(EVT_HANDLE hEvent, BOOL preserve_qualifiers, BOOL preserveSI
   }
 
   EvtClose(hContext);
-  ALLOCV_END(vRenderedValues);
+  RB_ALLOCV_END(vRenderedValues);
 
   return hash;
 }
