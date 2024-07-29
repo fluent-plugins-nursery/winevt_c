@@ -893,6 +893,7 @@ render_system_event(EVT_HANDLE hEvent, BOOL preserve_qualifiers, BOOL expandSID_
           ExpandSIDWString(pRenderedValues[EvtSystemUserID].SidVal,
                            &expandSID) == 0) {
         rbstr = rb_utf8_str_new_cstr(expandSID);
+        free(expandSID);
       } else {
         rbstr = rb_utf8_str_new_cstr(pwsSid);
       }
