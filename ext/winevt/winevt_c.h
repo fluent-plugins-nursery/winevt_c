@@ -38,6 +38,9 @@ typedef struct {
 extern "C" {
 #endif /* __cplusplus */
 
+#define WINEVT_UTILS_ERROR_NONE_MAPPED -1
+#define WINEVT_UTILS_ERROR_OTHERS      -2
+
 VALUE wstr_to_rb_str(UINT cp, const WCHAR* wstr, int clen);
 #if defined(__cplusplus)
 [[ noreturn ]]

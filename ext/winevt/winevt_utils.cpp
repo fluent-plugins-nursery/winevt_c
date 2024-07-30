@@ -635,16 +635,17 @@ static int ExpandSIDWString(PSID sid, CHAR **out_expanded)
   DWORD result_len = 0;
   CHAR *formatted = NULL;
   VALUE vformatted;
+#undef MAX_NAME
 
   if (!LookupAccountSidW(NULL, sid,
                          wAccount, &len, wDomain,
                          &len, &sid_type)) {
     err = GetLastError();
     if (err == ERROR_NONE_MAPPED) {
-      goto not_mapped_error;
+      goto none_mapped_error;
     }
     else {
-      return -2;
+      return WINEVT_UTILS_ERROR_OTHERS;
     }
 
     goto error;
@@ -680,9 +681,9 @@ static int ExpandSIDWString(PSID sid, CHAR **out_expanded)
 
   return 0;
 
-not_mapped_error:
+none_mapped_error:
 
-  return -1;
+  return WINEVT_UTILS_ERROR_NONE_MAPPED;
 
 error:
   err = GetLastError();
