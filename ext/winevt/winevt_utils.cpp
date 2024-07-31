@@ -670,12 +670,8 @@ static int ExpandSIDWString(PSID sid, CHAR **out_expanded)
 
   *out_expanded = strdup(formatted);
 
-  if (domain != NULL) {
-    free(domain);
-  }
-  if (account != NULL) {
-    free(account);
-  }
+  free(domain);
+  free(account);
   RB_ALLOCV_END(vformatted);
 
 
@@ -689,12 +685,8 @@ error:
   err = GetLastError();
 
   RB_ALLOCV_END(vformatted);
-  if (domain != NULL) {
-    free(domain);
-  }
-  if (account != NULL) {
-    free(account);
-  }
+  free(domain);
+  free(account);
   raise_system_error(rb_eRuntimeError, err);
 }
 
