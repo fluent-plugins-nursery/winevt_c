@@ -631,7 +631,7 @@ static int ExpandSIDWString(PSID sid, CHAR **out_expanded)
   SID_NAME_USE sid_type = SidTypeUnknown;
   WCHAR wAccount[MAX_NAME];
   WCHAR wDomain[MAX_NAME];
-  CHAR *account, *domain;
+  CHAR *account = NULL, *domain = NULL;
   DWORD result_len = 0;
   CHAR *formatted = NULL;
   VALUE vformatted;
@@ -889,7 +889,7 @@ render_system_event(EVT_HANDLE hEvent, BOOL preserve_qualifiers, BOOL preserveSI
 
   if (EvtVarTypeNull != pRenderedValues[EvtSystemUserID].Type) {
     if (ConvertSidToStringSid(pRenderedValues[EvtSystemUserID].SidVal, &pwsSid)) {
-      CHAR *expandSID;
+      CHAR *expandSID = NULL;
       if (preserveSID_p) {
         rbstr = rb_utf8_str_new_cstr(pwsSid);
         rb_hash_aset(hash, rb_str_new2("UserID"), rbstr);
