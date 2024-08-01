@@ -663,31 +663,31 @@ Init_winevt_query(VALUE rb_cEventLog)
 
   /*
    * EVT_QUERY_FLAGS enumeration: EvtQueryChannelPath
-   * @since 0.10.3
+   * @since 0.11.0
    * @see https://learn.microsoft.com/en-us/windows/win32/api/winevt/ne-winevt-evt_query_flags
    */
   rb_define_const(rb_cFlag, "ChannelPath", LONG2NUM(EvtQueryChannelPath));
   /*
    * EVT_QUERY_FLAGS enumeration: EvtQueryFilePath
-   * @since 0.10.3
+   * @since 0.11.0
    * @see https://learn.microsoft.com/en-us/windows/win32/api/winevt/ne-winevt-evt_query_flags
    */
   rb_define_const(rb_cFlag, "FilePath", LONG2NUM(EvtQueryFilePath));
   /*
    * EVT_QUERY_FLAGS enumeration: EvtQueryForwardDirection
-   * @since 0.10.3
+   * @since 0.11.0
    * @see https://learn.microsoft.com/en-us/windows/win32/api/winevt/ne-winevt-evt_query_flags
    */
   rb_define_const(rb_cFlag, "ForwardDirection", LONG2NUM(EvtQueryForwardDirection));
   /*
    * EVT_QUERY_FLAGS enumeration: EvtQueryReverseDirection
-   * @since 0.10.3
+   * @since 0.11.0
    * @see https://learn.microsoft.com/en-us/windows/win32/api/winevt/ne-winevt-evt_query_flags
    */
   rb_define_const(rb_cFlag, "ReverseDirection", LONG2NUM(EvtQueryReverseDirection));
   /*
    * EVT_QUERY_FLAGS enumeration: EvtSeekOriginMask
-   * @since 0.10.3
+   * @since 0.11.0
    * @see https://learn.microsoft.com/en-us/windows/win32/api/winevt/ne-winevt-evt_query_flags
    */
   rb_define_const(rb_cFlag, "TolerateQueryErrors", LONG2NUM(EvtQueryTolerateQueryErrors));
@@ -720,11 +720,11 @@ Init_winevt_query(VALUE rb_cEventLog)
    */
   rb_define_method(rb_cQuery, "locale=", rb_winevt_query_set_locale, 1);
   /*
-   * @since 0.10.3
+   * @since 0.11.0
    */
   rb_define_method(rb_cQuery, "preserve_sid?", rb_winevt_query_preserve_sid_p, 0);
   /*
-   * @since 0.10.3
+   * @since 0.11.0
    */
   rb_define_method(rb_cQuery, "preserve_sid=", rb_winevt_query_set_preserve_sid, 1);
   /*
