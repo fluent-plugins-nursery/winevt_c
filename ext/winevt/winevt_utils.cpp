@@ -17,7 +17,7 @@ wstr_to_rb_str(UINT cp, const WCHAR* wstr, int clen)
   }
 
   int len = WideCharToMultiByte(cp, 0, wstr, clen, nullptr, 0, nullptr, nullptr);
-  ptr = ALLOCV_N(CHAR, vstr, len);
+  ptr = RB_ALLOCV_N(CHAR, vstr, len);
   // For memory safety.
   ZeroMemory(ptr, sizeof(CHAR) * len);
   ret = WideCharToMultiByte(cp, 0, wstr, clen, ptr, len, nullptr, nullptr);
@@ -25,11 +25,11 @@ wstr_to_rb_str(UINT cp, const WCHAR* wstr, int clen)
   // ref: https://docs.microsoft.com/en-us/windows/win32/api/stringapiset/nf-stringapiset-widechartomultibyte#return-value
   if (ret == 0) {
     err = GetLastError();
-    ALLOCV_END(vstr);
+    RB_ALLOCV_END(vstr);
     raise_system_error(rb_eRuntimeError, err);
   }
   VALUE str = rb_utf8_str_new_cstr(ptr);
-  ALLOCV_END(vstr);
+  RB_ALLOCV_END(vstr);
 
   return str;
 }
@@ -85,18 +85,18 @@ render_to_rb_str(EVT_HANDLE handle, DWORD flags)
   EvtRender(nullptr, handle, flags, 0, NULL, &bufferSize, &count);
 
   // bufferSize is in bytes, not characters
-  buffer = (WCHAR*)ALLOCV(vbuffer, bufferSize);
+  buffer = (WCHAR*)RB_ALLOCV(vbuffer, bufferSize);
 
   succeeded =
     EvtRender(nullptr, handle, flags, bufferSize, buffer, &bufferSizeUsed, &count);
   if (!succeeded) {
     DWORD status = GetLastError();
-    ALLOCV_END(vbuffer);
+    RB_ALLOCV_END(vbuffer);
     raise_system_error(rb_eWinevtQueryError, status);
   }
 
   result = wstr_to_rb_str(CP_UTF8, buffer, -1);
-  ALLOCV_END(vbuffer);
+  RB_ALLOCV_END(vbuffer);
 
   return result;
 }
@@ -153,7 +153,7 @@ make_displayable_binary_string(PBYTE bin, size_t length)
     return rb_str_new2("(NULL)");
   }
 
-  buffer = ALLOCV_N(CHAR, vbuffer, size);
+  buffer = RB_ALLOCV_N(CHAR, vbuffer, size);
 
   for (i = 0; i < length; i++) {
     for (j = 0; j < 2; j++) {
@@ -164,7 +164,7 @@ make_displayable_binary_string(PBYTE bin, size_t length)
   buffer[size - 1] = '\0';
 
   VALUE str = rb_str_new2(buffer);
-  ALLOCV_END(vbuffer);
+  RB_ALLOCV_END(vbuffer);
 
   return str;
 }
@@ -380,7 +380,7 @@ get_values(EVT_HANDLE handle)
     renderContext, handle, EvtRenderEventValues, 0, NULL, &bufferSize, &propCount);
 
   // bufferSize is in bytes, not array size
-  pRenderedValues = (PEVT_VARIANT)ALLOCV(vbuffer, bufferSize);
+  pRenderedValues = (PEVT_VARIANT)RB_ALLOCV(vbuffer, bufferSize);
 
   succeeded = EvtRender(renderContext,
                         handle,
@@ -391,14 +391,14 @@ get_values(EVT_HANDLE handle)
                         &propCount);
   if (!succeeded) {
     DWORD status = GetLastError();
-    ALLOCV_END(vbuffer);
+    RB_ALLOCV_END(vbuffer);
     EvtClose(renderContext);
     raise_system_error(rb_eWinevtQueryError, status);
   }
 
   userValues = extract_user_evt_variants(pRenderedValues, propCount);
 
-  ALLOCV_END(vbuffer);
+  RB_ALLOCV_END(vbuffer);
   EvtClose(renderContext);
 
   return userValues;
@@ -596,8 +596,102 @@ cleanup:
   return _wcsdup(result.data());
 }
 
+static char* convert_wstr(wchar_t *wstr)
+{
+  VALUE vstr;
+  int len = 0;
+  CHAR *ptr = NULL;
+  DWORD err = ERROR_SUCCESS;
+
+  len = WideCharToMultiByte(CP_UTF8, 0, wstr, -1, NULL, 0, NULL, NULL);
+  if (len == 0) {
+    return NULL;
+  }
+
+  ptr = RB_ALLOCV_N(CHAR, vstr, len);
+  // For memory safety.
+  ZeroMemory(ptr, sizeof(CHAR) * len);
+
+  len = WideCharToMultiByte(CP_UTF8, 0, wstr, -1, ptr, len, NULL, NULL);
+  // return 0 should be failure.
+  // ref: https://docs.microsoft.com/en-us/windows/win32/api/stringapiset/nf-stringapiset-widechartomultibyte#return-value
+  if (len == 0) {
+    err = GetLastError();
+    RB_ALLOCV_END(vstr);
+    raise_system_error(rb_eRuntimeError, err);
+  }
+
+  return strdup(ptr);
+}
+
+static int ExpandSIDWString(PSID sid, CHAR **out_expanded)
+{
+#define MAX_NAME 256
+  DWORD len = MAX_NAME, err = ERROR_SUCCESS;
+  SID_NAME_USE sid_type = SidTypeUnknown;
+  WCHAR wAccount[MAX_NAME];
+  WCHAR wDomain[MAX_NAME];
+  CHAR *account = NULL, *domain = NULL;
+  DWORD result_len = 0;
+  CHAR *formatted = NULL;
+  VALUE vformatted;
+#undef MAX_NAME
+
+  if (!LookupAccountSidW(NULL, sid,
+                         wAccount, &len, wDomain,
+                         &len, &sid_type)) {
+    err = GetLastError();
+    if (err == ERROR_NONE_MAPPED) {
+      goto none_mapped_error;
+    }
+    else {
+      return WINEVT_UTILS_ERROR_OTHERS;
+    }
+
+    goto error;
+  }
+
+  domain = convert_wstr(wDomain);
+  if (domain == NULL) {
+    goto error;
+  }
+  account = convert_wstr(wAccount);
+  if (account == NULL) {
+    goto error;
+  }
+
+  result_len = strlen(domain) + 1 + strlen(account) + 1;
+  formatted = (CHAR *)RB_ALLOCV(vformatted, result_len);
+  if (formatted == NULL) {
+    goto error;
+  }
+
+  _snprintf_s(formatted, result_len, _TRUNCATE, "%s\\%s", domain, account);
+
+  *out_expanded = strdup(formatted);
+
+  free(domain);
+  free(account);
+  RB_ALLOCV_END(vformatted);
+
+
+  return 0;
+
+none_mapped_error:
+
+  return WINEVT_UTILS_ERROR_NONE_MAPPED;
+
+error:
+  err = GetLastError();
+
+  RB_ALLOCV_END(vformatted);
+  free(domain);
+  free(account);
+  raise_system_error(rb_eRuntimeError, err);
+}
+
 VALUE
-render_system_event(EVT_HANDLE hEvent, BOOL preserve_qualifiers)
+render_system_event(EVT_HANDLE hEvent, BOOL preserve_qualifiers, BOOL preserveSID_p)
 {
   DWORD status = ERROR_SUCCESS;
   EVT_HANDLE hContext = NULL;
@@ -633,7 +727,7 @@ render_system_event(EVT_HANDLE hEvent, BOOL preserve_qualifiers)
     status = GetLastError();
     if (ERROR_INSUFFICIENT_BUFFER == status) {
       dwBufferSize = dwBufferUsed;
-      pRenderedValues = (PEVT_VARIANT)ALLOCV(vRenderedValues, dwBufferSize);
+      pRenderedValues = (PEVT_VARIANT)RB_ALLOCV(vRenderedValues, dwBufferSize);
       if (pRenderedValues) {
         EvtRender(hContext,
                   hEvent,
@@ -651,7 +745,7 @@ render_system_event(EVT_HANDLE hEvent, BOOL preserve_qualifiers)
 
     if (ERROR_SUCCESS != status) {
       EvtClose(hContext);
-      ALLOCV_END(vRenderedValues);
+      RB_ALLOCV_END(vRenderedValues);
 
       rb_raise(rb_eWinevtQueryError, "EvtRender failed with %lu\n", status);
     }
@@ -787,14 +881,23 @@ render_system_event(EVT_HANDLE hEvent, BOOL preserve_qualifiers)
 
   if (EvtVarTypeNull != pRenderedValues[EvtSystemUserID].Type) {
     if (ConvertSidToStringSid(pRenderedValues[EvtSystemUserID].SidVal, &pwsSid)) {
-      rbstr = rb_utf8_str_new_cstr(pwsSid);
-      rb_hash_aset(hash, rb_str_new2("UserID"), rbstr);
-      LocalFree(pwsSid);
+      CHAR *expandSID = NULL;
+      if (preserveSID_p) {
+        rbstr = rb_utf8_str_new_cstr(pwsSid);
+        rb_hash_aset(hash, rb_str_new2("UserID"), rbstr);
+        LocalFree(pwsSid);
+      }
+      if (ExpandSIDWString(pRenderedValues[EvtSystemUserID].SidVal,
+                       &expandSID) == 0) {
+        rbstr = rb_utf8_str_new_cstr(expandSID);
+        free(expandSID);
+        rb_hash_aset(hash, rb_str_new2("User"), rbstr);
+      }
     }
   }
 
   EvtClose(hContext);
-  ALLOCV_END(vRenderedValues);
+  RB_ALLOCV_END(vRenderedValues);
 
   return hash;
 }

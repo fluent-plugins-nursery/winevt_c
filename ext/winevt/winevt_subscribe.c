@@ -110,6 +110,7 @@ rb_winevt_subscribe_initialize(VALUE self)
   winevtSubscribe->readExistingEvents = TRUE;
   winevtSubscribe->preserveQualifiers = FALSE;
   winevtSubscribe->localeInfo = &default_locale;
+  winevtSubscribe->preserveSID = TRUE;
 
   return Qnil;
 }
@@ -417,7 +418,8 @@ rb_winevt_subscribe_render(VALUE self, EVT_HANDLE event)
   if (winevtSubscribe->renderAsXML) {
     return render_to_rb_str(event, EvtRenderEventXml);
   } else {
-    return render_system_event(event, winevtSubscribe->preserveQualifiers);
+    return render_system_event(event, winevtSubscribe->preserveQualifiers,
+                               winevtSubscribe->preserveSID);
   }
 }
 
@@ -675,6 +677,40 @@ rb_winevt_subscribe_get_locale(VALUE self)
 }
 
 /*
+ * This method specifies whether preserving SID or not.
+ *
+ * @param rb_preserve_sid_p [Boolean]
+ */
+static VALUE
+rb_winevt_subscribe_set_preserve_sid(VALUE self, VALUE rb_preserve_sid_p)
+{
+  struct WinevtSubscribe* winevtSubscribe;
+
+  TypedData_Get_Struct(
+    self, struct WinevtSubscribe, &rb_winevt_subscribe_type, winevtSubscribe);
+
+  winevtSubscribe->preserveSID = RTEST(rb_preserve_sid_p);
+
+  return Qnil;
+}
+
+/*
+ * This method returns whether preserving SID or not.
+ *
+ * @return [Boolean]
+ */
+static VALUE
+rb_winevt_subscribe_preserve_sid_p(VALUE self)
+{
+  struct WinevtSubscribe* winevtSubscribe;
+
+  TypedData_Get_Struct(
+    self, struct WinevtSubscribe, &rb_winevt_subscribe_type, winevtSubscribe);
+
+  return winevtSubscribe->preserveSID ? Qtrue : Qfalse;
+}
+
+/*
  * This method cancels channel subscription.
  *
  * @return [Boolean]
@@ -771,6 +807,14 @@ Init_winevt_subscribe(VALUE rb_cEventLog)
    */
   rb_define_method(
     rb_cSubscribe, "locale=", rb_winevt_subscribe_set_locale, 1);
+  /*
+   * @since 0.10.3
+   */
+  rb_define_method(rb_cSubscribe, "preserve_sid?", rb_winevt_subscribe_preserve_sid_p, 0);
+  /*
+   * @since 0.10.3
+   */
+  rb_define_method(rb_cSubscribe, "preserve_sid=", rb_winevt_subscribe_set_preserve_sid, 1);
   /*
    * @since 0.9.1
    */

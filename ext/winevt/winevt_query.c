@@ -153,6 +153,7 @@ rb_winevt_query_initialize(VALUE argc, VALUE *argv, VALUE self)
   winevtQuery->preserveQualifiers = FALSE;
   winevtQuery->localeInfo = &default_locale;
   winevtQuery->remoteHandle = hRemoteHandle;
+  winevtQuery->preserveSID = TRUE;
 
   ALLOCV_END(wchannelBuf);
   ALLOCV_END(wpathBuf);
@@ -274,7 +275,8 @@ rb_winevt_query_render(VALUE self, EVT_HANDLE event)
   if (winevtQuery->renderAsXML) {
     return render_to_rb_str(event, EvtRenderEventXml);
   } else {
-    return render_system_event(event, winevtQuery->preserveQualifiers);
+    return render_system_event(event, winevtQuery->preserveQualifiers,
+                               winevtQuery->preserveSID);
   }
 }
 
@@ -536,6 +538,40 @@ rb_winevt_query_get_locale(VALUE self)
 }
 
 /*
+ * This method specifies whether preserving SID or not.
+ *
+ * @param rb_preserve_sid_p [Boolean]
+ */
+static VALUE
+rb_winevt_query_set_preserve_sid(VALUE self, VALUE rb_preserve_sid_p)
+{
+  struct WinevtQuery* winevtQuery;
+
+  TypedData_Get_Struct(
+    self, struct WinevtQuery, &rb_winevt_query_type, winevtQuery);
+
+  winevtQuery->preserveSID = RTEST(rb_preserve_sid_p);
+
+  return Qnil;
+}
+
+/*
+ * This method returns whether preserving SID or not.
+ *
+ * @return [Boolean]
+ */
+static VALUE
+rb_winevt_query_preserve_sid_p(VALUE self)
+{
+  struct WinevtQuery* winevtQuery;
+
+  TypedData_Get_Struct(
+    self, struct WinevtQuery, &rb_winevt_query_type, winevtQuery);
+
+  return winevtQuery->preserveSID ? Qtrue : Qfalse;
+}
+
+/*
  * This method cancels channel query.
  *
  * @return [Boolean]
@@ -683,6 +719,14 @@ Init_winevt_query(VALUE rb_cEventLog)
    * @since 0.8.0
    */
   rb_define_method(rb_cQuery, "locale=", rb_winevt_query_set_locale, 1);
+  /*
+   * @since 0.10.3
+   */
+  rb_define_method(rb_cQuery, "preserve_sid?", rb_winevt_query_preserve_sid_p, 0);
+  /*
+   * @since 0.10.3
+   */
+  rb_define_method(rb_cQuery, "preserve_sid=", rb_winevt_query_set_preserve_sid, 1);
   /*
    * @since 0.9.1
    */
