@@ -808,11 +808,11 @@ Init_winevt_subscribe(VALUE rb_cEventLog)
   rb_define_method(
     rb_cSubscribe, "locale=", rb_winevt_subscribe_set_locale, 1);
   /*
-   * @since 0.10.3
+   * @since 0.11.0
    */
   rb_define_method(rb_cSubscribe, "preserve_sid?", rb_winevt_subscribe_preserve_sid_p, 0);
   /*
-   * @since 0.10.3
+   * @since 0.11.0
    */
   rb_define_method(rb_cSubscribe, "preserve_sid=", rb_winevt_subscribe_set_preserve_sid, 1);
   /*
