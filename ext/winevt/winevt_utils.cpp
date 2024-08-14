@@ -885,14 +885,20 @@ render_system_event(EVT_HANDLE hEvent, BOOL preserve_qualifiers, BOOL preserveSI
       if (preserveSID_p) {
         rbstr = rb_utf8_str_new_cstr(pwsSid);
         rb_hash_aset(hash, rb_str_new2("UserID"), rbstr);
-        LocalFree(pwsSid);
       }
-      if (ExpandSIDWString(pRenderedValues[EvtSystemUserID].SidVal,
-                       &expandSID) == 0) {
-        rbstr = rb_utf8_str_new_cstr(expandSID);
-        free(expandSID);
-        rb_hash_aset(hash, rb_str_new2("User"), rbstr);
+      /* S-1-15-3- is used for capability SIDs. So, we need to skip
+       * SID translation.
+       * See also: https://learn.microsoft.com/en-us/windows-server/identity/ad-ds/manage/understand-security-identifiers
+       */
+      if (strnicmp(pwsSid, "S-1-15-3-", 9) != 0) {
+        if (ExpandSIDWString(pRenderedValues[EvtSystemUserID].SidVal,
+                             &expandSID) == 0) {
+          rbstr = rb_utf8_str_new_cstr(expandSID);
+          free(expandSID);
+          rb_hash_aset(hash, rb_str_new2("User"), rbstr);
+        }
       }
+      LocalFree(pwsSid);
     }
   }
 
