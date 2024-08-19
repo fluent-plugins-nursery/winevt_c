@@ -888,7 +888,8 @@ render_system_event(EVT_HANDLE hEvent, BOOL preserve_qualifiers, BOOL preserveSI
       }
       /* S-1-15-3- is used for capability SIDs. So, we need to skip
        * SID translation.
-       * See also: https://learn.microsoft.com/en-us/windows-server/identity/ad-ds/manage/understand-security-identifiers
+       * ref: https://learn.microsoft.com/en-us/windows-server/identity/ad-ds/manage/understand-security-identifiers
+       * See also: https://learn.microsoft.com/en-us/troubleshoot/windows-server/windows-security/sids-not-resolve-into-friendly-names
        */
       if (strnicmp(pwsSid, "S-1-15-3-", 9) != 0) {
         if (ExpandSIDWString(pRenderedValues[EvtSystemUserID].SidVal,
