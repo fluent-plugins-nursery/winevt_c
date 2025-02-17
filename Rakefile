@@ -1,8 +1,4 @@
-require 'bundler'
-Bundler::GemHelper.install_tasks
-
 require "rake/testtask"
-require 'rake_compiler_dock'
 require 'rake/clean'
 
 Rake::TestTask.new(:test) do |t|
@@ -13,23 +9,9 @@ end
 
 require "rake/extensiontask"
 
-spec = eval File.read("winevt_c.gemspec")
-
-Rake::ExtensionTask.new("winevt", spec) do |ext|
+Rake::ExtensionTask.new("winevt") do |ext|
   ext.ext_dir = 'ext/winevt'
-  ext.cross_compile = true
-  ext.lib_dir = File.join(*['lib', 'winevt', ENV['FAT_DIR']].compact)
-  # cross_platform names are of MRI's platform name
-  ext.cross_platform = ['x86-mingw32', 'x64-mingw32']
-end
-
-desc 'Build gems for Windows per rake-compiler-dock'
-task 'gem:native' do
-  sh "bundle package"
-  # See RUBY_CC_VERSION in https://github.com/rake-compiler/rake-compiler-dock/blob/master/Dockerfile.mri
-  %w[ x86-mingw32 x64-mingw32 ].each do |plat|
-    RakeCompilerDock.sh "bundle --local && bundle exec rake native:#{plat} gem RUBY_CC_VERSION=2.4.0:2.5.0:2.6.0:2.7.0:3.0.0", platform: plat
-  end
+  ext.lib_dir = 'lib/winevt'
 end
 
 CLEAN.include('lib/winevt/winevt.*')
