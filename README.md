@@ -1,6 +1,6 @@
 # winevt_c
 
-[![Build status](https://ci.appveyor.com/api/projects/status/o5771b3cb6x3acq0/branch/master?svg=true)](https://ci.appveyor.com/project/cosmo0920/winevt-c-6145k/branch/master)
+[![Test](https://github.com/fluent-plugins-nursery/winevt_c/actions/workflows/test.yml/badge.svg)](https://github.com/fluent-plugins-nursery/winevt_c/actions/workflows/test.yml)
 
 ## Prerequisites
 
