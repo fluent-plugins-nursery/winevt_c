@@ -132,8 +132,6 @@ DWORD is_subscribable_channel_p(EVT_HANDLE hChannel, BOOL force_enumerate)
           EvtGetChannelConfigProperty(hChannel, (EVT_CHANNEL_CONFIG_PROPERTY_ID)Id, 0, dwBufferSize, pProperty, &dwBufferUsed);
           status = GetLastError();
         } else {
-          free(pProperty);
-
           status = ERROR_OUTOFMEMORY;
 
           goto cleanup;
@@ -141,8 +139,6 @@ DWORD is_subscribable_channel_p(EVT_HANDLE hChannel, BOOL force_enumerate)
       }
 
       if (ERROR_SUCCESS != status) {
-        free(pProperty);
-
         goto cleanup;
       }
     }
