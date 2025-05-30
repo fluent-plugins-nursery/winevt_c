@@ -562,6 +562,7 @@ get_description(EVT_HANDLE handle, LANGID langID, EVT_HANDLE hRemote)
   }
 
   if (status != ERROR_SUCCESS) {
+    EvtClose(renderContext);
     raise_system_error(rb_eWinevtQueryError, status);
   }
 
