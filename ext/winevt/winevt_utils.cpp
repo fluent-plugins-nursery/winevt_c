@@ -603,6 +603,7 @@ static char* convert_wstr(wchar_t *wstr)
   int len = 0;
   CHAR *ptr = NULL;
   DWORD err = ERROR_SUCCESS;
+  char *dup_str = NULL;
 
   len = WideCharToMultiByte(CP_UTF8, 0, wstr, -1, NULL, 0, NULL, NULL);
   if (len == 0) {
@@ -622,7 +623,10 @@ static char* convert_wstr(wchar_t *wstr)
     raise_system_error(rb_eRuntimeError, err);
   }
 
-  return strdup(ptr);
+  dup_str = strdup(ptr);
+  RB_ALLOCV_END(vstr);
+
+  return dup_str;
 }
 
 static int ExpandSIDWString(PSID sid, CHAR **out_expanded)
