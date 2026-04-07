@@ -119,6 +119,9 @@ rb_winevt_query_initialize(VALUE argc, VALUE *argv, VALUE self)
     flags = EvtQueryChannelPath | EvtQueryTolerateQueryErrors;
     break;
   default:
+    if (hRemoteHandle != NULL) {
+      EvtClose(hRemoteHandle);
+    }
     rb_raise(rb_eArgError, "Expected a String, a Symbol, a Fixnum, or a NilClass instance");
   }
 
@@ -142,6 +145,9 @@ rb_winevt_query_initialize(VALUE argc, VALUE *argv, VALUE self)
     hRemoteHandle, evtChannel, evtXPath, flags);
   err = GetLastError();
   if (err != ERROR_SUCCESS) {
+    if (hRemoteHandle != NULL) {
+      EvtClose(hRemoteHandle);
+    }
     if (err == ERROR_EVT_CHANNEL_NOT_FOUND) {
       raise_channel_not_found_error(channel);
     }
