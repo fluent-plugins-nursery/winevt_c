@@ -150,8 +150,8 @@ rb_winevt_session_set_server(VALUE self, VALUE rb_server)
   MultiByteToWideChar(CP_UTF8, 0,
                       RSTRING_PTR(rb_server), RSTRING_LEN(rb_server),
                       wServer, len);
-  winevtSession->server = _wcsdup(wServer);
   wServer[len] = L'\0';
+  winevtSession->server = _wcsdup(wServer);
 
   ALLOCV_END(vserverBuf);
 
