@@ -455,6 +455,7 @@ get_message(EVT_HANDLE hMetadata, EVT_HANDLE handle)
 
           std::wstring ret(reinterpret_cast<WCHAR*>(lpMsgBuf));
           std::copy(ret.begin(), ret.end(), std::back_inserter(result));
+          result.push_back(L'\0');
           LocalFree(lpMsgBuf);
 
           goto cleanup;
@@ -512,6 +513,7 @@ get_message(EVT_HANDLE hMetadata, EVT_HANDLE handle)
 
               std::wstring ret(reinterpret_cast<WCHAR*>(lpMsgBuf));
               std::copy(ret.begin(), ret.end(), std::back_inserter(result));
+              result.push_back(L'\0');
               LocalFree(lpMsgBuf);
 
               goto cleanup;
@@ -593,6 +595,10 @@ cleanup:
 
   if (hMetadata)
     EvtClose(hMetadata);
+
+  if (result.empty()) {
+    return _wcsdup(L"");
+  }
 
   return _wcsdup(result.data());
 }
