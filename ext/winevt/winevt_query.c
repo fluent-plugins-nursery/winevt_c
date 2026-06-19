@@ -143,8 +143,8 @@ rb_winevt_query_initialize(VALUE argc, VALUE *argv, VALUE self)
 
   winevtQuery->query = EvtQuery(
     hRemoteHandle, evtChannel, evtXPath, flags);
-  err = GetLastError();
-  if (err != ERROR_SUCCESS) {
+  if (winevtQuery->query == NULL) {
+    err = GetLastError();
     if (hRemoteHandle != NULL) {
       EvtClose(hRemoteHandle);
     }
