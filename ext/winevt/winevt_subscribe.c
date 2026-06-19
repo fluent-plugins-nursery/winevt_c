@@ -175,8 +175,6 @@ rb_winevt_subscribe_subscribe(int argc, VALUE* argv, VALUE self)
   struct WinevtSession* winevtSession;
   struct WinevtSubscribe* winevtSubscribe;
 
-  hSignalEvent = CreateEvent(NULL, TRUE, TRUE, NULL);
-
   TypedData_Get_Struct(
     self, struct WinevtSubscribe, &rb_winevt_subscribe_type, winevtSubscribe);
 
@@ -239,6 +237,7 @@ rb_winevt_subscribe_subscribe(int argc, VALUE* argv, VALUE self)
     flags |= EvtSubscribeToFutureEvents;
   }
 
+  hSignalEvent = CreateEvent(NULL, TRUE, TRUE, NULL);
   hSubscription =
     EvtSubscribe(hRemoteHandle, hSignalEvent, path, query, hBookmark, NULL, NULL, flags);
   if (!hSubscription) {
@@ -263,22 +262,13 @@ rb_winevt_subscribe_subscribe(int argc, VALUE* argv, VALUE self)
     }
   }
 
-  if (winevtSubscribe->subscription != NULL) {
-    // should be disgarded the old event subscription handle.
-    EvtClose(winevtSubscribe->subscription);
-  }
 
   ALLOCV_END(wpathBuf);
   ALLOCV_END(wqueryBuf);
 
-  winevtSubscribe->signalEvent = hSignalEvent;
-  winevtSubscribe->subscription = hSubscription;
-  winevtSubscribe->remoteHandle = hRemoteHandle;
-  if (hBookmark) {
-    winevtSubscribe->bookmark = hBookmark;
-  } else {
-    winevtSubscribe->bookmark = EvtCreateBookmark(NULL);
-    if (winevtSubscribe->bookmark == NULL) {
+  if (!hBookmark) {
+    hBookmark = EvtCreateBookmark(NULL);
+    if (hBookmark == NULL) {
       status = GetLastError();
       if (hSubscription != NULL) {
         EvtClose(hSubscription);
@@ -289,6 +279,20 @@ rb_winevt_subscribe_subscribe(int argc, VALUE* argv, VALUE self)
       raise_system_error(rb_eWinevtQueryError, status);
     }
   }
+
+  if (winevtSubscribe->subscription) {
+      EvtClose(winevtSubscribe->subscription);
+  }
+  if (winevtSubscribe->signalEvent) {
+      CloseHandle(winevtSubscribe->signalEvent);
+  }
+  if (winevtSubscribe->bookmark) {
+      EvtClose(winevtSubscribe->bookmark);
+  }
+  winevtSubscribe->signalEvent = hSignalEvent;
+  winevtSubscribe->subscription = hSubscription;
+  winevtSubscribe->remoteHandle = hRemoteHandle;
+  winevtSubscribe->bookmark = hBookmark;
 
   return Qtrue;
 }
