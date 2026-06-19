@@ -132,7 +132,7 @@ guid_to_wstr(const GUID& guid)
 {
   LPOLESTR p = nullptr;
   if (FAILED(StringFromCLSID(guid, &p))) {
-    return nullptr;
+    return std::wstring();
   }
   std::wstring s(p);
   CoTaskMemFree(p);
@@ -252,7 +252,11 @@ extract_user_evt_variants(PEVT_VARIANT pRenderedValues, DWORD propCount)
         if (pRenderedValues[i].GuidVal != nullptr) {
           const GUID guid = *pRenderedValues[i].GuidVal;
           std::wstring wstr = guid_to_wstr(guid);
-          rbObj = wstr_to_rb_str(CP_UTF8, wstr.c_str(), -1);
+          if (!wstr.empty()) {
+              rbObj = wstr_to_rb_str(CP_UTF8, wstr.c_str(), -1);
+          } else {
+              rbObj = rb_utf8_str_new_cstr("?");
+          }
           rb_ary_push(userValues, rbObj);
         } else {
           rb_ary_push(userValues, rb_utf8_str_new_cstr("?"));
