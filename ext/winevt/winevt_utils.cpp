@@ -408,130 +408,88 @@ get_values(EVT_HANDLE handle)
   return userValues;
 }
 
+/*
+ * These EvtFormatMessage statuses mean the (possibly partial) message was
+ * still written into the buffer, so the buffer content is usable. This mirrors
+ * the Windows SDK sample (Windows-classic-samples GetEventRawDescription.cpp)
+ * and Zabbix (src/zabbix_agent/eventlog.c), both of which treat exactly these
+ * statuses as partial success and use the rendered buffer.
+ */
+static bool
+is_partial_message(ULONG status)
+{
+  return status == ERROR_SUCCESS ||
+         status == ERROR_EVT_UNRESOLVED_VALUE_INSERT ||
+         status == ERROR_EVT_UNRESOLVED_PARAMETER_INSERT ||
+         status == ERROR_EVT_MAX_INSERTS_REACHED;
+}
+
+/*
+ * Returns the event's formatted message, or an empty vector when it cannot be
+ * resolved. The returned buffer is always NUL-terminated by EvtFormatMessage
+ * but may be larger than the message, with trailing L'\0' padding (the vector
+ * is sized to BUFSIZE / the reported need, not to the string length). Callers
+ * MUST read it as a NUL-terminated string -- get_description() does
+ * _wcsdup(result.data()) and the value ultimately reaches wstr_to_rb_str() with
+ * clen == -1, both of which stop at the NUL. Do NOT switch callers to a
+ * size()/RSTRING_LEN-based read without first trimming at the NUL, or the
+ * padding is included (and, for a heap-backed buffer, an over-read risked).
+ */
 static std::vector<WCHAR>
 get_message(EVT_HANDLE hMetadata, EVT_HANDLE handle)
 {
 #define BUFSIZE 4096
   std::vector<WCHAR> result;
-  ULONG status;
-  ULONG bufferSizeNeeded = 0;
-  LPVOID lpMsgBuf;
   std::vector<WCHAR> message(BUFSIZE);
+  ULONG bufferSizeNeeded = 0;
+  ULONG status;
 
-  if (!EvtFormatMessage(hMetadata,
-                        handle,
-                        0xffffffff,
-                        0,
-                        nullptr,
-                        EvtFormatMessageEvent,
-                        message.size(),
-                        &message[0],
-                        &bufferSizeNeeded)) {
-    status = GetLastError();
-
-    if (status != ERROR_EVT_UNRESOLVED_VALUE_INSERT) {
-      switch (status) {
-        case ERROR_EVT_MESSAGE_NOT_FOUND:
-        case ERROR_EVT_MESSAGE_ID_NOT_FOUND:
-        case ERROR_EVT_MESSAGE_LOCALE_NOT_FOUND:
-        case ERROR_RESOURCE_DATA_NOT_FOUND:
-        case ERROR_RESOURCE_TYPE_NOT_FOUND:
-        case ERROR_RESOURCE_NAME_NOT_FOUND:
-        case ERROR_RESOURCE_LANG_NOT_FOUND:
-        case ERROR_MUI_FILE_NOT_FOUND:
-        case ERROR_EVT_UNRESOLVED_PARAMETER_INSERT: {
-          if (FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM |
-                               FORMAT_MESSAGE_IGNORE_INSERTS,
-                             nullptr,
-                             status,
-                             MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-                             reinterpret_cast<WCHAR*>(&lpMsgBuf),
-                             0,
-                             nullptr) == 0)
-            FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM |
-                             FORMAT_MESSAGE_IGNORE_INSERTS,
-                           nullptr,
-                           status,
-                           MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US),
-                           reinterpret_cast<WCHAR*>(&lpMsgBuf),
-                           0,
-                           nullptr);
-
-          std::wstring ret(reinterpret_cast<WCHAR*>(lpMsgBuf));
-          std::copy(ret.begin(), ret.end(), std::back_inserter(result));
-          result.push_back(L'\0');
-          LocalFree(lpMsgBuf);
-
-          goto cleanup;
-        }
-      }
-
-      if (status != ERROR_INSUFFICIENT_BUFFER)
-        rb_raise(rb_eWinevtQueryError, "ErrorCode: %lu", status);
-    }
-
-    if (status == ERROR_INSUFFICIENT_BUFFER) {
-      message.resize(bufferSizeNeeded);
-      message.shrink_to_fit();
-
-      if (!EvtFormatMessage(hMetadata,
-                            handle,
-                            0xffffffff,
-                            0,
-                            nullptr,
-                            EvtFormatMessageEvent,
-                            message.size(),
-                            &message.front(),
-                            &bufferSizeNeeded)) {
-        status = GetLastError();
-
-        if (status != ERROR_EVT_UNRESOLVED_VALUE_INSERT) {
-          switch (status) {
-            case ERROR_EVT_MESSAGE_NOT_FOUND:
-            case ERROR_EVT_MESSAGE_ID_NOT_FOUND:
-            case ERROR_EVT_MESSAGE_LOCALE_NOT_FOUND:
-            case ERROR_RESOURCE_DATA_NOT_FOUND:
-            case ERROR_RESOURCE_TYPE_NOT_FOUND:
-            case ERROR_RESOURCE_NAME_NOT_FOUND:
-            case ERROR_RESOURCE_LANG_NOT_FOUND:
-            case ERROR_MUI_FILE_NOT_FOUND:
-            case ERROR_EVT_UNRESOLVED_PARAMETER_INSERT:
-              if (FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER |
-                                   FORMAT_MESSAGE_FROM_SYSTEM |
-                                   FORMAT_MESSAGE_IGNORE_INSERTS,
-                                 nullptr,
-                                 status,
-                                 MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-                                 reinterpret_cast<WCHAR*>(&lpMsgBuf),
-                                 0,
-                                 nullptr) == 0)
-                FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER |
-                                 FORMAT_MESSAGE_FROM_SYSTEM |
-                                 FORMAT_MESSAGE_IGNORE_INSERTS,
-                               nullptr,
-                               status,
-                               MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US),
-                               reinterpret_cast<WCHAR*>(&lpMsgBuf),
-                               0,
-                               nullptr);
-
-              std::wstring ret(reinterpret_cast<WCHAR*>(lpMsgBuf));
-              std::copy(ret.begin(), ret.end(), std::back_inserter(result));
-              result.push_back(L'\0');
-              LocalFree(lpMsgBuf);
-
-              goto cleanup;
-          }
-
-          rb_raise(rb_eWinevtQueryError, "ErrorCode: %lu", status);
-        }
-      }
-    }
+  if (EvtFormatMessage(hMetadata,
+                       handle,
+                       0xffffffff,
+                       0,
+                       nullptr,
+                       EvtFormatMessageEvent,
+                       message.size(),
+                       &message[0],
+                       &bufferSizeNeeded)) {
+    // Full success on the first try.
+    return message;
   }
 
-  result = message;
+  status = GetLastError();
 
-cleanup:
+  if (status == ERROR_INSUFFICIENT_BUFFER) {
+    // The message is longer than BUFSIZE; grow the buffer and retry once.
+    message.resize(bufferSizeNeeded);
+
+    if (EvtFormatMessage(hMetadata,
+                         handle,
+                         0xffffffff,
+                         0,
+                         nullptr,
+                         EvtFormatMessageEvent,
+                         message.size(),
+                         &message.front(),
+                         &bufferSizeNeeded)) {
+      return message;
+    }
+
+    status = GetLastError();
+  }
+
+  // EvtFormatMessage did not fully succeed. If it still produced a usable
+  // (partial) message, keep the buffer; otherwise degrade to an empty string.
+  //
+  // Message resolution fails for open-ended reasons: a message DLL removed
+  // from disk yields ERROR_FILE_NOT_FOUND, a locale without resources yields
+  // an HRESULT-wrapped code, and the underlying LoadLibraryEx can surface many
+  // more. The set is not closed, so we must not enumerate "acceptable" errors
+  // and raise on the rest -- a single unresolvable event (which is normal in a
+  // real System log) would otherwise abort the whole #each enumeration.
+  if (is_partial_message(status)) {
+    result = message;
+  }
 
   return result;
 
