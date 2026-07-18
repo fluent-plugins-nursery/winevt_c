@@ -109,6 +109,10 @@ rb_winevt_bookmark_update(VALUE self, VALUE event)
   struct WinevtQuery* winevtQuery;
   struct WinevtBookmark* winevtBookmark;
 
+  if (!rb_obj_is_kind_of(event, rb_cQuery)) {
+    rb_raise(rb_eArgError, "Expected a Query instance");
+  }
+
   winevtQuery = EventQuery(event);
 
   TypedData_Get_Struct(

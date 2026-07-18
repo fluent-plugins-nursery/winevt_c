@@ -134,6 +134,18 @@ class WinevtTest < Test::Unit::TestCase
       assert_true(@bookmark.update(@query))
     end
 
+    data("fixnum" => 42,
+         "string" => "not a query",
+         "object" => Object.new,
+         "array"  => [],
+         "nil"    => nil,
+         "symbol" => :boom)
+    def test_update_type_confusion(arg)
+      assert_raise(ArgumentError) do
+        @bookmark.update(arg)
+      end
+    end
+
     def test_update_with_seek_bookmark
       @query.next
       assert_true(@bookmark.update(@query))
