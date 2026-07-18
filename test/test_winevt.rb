@@ -179,7 +179,11 @@ class WinevtTest < Test::Unit::TestCase
       subscribe = Winevt::EventLog::Subscribe.new
       subscribe.subscribe("Application", "*")
       assert_true(subscribe.next)
-      subscribe.subscribe("Security", "*")
+      begin
+        subscribe.subscribe("Security", "*")
+      rescue Winevt::EventLog::Query::Error => e
+        omit("Security channel requires SeSecurityPrivilege: #{e.message.lines.first.strip}")
+      end
       assert_true(subscribe.next)
     end
 
