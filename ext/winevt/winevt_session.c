@@ -60,8 +60,11 @@ session_free(void* ptr)
     free(winevtSession->domain);
   if (winevtSession->username)
     free(winevtSession->username);
-  if (winevtSession->password)
+  if (winevtSession->password) {
+    SecureZeroMemory(winevtSession->password,
+                     (wcslen(winevtSession->password) + 1) * sizeof(WCHAR));
     free(winevtSession->password);
+  }
 
   xfree(ptr);
 }
@@ -151,6 +154,8 @@ rb_winevt_session_set_server(VALUE self, VALUE rb_server)
                       RSTRING_PTR(rb_server), RSTRING_LEN(rb_server),
                       wServer, len);
   wServer[len] = L'\0';
+  if (winevtSession->server)
+    free(winevtSession->server);
   winevtSession->server = _wcsdup(wServer);
 
   ALLOCV_END(vserverBuf);
@@ -204,6 +209,8 @@ rb_winevt_session_set_domain(VALUE self, VALUE rb_domain)
                       wDomain, len);
   wDomain[len] = L'\0';
 
+  if (winevtSession->domain)
+    free(winevtSession->domain);
   winevtSession->domain = _wcsdup(wDomain);
 
   ALLOCV_END(vdomainBuf);
@@ -257,6 +264,8 @@ rb_winevt_session_set_username(VALUE self, VALUE rb_username)
                       wUsername, len);
   wUsername[len] = L'\0';
 
+  if (winevtSession->username)
+    free(winevtSession->username);
   winevtSession->username = _wcsdup(wUsername);
 
   ALLOCV_END(vusernameBuf);
@@ -310,6 +319,11 @@ rb_winevt_session_set_password(VALUE self, VALUE rb_password)
                       wPassword, len);
   wPassword[len] = L'\0';
 
+  if (winevtSession->password) {
+    SecureZeroMemory(winevtSession->password,
+                     (wcslen(winevtSession->password) + 1) * sizeof(WCHAR));
+    free(winevtSession->password);
+  }
   winevtSession->password = _wcsdup(wPassword);
 
   ALLOCV_END(vpasswordBuf);

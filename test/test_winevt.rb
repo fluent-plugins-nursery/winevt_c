@@ -383,6 +383,21 @@ class WinevtTest < Test::Unit::TestCase
       assert_equal("changeme!", @session.password)
     end
 
+    # Regression: the credential setters _wcsdup() into the struct without
+    # freeing the previous allocation, leaking on every re-assignment. After the
+    # fix the old buffer is freed first; re-assignment must keep working and
+    # return the latest value.
+    def test_setter_reassignment
+      10.times { |i| @session.server = "server-#{i}" }
+      assert_equal("server-9", @session.server)
+      10.times { |i| @session.domain = "domain-#{i}" }
+      assert_equal("domain-9", @session.domain)
+      10.times { |i| @session.username = "user-#{i}" }
+      assert_equal("user-9", @session.username)
+      10.times { |i| @session.password = "pw-#{i}" }
+      assert_equal("pw-9", @session.password)
+    end
+
     def test_flags
       @session.flags = Winevt::EventLog::Session::RpcLoginFlag::AuthNTLM
       assert_equal(Winevt::EventLog::Session::RpcLoginFlag::AuthNTLM,
