@@ -245,32 +245,15 @@ rb_winevt_channel_each(VALUE self)
     }
     hChannelConfig = EvtOpenChannelConfig(NULL, buffer, 0);
     if (NULL == hChannelConfig) {
-      _snprintf_s(errBuf,
-                  _countof(errBuf),
-                  _TRUNCATE,
-                  "EvtOpenChannelConfig failed with %lu.\n",
-                  GetLastError());
-
-      EvtClose(winevtChannel->channels);
-      winevtChannel->channels = NULL;
-
-      free(buffer);
-      buffer = NULL;
-      bufferSize = 0;
-
-      rb_raise(rb_eRuntimeError, errBuf);
-    }
-
-    status = is_subscribable_channel_p(hChannelConfig, winevtChannel->force_enumerate);
-    EvtClose(hChannelConfig);
-
-    if (status == ERROR_INVALID_DATA) {
       free(buffer);
       buffer = NULL;
       bufferSize = 0;
 
       continue;
     }
+
+    status = is_subscribable_channel_p(hChannelConfig, winevtChannel->force_enumerate);
+    EvtClose(hChannelConfig);
 
     if (status == ERROR_OUTOFMEMORY) {
       EvtClose(winevtChannel->channels);
@@ -281,15 +264,17 @@ rb_winevt_channel_each(VALUE self)
       bufferSize = 0;
 
       rb_raise(rb_eRuntimeError, "realloc failed\n");
-    } else if (status != ERROR_SUCCESS) {
-      EvtClose(winevtChannel->channels);
-      winevtChannel->channels = NULL;
+    }
 
+    // Not fatal: Security's configuration cannot be read without elevation, and
+    // it is the third channel EvtOpenChannelEnum returns, so raising here
+    // truncated the whole enumeration to two channels.
+    if (status != ERROR_SUCCESS) {
       free(buffer);
       buffer = NULL;
       bufferSize = 0;
 
-      rb_raise(rb_eRuntimeError, "is_subscribe_channel_p is failed with %ld\n", status);
+      continue;
     }
 
     utf8str = wstr_to_rb_str(CP_UTF8, buffer, -1);
