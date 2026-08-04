@@ -52,7 +52,8 @@ EVT_HANDLE connect_to_remote(LPWSTR computerName, LPWSTR domain,
                              LPWSTR username, LPWSTR password,
                              EVT_RPC_LOGIN_FLAGS flags,
                              DWORD *error_code);
-WCHAR* get_description(EVT_HANDLE handle, LANGID langID, EVT_HANDLE hRemote);
+WCHAR* get_description(EVT_HANDLE handle, LANGID langID, EVT_HANDLE hRemote,
+                       BOOL* resolved);
 VALUE get_values(EVT_HANDLE handle);
 VALUE render_system_event(EVT_HANDLE handle, BOOL preserve_qualifiers, BOOL preserveSID);
 LocaleInfo* get_locale_info_from_rb_str(VALUE rb_locale_str);
@@ -112,6 +113,7 @@ struct WinevtQuery
   BOOL preserveSID;
   LocaleInfo *localeInfo;
   EVT_HANDLE remoteHandle;
+  ULONGLONG unresolvedMessageCount;
 };
 
 #define SUBSCRIBE_ARRAY_SIZE 10
@@ -134,6 +136,7 @@ struct WinevtSubscribe
   BOOL preserveSID;
   LocaleInfo* localeInfo;
   EVT_HANDLE remoteHandle;
+  ULONGLONG unresolvedMessageCount;
 };
 
 void Init_winevt_query(VALUE rb_cEventLog);

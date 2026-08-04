@@ -111,6 +111,7 @@ rb_winevt_subscribe_initialize(VALUE self)
   winevtSubscribe->preserveQualifiers = FALSE;
   winevtSubscribe->localeInfo = &default_locale;
   winevtSubscribe->preserveSID = TRUE;
+  winevtSubscribe->unresolvedMessageCount = 0;
 
   return Qnil;
 }
@@ -437,12 +438,19 @@ rb_winevt_subscribe_render(VALUE self, EVT_HANDLE event)
 }
 
 static VALUE
-rb_winevt_subscribe_message(EVT_HANDLE event, LocaleInfo* localeInfo, EVT_HANDLE hRemote)
+rb_winevt_subscribe_message(struct WinevtSubscribe* winevtSubscribe, EVT_HANDLE event)
 {
   WCHAR* wResult;
   VALUE utf8str;
+  BOOL resolved = TRUE;
 
-  wResult = get_description(event, localeInfo->langID, hRemote);
+  wResult = get_description(event,
+                            winevtSubscribe->localeInfo->langID,
+                            winevtSubscribe->remoteHandle,
+                            &resolved);
+  if (!resolved) {
+    winevtSubscribe->unresolvedMessageCount++;
+  }
   utf8str = wstr_to_rb_str(CP_UTF8, wResult, -1);
   free(wResult);
 
@@ -485,8 +493,7 @@ rb_winevt_subscribe_each_yield(VALUE self)
   for (int i = 0; i < winevtSubscribe->count; i++) {
     rb_yield_values(3,
                     rb_winevt_subscribe_render(self, winevtSubscribe->hEvents[i]),
-                    rb_winevt_subscribe_message(winevtSubscribe->hEvents[i], winevtSubscribe->localeInfo,
-                                                winevtSubscribe->remoteHandle),
+                    rb_winevt_subscribe_message(winevtSubscribe, winevtSubscribe->hEvents[i]),
                     rb_winevt_subscribe_string_inserts(winevtSubscribe->hEvents[i]));
   }
 
@@ -724,6 +731,27 @@ rb_winevt_subscribe_preserve_sid_p(VALUE self)
 }
 
 /*
+ * This method returns how many events had no description message. Message
+ * resolution fails for reasons outside the caller's control (a provider whose
+ * message DLL is gone, a locale without resources), and #each degrades to an
+ * empty message instead of aborting the enumeration. The counter increases
+ * monotonically, so callers can poll it and take the difference to tell a few
+ * unresolvable events apart from a channel that resolves nothing.
+ *
+ * @return [Integer]
+ */
+static VALUE
+rb_winevt_subscribe_get_unresolved_message_count(VALUE self)
+{
+  struct WinevtSubscribe* winevtSubscribe;
+
+  TypedData_Get_Struct(
+    self, struct WinevtSubscribe, &rb_winevt_subscribe_type, winevtSubscribe);
+
+  return ULL2NUM(winevtSubscribe->unresolvedMessageCount);
+}
+
+/*
  * This method cancels channel subscription.
  *
  * @return [Boolean]
@@ -828,6 +856,7 @@ Init_winevt_subscribe(VALUE rb_cEventLog)
    * @since 0.11.0
    */
   rb_define_method(rb_cSubscribe, "preserve_sid=", rb_winevt_subscribe_set_preserve_sid, 1);
+  rb_define_method(rb_cSubscribe, "unresolved_message_count", rb_winevt_subscribe_get_unresolved_message_count, 0);
   /*
    * @since 0.9.1
    */

@@ -409,11 +409,9 @@ get_values(EVT_HANDLE handle)
 }
 
 /*
- * These EvtFormatMessage statuses mean the (possibly partial) message was
- * still written into the buffer, so the buffer content is usable. This mirrors
- * the Windows SDK sample (Windows-classic-samples GetEventRawDescription.cpp)
- * and Zabbix (src/zabbix_agent/eventlog.c), both of which treat exactly these
- * statuses as partial success and use the rendered buffer.
+ * These statuses still leave a usable (if partial) message in the buffer. The
+ * Windows SDK sample (GetEventRawDescription.cpp) and Zabbix
+ * (src/zabbix_agent/eventlog.c) treat exactly this set the same way.
  */
 static bool
 is_partial_message(ULONG status)
@@ -425,15 +423,10 @@ is_partial_message(ULONG status)
 }
 
 /*
- * Returns the event's formatted message, or an empty vector when it cannot be
- * resolved. The returned buffer is always NUL-terminated by EvtFormatMessage
- * but may be larger than the message, with trailing L'\0' padding (the vector
- * is sized to BUFSIZE / the reported need, not to the string length). Callers
- * MUST read it as a NUL-terminated string -- get_description() does
- * _wcsdup(result.data()) and the value ultimately reaches wstr_to_rb_str() with
- * clen == -1, both of which stop at the NUL. Do NOT switch callers to a
- * size()/RSTRING_LEN-based read without first trimming at the NUL, or the
- * padding is included (and, for a heap-backed buffer, an over-read risked).
+ * Returns the formatted message, or an empty vector when it cannot be resolved.
+ * The buffer is sized to BUFSIZE / the size EvtFormatMessage asked for, not to
+ * the string, so it carries trailing L'\0' padding: read it as a NUL-terminated
+ * string, never by size(), or the padding comes along.
  */
 static std::vector<WCHAR>
 get_message(EVT_HANDLE hMetadata, EVT_HANDLE handle)
@@ -453,14 +446,12 @@ get_message(EVT_HANDLE hMetadata, EVT_HANDLE handle)
                        message.size(),
                        &message[0],
                        &bufferSizeNeeded)) {
-    // Full success on the first try.
     return message;
   }
 
   status = GetLastError();
 
   if (status == ERROR_INSUFFICIENT_BUFFER) {
-    // The message is longer than BUFSIZE; grow the buffer and retry once.
     message.resize(bufferSizeNeeded);
 
     if (EvtFormatMessage(hMetadata,
@@ -478,15 +469,10 @@ get_message(EVT_HANDLE hMetadata, EVT_HANDLE handle)
     status = GetLastError();
   }
 
-  // EvtFormatMessage did not fully succeed. If it still produced a usable
-  // (partial) message, keep the buffer; otherwise degrade to an empty string.
-  //
-  // Message resolution fails for open-ended reasons: a message DLL removed
-  // from disk yields ERROR_FILE_NOT_FOUND, a locale without resources yields
-  // an HRESULT-wrapped code, and the underlying LoadLibraryEx can surface many
-  // more. The set is not closed, so we must not enumerate "acceptable" errors
-  // and raise on the rest -- a single unresolvable event (which is normal in a
-  // real System log) would otherwise abort the whole #each enumeration.
+  // Message resolution fails for open-ended reasons -- a message DLL removed
+  // from disk, a locale without resources, anything LoadLibraryEx surfaces --
+  // so there is no error set to enumerate. Raising on "unknown" statuses would
+  // let one unresolvable event abort the whole #each enumeration.
   if (is_partial_message(status)) {
     result = message;
   }
@@ -497,7 +483,7 @@ get_message(EVT_HANDLE hMetadata, EVT_HANDLE handle)
 }
 
 WCHAR*
-get_description(EVT_HANDLE handle, LANGID langID, EVT_HANDLE hRemote)
+get_description(EVT_HANDLE handle, LANGID langID, EVT_HANDLE hRemote, BOOL* resolved)
 {
 #define BUFSIZE 4096
   std::vector<WCHAR> buffer(BUFSIZE);
@@ -505,6 +491,9 @@ get_description(EVT_HANDLE handle, LANGID langID, EVT_HANDLE hRemote)
   ULONG status, count;
   std::vector<WCHAR> result;
   EVT_HANDLE hMetadata = nullptr;
+
+  if (resolved)
+    *resolved = TRUE;
 
   static PCWSTR eventProperties[] = { L"Event/System/Provider/@Name" };
   EVT_HANDLE renderContext =
@@ -558,7 +547,11 @@ cleanup:
   if (hMetadata)
     EvtClose(hMetadata);
 
+  // Both ways of giving up -- publisher metadata that cannot be opened, and
+  // EvtFormatMessage failing to resolve -- end up here with an empty result.
   if (result.empty()) {
+    if (resolved)
+      *resolved = FALSE;
     return _wcsdup(L"");
   }
 
