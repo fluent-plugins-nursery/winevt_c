@@ -2,7 +2,6 @@
 
 #include <sddl.h>
 #include <stdlib.h>
-#include <string>
 #include <vector>
 
 VALUE
@@ -127,18 +126,6 @@ connect_to_remote(LPWSTR computerName, LPWSTR domain, LPWSTR username, LPWSTR pa
   return hRemote;
 }
 
-static std::wstring
-guid_to_wstr(const GUID& guid)
-{
-  LPOLESTR p = nullptr;
-  if (FAILED(StringFromCLSID(guid, &p))) {
-    return std::wstring();
-  }
-  std::wstring s(p);
-  CoTaskMemFree(p);
-  return s;
-}
-
 static VALUE
 make_displayable_binary_string(PBYTE bin, size_t length)
 {
@@ -184,8 +171,7 @@ extract_user_evt_variants(PEVT_VARIANT pRenderedValues, DWORD propCount)
         if (pRenderedValues[i].StringVal == nullptr) {
           rb_ary_push(userValues, rb_utf8_str_new_cstr("(NULL)"));
         } else {
-          std::wstring wStr(pRenderedValues[i].StringVal);
-          rbObj = wstr_to_rb_str(CP_UTF8, &wStr[0], -1);
+          rbObj = wstr_to_rb_str(CP_UTF8, pRenderedValues[i].StringVal, -1);
           rb_ary_push(userValues, rbObj);
         }
         break;
@@ -250,10 +236,9 @@ extract_user_evt_variants(PEVT_VARIANT pRenderedValues, DWORD propCount)
         break;
       case EvtVarTypeGuid:
         if (pRenderedValues[i].GuidVal != nullptr) {
-          const GUID guid = *pRenderedValues[i].GuidVal;
-          std::wstring wstr = guid_to_wstr(guid);
-          if (!wstr.empty()) {
-              rbObj = wstr_to_rb_str(CP_UTF8, wstr.c_str(), -1);
+          WCHAR wsGuid[50];
+          if (StringFromGUID2(*pRenderedValues[i].GuidVal, wsGuid, _countof(wsGuid)) > 0) {
+              rbObj = wstr_to_rb_str(CP_UTF8, wsGuid, -1);
           } else {
               rbObj = rb_utf8_str_new_cstr("?");
           }
@@ -486,7 +471,11 @@ WCHAR*
 get_description(EVT_HANDLE handle, LANGID langID, EVT_HANDLE hRemote, BOOL* resolved)
 {
 #define BUFSIZE 4096
-  std::vector<WCHAR> buffer(BUFSIZE);
+  // rb_raise longjmps out of this frame without running C++ destructors, and
+  // both error paths below raise. Ruby owns this buffer so the GC still
+  // reclaims it on those paths; a std::vector here would leak its storage.
+  VALUE vbuffer;
+  WCHAR* buffer = RB_ALLOCV_N(WCHAR, vbuffer, BUFSIZE);
   ULONG bufferSizeNeeded = 0;
   ULONG status, count;
   std::vector<WCHAR> result;
@@ -499,14 +488,15 @@ get_description(EVT_HANDLE handle, LANGID langID, EVT_HANDLE hRemote, BOOL* reso
   EVT_HANDLE renderContext =
     EvtCreateRenderContext(1, eventProperties, EvtRenderContextValues);
   if (renderContext == nullptr) {
+    RB_ALLOCV_END(vbuffer);
     rb_raise(rb_eWinevtQueryError, "Failed to create renderContext");
   }
 
   if (EvtRender(renderContext,
                 handle,
                 EvtRenderEventValues,
-                buffer.size(),
-                &buffer.front(),
+                BUFSIZE,
+                buffer,
                 &bufferSizeNeeded,
                 &count) != FALSE) {
     status = ERROR_SUCCESS;
@@ -516,11 +506,20 @@ get_description(EVT_HANDLE handle, LANGID langID, EVT_HANDLE hRemote, BOOL* reso
 
   if (status != ERROR_SUCCESS) {
     EvtClose(renderContext);
+    RB_ALLOCV_END(vbuffer);
     raise_system_error(rb_eWinevtQueryError, status);
   }
 
   // Obtain buffer as EVT_VARIANT pointer. To avoid ErrorCide 87 in EvtRender.
-  const PEVT_VARIANT values = reinterpret_cast<PEVT_VARIANT>(&buffer.front());
+  const PEVT_VARIANT values = reinterpret_cast<PEVT_VARIANT>(buffer);
+
+  // EvtRender reports what it actually wrote, and the buffer is not zeroed, so
+  // values[0] is only meaningful once count says it was filled in. A truncated
+  // event -- more likely arriving over a remote session -- would otherwise hand
+  // EvtOpenPublisherMetadata whatever the buffer happened to contain.
+  if (count == 0 || values[0].Type != EvtVarTypeString) {
+    goto cleanup;
+  }
 
   // Open publisher metadata
   hMetadata = EvtOpenPublisherMetadata(
@@ -540,6 +539,8 @@ get_description(EVT_HANDLE handle, LANGID langID, EVT_HANDLE hRemote, BOOL* reso
 #undef BUFSIZE
 
 cleanup:
+
+  RB_ALLOCV_END(vbuffer);
 
   if (renderContext)
     EvtClose(renderContext);
