@@ -667,7 +667,10 @@ render_system_event(EVT_HANDLE hEvent, BOOL preserve_qualifiers, BOOL preserveSI
   DWORD dwBufferSize = 0;
   DWORD dwBufferUsed = 0;
   DWORD dwPropertyCount = 0;
-  VALUE vRenderedValues;
+  // The error path below runs RB_ALLOCV_END() whether or not RB_ALLOCV() was
+  // reached, and RB_ALLOCV_END() dereferences anything non-zero. Zero, not
+  // Qnil, is the value it treats as "nothing was allocated".
+  VALUE vRenderedValues = 0;
   PEVT_VARIANT pRenderedValues = NULL;
   WCHAR wsGuid[50];
   LPSTR pwsSid = NULL;
