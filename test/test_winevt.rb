@@ -27,6 +27,20 @@ class WinevtTest < Test::Unit::TestCase
       assert_true(@query.next)
     end
 
+    # Only the second and later #next calls reach the code that closes the
+    # previously stored handles, so call it repeatedly and keep using the query
+    # afterwards.
+    def test_next_repeatedly
+      query = Winevt::EventLog::Query.new("Application", "*")
+      5.times do
+        query.seek(:first) unless query.next
+      end
+      assert_nothing_raised do
+        query.each { |xml, message, string_inserts| break }
+      end
+      query.close
+    end
+
     def test_cancel
       assert_true(@query.cancel)
       assert_false(@query.next)
