@@ -492,10 +492,12 @@ get_description(EVT_HANDLE handle, LANGID langID, EVT_HANDLE hRemote, BOOL* reso
     rb_raise(rb_eWinevtQueryError, "Failed to create renderContext");
   }
 
+  // EvtRender sizes in bytes, not characters, and this call has no retry: a
+  // short size turns into ERROR_INSUFFICIENT_BUFFER and raises below.
   if (EvtRender(renderContext,
                 handle,
                 EvtRenderEventValues,
-                BUFSIZE,
+                BUFSIZE * sizeof(WCHAR),
                 buffer,
                 &bufferSizeNeeded,
                 &count) != FALSE) {
@@ -510,7 +512,7 @@ get_description(EVT_HANDLE handle, LANGID langID, EVT_HANDLE hRemote, BOOL* reso
     raise_system_error(rb_eWinevtQueryError, status);
   }
 
-  // Obtain buffer as EVT_VARIANT pointer. To avoid ErrorCide 87 in EvtRender.
+  // Obtain buffer as EVT_VARIANT pointer. To avoid ErrorCode 87 in EvtRender.
   const PEVT_VARIANT values = reinterpret_cast<PEVT_VARIANT>(buffer);
 
   // EvtRender reports what it actually wrote, and the buffer is not zeroed, so
