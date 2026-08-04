@@ -127,6 +127,17 @@ class WinevtTest < Test::Unit::TestCase
         @query.locale = "ex_EX" # Invalid Locale
       end
     end
+
+    # How many messages fail to resolve depends on what the machine has
+    # installed, so only the counter's contract is asserted here.
+    def test_unresolved_message_count
+      assert_equal(0, @query.unresolved_message_count)
+      @query.each { break }
+      counted = @query.unresolved_message_count
+      assert_operator(counted, :>=, 0)
+      @query.each { break }
+      assert_operator(@query.unresolved_message_count, :>=, counted)
+    end
   end
 
   class BookmarkTest < self
@@ -337,6 +348,17 @@ class WinevtTest < Test::Unit::TestCase
       assert_raise(Winevt::EventLog::ChannelNotFoundError) do
         subscribe.subscribe("NonExistentChannel", "*")
       end
+    end
+
+    # How many messages fail to resolve depends on what the machine has
+    # installed, so only the counter's contract is asserted here.
+    def test_unresolved_message_count
+      assert_equal(0, @subscribe.unresolved_message_count)
+      @subscribe.each { break }
+      counted = @subscribe.unresolved_message_count
+      assert_operator(counted, :>=, 0)
+      @subscribe.each { break }
+      assert_operator(@subscribe.unresolved_message_count, :>=, counted)
     end
   end
 

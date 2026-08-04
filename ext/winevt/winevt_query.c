@@ -160,6 +160,7 @@ rb_winevt_query_initialize(VALUE argc, VALUE *argv, VALUE self)
   winevtQuery->localeInfo = &default_locale;
   winevtQuery->remoteHandle = hRemoteHandle;
   winevtQuery->preserveSID = TRUE;
+  winevtQuery->unresolvedMessageCount = 0;
 
   ALLOCV_END(wchannelBuf);
   ALLOCV_END(wpathBuf);
@@ -296,12 +297,19 @@ rb_winevt_query_render(VALUE self, EVT_HANDLE event)
 }
 
 static VALUE
-rb_winevt_query_message(EVT_HANDLE event, LocaleInfo* localeInfo, EVT_HANDLE hRemote)
+rb_winevt_query_message(struct WinevtQuery* winevtQuery, EVT_HANDLE event)
 {
   WCHAR* wResult;
   VALUE utf8str;
+  BOOL resolved = TRUE;
 
-  wResult = get_description(event, localeInfo->langID, hRemote);
+  wResult = get_description(event,
+                            winevtQuery->localeInfo->langID,
+                            winevtQuery->remoteHandle,
+                            &resolved);
+  if (!resolved) {
+    winevtQuery->unresolvedMessageCount++;
+  }
   utf8str = wstr_to_rb_str(CP_UTF8, wResult, -1);
   free(wResult);
 
@@ -413,8 +421,7 @@ rb_winevt_query_each_yield(VALUE self)
   for (int i = 0; i < winevtQuery->count; i++) {
     rb_yield_values(3,
                     rb_winevt_query_render(self, winevtQuery->hEvents[i]),
-                    rb_winevt_query_message(winevtQuery->hEvents[i], winevtQuery->localeInfo,
-                                            winevtQuery->remoteHandle),
+                    rb_winevt_query_message(winevtQuery, winevtQuery->hEvents[i]),
                     rb_winevt_query_string_inserts(winevtQuery->hEvents[i]));
   }
   return Qnil;
@@ -587,6 +594,27 @@ rb_winevt_query_preserve_sid_p(VALUE self)
 }
 
 /*
+ * This method returns how many events had no description message. Message
+ * resolution fails for reasons outside the caller's control (a provider whose
+ * message DLL is gone, a locale without resources), and #each degrades to an
+ * empty message instead of aborting the enumeration. The counter increases
+ * monotonically, so callers can poll it and take the difference to tell a few
+ * unresolvable events apart from a channel that resolves nothing.
+ *
+ * @return [Integer]
+ */
+static VALUE
+rb_winevt_query_get_unresolved_message_count(VALUE self)
+{
+  struct WinevtQuery* winevtQuery;
+
+  TypedData_Get_Struct(
+    self, struct WinevtQuery, &rb_winevt_query_type, winevtQuery);
+
+  return ULL2NUM(winevtQuery->unresolvedMessageCount);
+}
+
+/*
  * This method cancels channel query.
  *
  * @return [Boolean]
@@ -742,6 +770,7 @@ Init_winevt_query(VALUE rb_cEventLog)
    * @since 0.11.0
    */
   rb_define_method(rb_cQuery, "preserve_sid=", rb_winevt_query_set_preserve_sid, 1);
+  rb_define_method(rb_cQuery, "unresolved_message_count", rb_winevt_query_get_unresolved_message_count, 0);
   /*
    * @since 0.9.1
    */
