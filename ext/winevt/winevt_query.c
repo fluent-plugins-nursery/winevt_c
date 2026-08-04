@@ -260,6 +260,15 @@ rb_winevt_query_next(VALUE self)
   }
 
   if (status == ERROR_SUCCESS) {
+    // #each frees each batch in its ensure block; this covers calling #next
+    // directly in a loop.
+    for (int i = 0; i < winevtQuery->count; i++) {
+      if (winevtQuery->hEvents[i]) {
+        EvtClose(winevtQuery->hEvents[i]);
+        winevtQuery->hEvents[i] = NULL;
+      }
+    }
+
     winevtQuery->count = count;
     for (int i = 0; i < count; i++) {
       winevtQuery->hEvents[i] = hEvents[i];
