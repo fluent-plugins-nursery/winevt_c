@@ -368,9 +368,17 @@ class WinevtTest < Test::Unit::TestCase
     end
 
     def test_each
-      assert do
-        @channel.each
-      end
+      channels = []
+      @channel.each { |channel| channels << channel }
+      # Security's configuration cannot be read without elevation. Enumeration
+      # used to stop at that channel, which left only the two that precede it.
+      assert_operator(channels.size, :>, 2)
+      assert_include(channels, "Application")
+      assert_include(channels, "System")
+    end
+
+    def test_each_without_block
+      assert_kind_of(Enumerator, @channel.each)
     end
 
     def test_force_enumerate

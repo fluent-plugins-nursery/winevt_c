@@ -177,6 +177,14 @@ DWORD check_subscribable_with_channel_config_type(int Id, PEVT_VARIANT pProperty
 #undef EVENT_DEBUG_TYPE
 #undef EVENT_ANALYTICAL_TYPE
 
+// A per-channel failure skips that channel, but memory exhaustion is not a
+// property of any channel and would silently shorten the whole list.
+static BOOL
+is_resource_exhaustion(DWORD status)
+{
+  return status == ERROR_OUTOFMEMORY || status == ERROR_NOT_ENOUGH_MEMORY;
+}
+
 /*
  * Enumerate Windows EventLog channels
  *
@@ -245,51 +253,45 @@ rb_winevt_channel_each(VALUE self)
     }
     hChannelConfig = EvtOpenChannelConfig(NULL, buffer, 0);
     if (NULL == hChannelConfig) {
-      _snprintf_s(errBuf,
-                  _countof(errBuf),
-                  _TRUNCATE,
-                  "EvtOpenChannelConfig failed with %lu.\n",
-                  GetLastError());
-
-      EvtClose(winevtChannel->channels);
-      winevtChannel->channels = NULL;
+      status = GetLastError();
 
       free(buffer);
       buffer = NULL;
       bufferSize = 0;
 
-      rb_raise(rb_eRuntimeError, errBuf);
+      if (is_resource_exhaustion(status)) {
+        EvtClose(winevtChannel->channels);
+        winevtChannel->channels = NULL;
+
+        rb_raise(rb_eRuntimeError, "EvtOpenChannelConfig failed with %lu\n", status);
+      }
+
+      continue;
     }
 
     status = is_subscribable_channel_p(hChannelConfig, winevtChannel->force_enumerate);
     EvtClose(hChannelConfig);
 
-    if (status == ERROR_INVALID_DATA) {
+    if (is_resource_exhaustion(status)) {
+      EvtClose(winevtChannel->channels);
+      winevtChannel->channels = NULL;
+
+      free(buffer);
+      buffer = NULL;
+      bufferSize = 0;
+
+      rb_raise(rb_eRuntimeError, "Failed to read channel configuration with %lu\n", status);
+    }
+
+    // Not fatal: Security's configuration cannot be read without elevation, and
+    // it is the third channel EvtOpenChannelEnum returns, so raising here
+    // truncated the whole enumeration to two channels.
+    if (status != ERROR_SUCCESS) {
       free(buffer);
       buffer = NULL;
       bufferSize = 0;
 
       continue;
-    }
-
-    if (status == ERROR_OUTOFMEMORY) {
-      EvtClose(winevtChannel->channels);
-      winevtChannel->channels = NULL;
-
-      free(buffer);
-      buffer = NULL;
-      bufferSize = 0;
-
-      rb_raise(rb_eRuntimeError, "realloc failed\n");
-    } else if (status != ERROR_SUCCESS) {
-      EvtClose(winevtChannel->channels);
-      winevtChannel->channels = NULL;
-
-      free(buffer);
-      buffer = NULL;
-      bufferSize = 0;
-
-      rb_raise(rb_eRuntimeError, "is_subscribe_channel_p is failed with %ld\n", status);
     }
 
     utf8str = wstr_to_rb_str(CP_UTF8, buffer, -1);
