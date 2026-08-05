@@ -177,6 +177,14 @@ DWORD check_subscribable_with_channel_config_type(int Id, PEVT_VARIANT pProperty
 #undef EVENT_DEBUG_TYPE
 #undef EVENT_ANALYTICAL_TYPE
 
+// A per-channel failure skips that channel, but memory exhaustion is not a
+// property of any channel and would silently shorten the whole list.
+static BOOL
+is_resource_exhaustion(DWORD status)
+{
+  return status == ERROR_OUTOFMEMORY || status == ERROR_NOT_ENOUGH_MEMORY;
+}
+
 /*
  * Enumerate Windows EventLog channels
  *
@@ -245,9 +253,18 @@ rb_winevt_channel_each(VALUE self)
     }
     hChannelConfig = EvtOpenChannelConfig(NULL, buffer, 0);
     if (NULL == hChannelConfig) {
+      status = GetLastError();
+
       free(buffer);
       buffer = NULL;
       bufferSize = 0;
+
+      if (is_resource_exhaustion(status)) {
+        EvtClose(winevtChannel->channels);
+        winevtChannel->channels = NULL;
+
+        rb_raise(rb_eRuntimeError, "EvtOpenChannelConfig failed with %lu\n", status);
+      }
 
       continue;
     }
@@ -255,7 +272,7 @@ rb_winevt_channel_each(VALUE self)
     status = is_subscribable_channel_p(hChannelConfig, winevtChannel->force_enumerate);
     EvtClose(hChannelConfig);
 
-    if (status == ERROR_OUTOFMEMORY) {
+    if (is_resource_exhaustion(status)) {
       EvtClose(winevtChannel->channels);
       winevtChannel->channels = NULL;
 
@@ -263,7 +280,7 @@ rb_winevt_channel_each(VALUE self)
       buffer = NULL;
       bufferSize = 0;
 
-      rb_raise(rb_eRuntimeError, "realloc failed\n");
+      rb_raise(rb_eRuntimeError, "Failed to read channel configuration with %lu\n", status);
     }
 
     // Not fatal: Security's configuration cannot be read without elevation, and
