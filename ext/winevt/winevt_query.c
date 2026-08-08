@@ -1,5 +1,7 @@
 #include <winevt_c.h>
 
+#include <ruby/thread.h>
+
 /* clang-format off */
 /*
  * Document-class: Winevt::EventLog::Query
@@ -69,6 +71,33 @@ rb_winevt_query_alloc(VALUE klass)
   obj =
     TypedData_Make_Struct(klass, struct WinevtQuery, &rb_winevt_query_type, winevtQuery);
   return obj;
+}
+
+struct query_args
+{
+  EVT_HANDLE session;
+  LPCWSTR channel;
+  LPCWSTR xpath;
+  DWORD flags;
+  EVT_HANDLE handle;
+  DWORD error_code;
+};
+
+/*
+ * GetLastError is read here rather than by the caller: it belongs to the thread
+ * that made the call and does not survive re-acquiring the GVL.
+ */
+static void*
+query_without_gvl(void* ptr)
+{
+  struct query_args* args = (struct query_args*)ptr;
+
+  args->handle = EvtQuery(args->session, args->channel, args->xpath, args->flags);
+  if (!args->handle) {
+    args->error_code = GetLastError();
+  }
+
+  return NULL;
 }
 
 /*
@@ -141,10 +170,30 @@ rb_winevt_query_initialize(VALUE argc, VALUE *argv, VALUE self)
 
   TypedData_Get_Struct(self, struct WinevtQuery, &rb_winevt_query_type, winevtQuery);
 
-  winevtQuery->query = EvtQuery(
-    hRemoteHandle, evtChannel, evtXPath, flags);
+  if (hRemoteHandle != NULL) {
+    struct query_args args;
+
+    args.session = hRemoteHandle;
+    args.channel = evtChannel;
+    args.xpath = evtXPath;
+    args.flags = flags;
+    args.handle = NULL;
+    args.error_code = ERROR_SUCCESS;
+
+    // EvtOpenSession only builds the session object; this is the first call
+    // that reaches the remote machine, so it is the one that can stall.
+    rb_thread_call_without_gvl(query_without_gvl, &args, NULL, NULL);
+
+    winevtQuery->query = args.handle;
+    err = args.error_code;
+  } else {
+    winevtQuery->query = EvtQuery(hRemoteHandle, evtChannel, evtXPath, flags);
+    if (winevtQuery->query == NULL) {
+      err = GetLastError();
+    }
+  }
+
   if (winevtQuery->query == NULL) {
-    err = GetLastError();
     if (hRemoteHandle != NULL) {
       EvtClose(hRemoteHandle);
     }
