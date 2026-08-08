@@ -72,6 +72,14 @@ class WinevtTest < Test::Unit::TestCase
       end
     end
 
+    def test_render_system_event_record_id
+      @query.render_as_xml = false
+      @query.each do |system, _message, _inserts|
+        assert_match(/\A\d+\z/, system["EventRecordID"])
+        break
+      end
+    end
+
     data("first symbol" => [true, :first],
          "first string" => [true, "first"],
          "last symbol" => [true, :last],
