@@ -90,7 +90,7 @@ rb_winevt_subscribe_alloc(VALUE klass)
 }
 
 /*
- * Initalize Subscribe class.
+ * Initialize Subscribe class.
  *
  * @return [Subscribe]
  *

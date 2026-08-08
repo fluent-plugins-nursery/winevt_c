@@ -17,7 +17,7 @@
  *
  *  puts @bookmark.render
  */
-/* clang-format pn */
+/* clang-format on */
 
 VALUE rb_cBookmark;
 
@@ -54,9 +54,9 @@ rb_winevt_bookmark_alloc(VALUE klass)
 }
 
 /*
- * Initalize Bookmark class. Receive XML string or nil.
+ * Initialize Bookmark class. Receive XML string or nil.
  *
- * @overload initailize(options={})
+ * @overload initialize(options={})
  *   @option options [String] XML rendered Bookmark string.
  * @return [Bookmark]
  *
