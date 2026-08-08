@@ -14,8 +14,10 @@ have_library("wevtapi")
 have_func("EvtQuery", "winevt.h")
 have_library("advapi32")
 have_library("ole32")
+# $defs reaches both the C and the C++ compilations; $CFLAGS only reaches C,
+# which left the guard in winevt_c.h permanently open in winevt_utils.cpp.
 if have_macro("RB_ALLOCV")
-  $CFLAGS << " -DHAVE_RB_ALLOCV=1 "
+  $defs << "-DHAVE_RB_ALLOCV"
 end
 
 $LDFLAGS << " -lwevtapi -ladvapi32 -lole32"
