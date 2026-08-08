@@ -49,7 +49,7 @@ rb_winevt_locale_alloc(VALUE klass)
 }
 
 /*
- * Initalize Locale class.
+ * Initialize Locale class.
  *
  * @return [Locale]
  *

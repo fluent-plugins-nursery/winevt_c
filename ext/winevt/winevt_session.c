@@ -14,7 +14,7 @@
  *  @session.domain = "<EXAMPLEGROUP>"
  *  @session.username = "<username>"
  *  @session.password = "<password>"
- *  # Then pass @session veriable into Winevt::EventLog::Query or
+ *  # Then pass @session variable into Winevt::EventLog::Query or
  *  # Winevt::EventLog::Subscribe#subscribe
  *  @query = Winevt::EventLog::Query.new(
  *    "Application",
@@ -80,7 +80,7 @@ rb_winevt_session_alloc(VALUE klass)
 }
 
 /*
- * Initalize Session class.
+ * Initialize Session class.
  *
  * @overload initialize(server, domain=nil, username=nil, password=nil, flags=Winevt::EventLog::Session::RpcLoginFlag::AuthDefault)
  *   @param server [String] Server ip address or fqdn.
@@ -422,7 +422,7 @@ Init_winevt_session(VALUE rb_cEventLog)
    */
   rb_define_const(rb_cRpcLoginFlag, "AuthDefault", LONG2NUM(EvtRpcLoginAuthDefault));
   /*
-   * EVT_RPC_LOGIN_FLAGS enumeration: EvtRpcLoginAuthNegociate
+   * EVT_RPC_LOGIN_FLAGS enumeration: EvtRpcLoginAuthNegotiate
    * @see https://docs.microsoft.com/en-us/windows/win32/api/winevt/ne-winevt-evt_rpc_login_flags
    */
   rb_define_const(rb_cRpcLoginFlag, "AuthNegociate", LONG2NUM(EvtRpcLoginAuthNegotiate));

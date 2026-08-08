@@ -101,7 +101,7 @@ query_without_gvl(void* ptr)
 }
 
 /*
- * Initalize Query class.
+ * Initialize Query class.
  *
  * @overload initialize(channel, xpath, session=nil)
  *   @param channel [String] Querying EventLog channel.

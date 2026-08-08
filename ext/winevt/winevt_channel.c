@@ -56,7 +56,7 @@ rb_winevt_channel_alloc(VALUE klass)
 }
 
 /*
- * Initalize Channel class.
+ * Initialize Channel class.
  *
  * @return [Channel]
  *
