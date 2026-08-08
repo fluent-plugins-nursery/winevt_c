@@ -39,7 +39,7 @@ close_handles(struct WinevtQuery* winevtQuery)
     winevtQuery->query = NULL;
   }
 
-  for (int i = 0; i < winevtQuery->count; i++) {
+  for (ULONG i = 0; i < winevtQuery->count; i++) {
     if (winevtQuery->hEvents[i]) {
       EvtClose(winevtQuery->hEvents[i]);
       winevtQuery->hEvents[i] = NULL;
@@ -263,7 +263,7 @@ rb_winevt_query_next(VALUE self)
   if (status == ERROR_SUCCESS) {
     // #each frees each batch in its ensure block; this covers calling #next
     // directly in a loop.
-    for (int i = 0; i < winevtQuery->count; i++) {
+    for (ULONG i = 0; i < winevtQuery->count; i++) {
       if (winevtQuery->hEvents[i]) {
         EvtClose(winevtQuery->hEvents[i]);
         winevtQuery->hEvents[i] = NULL;
@@ -271,7 +271,7 @@ rb_winevt_query_next(VALUE self)
     }
 
     winevtQuery->count = count;
-    for (int i = 0; i < count; i++) {
+    for (ULONG i = 0; i < count; i++) {
       winevtQuery->hEvents[i] = hEvents[i];
     }
 
@@ -399,7 +399,7 @@ rb_winevt_query_close_handle(VALUE self)
 
   TypedData_Get_Struct(self, struct WinevtQuery, &rb_winevt_query_type, winevtQuery);
 
-  for (int i = 0; i < winevtQuery->count; i++) {
+  for (ULONG i = 0; i < winevtQuery->count; i++) {
     if (winevtQuery->hEvents[i] != NULL) {
       EvtClose(winevtQuery->hEvents[i]);
       winevtQuery->hEvents[i] = NULL;
@@ -418,7 +418,7 @@ rb_winevt_query_each_yield(VALUE self)
 
   TypedData_Get_Struct(self, struct WinevtQuery, &rb_winevt_query_type, winevtQuery);
 
-  for (int i = 0; i < winevtQuery->count; i++) {
+  for (ULONG i = 0; i < winevtQuery->count; i++) {
     rb_yield_values(3,
                     rb_winevt_query_render(self, winevtQuery->hEvents[i]),
                     rb_winevt_query_message(winevtQuery, winevtQuery->hEvents[i]),

@@ -56,7 +56,7 @@ close_handles(struct WinevtSubscribe* winevtSubscribe)
     winevtSubscribe->bookmark = NULL;
   }
 
-  for (int i = 0; i < winevtSubscribe->count; i++) {
+  for (DWORD i = 0; i < winevtSubscribe->count; i++) {
     if (winevtSubscribe->hEvents[i]) {
       EvtClose(winevtSubscribe->hEvents[i]);
       winevtSubscribe->hEvents[i] = NULL;
@@ -303,7 +303,7 @@ is_rate_limit_exceeded(struct WinevtSubscribe* winevtSubscribe)
 {
   time_t now;
 
-  if (winevtSubscribe->rateLimit == SUBSCRIBE_RATE_INFINITE)
+  if (winevtSubscribe->rateLimit == (DWORD)SUBSCRIBE_RATE_INFINITE)
     return FALSE;
 
   time(&now);
@@ -324,7 +324,7 @@ update_to_reflect_rate_limit_state(struct WinevtSubscribe* winevtSubscribe, ULON
 {
   time_t lastTime = 0;
 
-  if (winevtSubscribe->rateLimit == SUBSCRIBE_RATE_INFINITE)
+  if (winevtSubscribe->rateLimit == (DWORD)SUBSCRIBE_RATE_INFINITE)
     return;
 
   time(&lastTime);
@@ -400,7 +400,7 @@ rb_winevt_subscribe_next(VALUE self)
   if (status == ERROR_SUCCESS) {
     // #each frees each batch in its ensure block; this covers calling #next
     // directly in a loop.
-    for (int i = 0; i < winevtSubscribe->count; i++) {
+    for (DWORD i = 0; i < winevtSubscribe->count; i++) {
       if (winevtSubscribe->hEvents[i]) {
         EvtClose(winevtSubscribe->hEvents[i]);
         winevtSubscribe->hEvents[i] = NULL;
@@ -408,7 +408,7 @@ rb_winevt_subscribe_next(VALUE self)
     }
 
     winevtSubscribe->count = count;
-    for (int i = 0; i < count; i++) {
+    for (ULONG i = 0; i < count; i++) {
       winevtSubscribe->hEvents[i] = hEvents[i];
       EvtUpdateBookmark(winevtSubscribe->bookmark, winevtSubscribe->hEvents[i]);
     }
@@ -471,7 +471,7 @@ rb_winevt_subscribe_close_handle(VALUE self)
   TypedData_Get_Struct(
     self, struct WinevtSubscribe, &rb_winevt_subscribe_type, winevtSubscribe);
 
-  for (int i = 0; i < winevtSubscribe->count; i++) {
+  for (DWORD i = 0; i < winevtSubscribe->count; i++) {
     if (winevtSubscribe->hEvents[i] != NULL) {
       EvtClose(winevtSubscribe->hEvents[i]);
       winevtSubscribe->hEvents[i] = NULL;
@@ -490,7 +490,7 @@ rb_winevt_subscribe_each_yield(VALUE self)
   TypedData_Get_Struct(
     self, struct WinevtSubscribe, &rb_winevt_subscribe_type, winevtSubscribe);
 
-  for (int i = 0; i < winevtSubscribe->count; i++) {
+  for (DWORD i = 0; i < winevtSubscribe->count; i++) {
     rb_yield_values(3,
                     rb_winevt_subscribe_render(self, winevtSubscribe->hEvents[i]),
                     rb_winevt_subscribe_message(winevtSubscribe, winevtSubscribe->hEvents[i]),
@@ -573,7 +573,7 @@ rb_winevt_subscribe_set_rate_limit(VALUE self, VALUE rb_rate_limit)
 
   rateLimit = NUM2LONG(rb_rate_limit);
 
-  if ((rateLimit != SUBSCRIBE_RATE_INFINITE) && (rateLimit < 10 || rateLimit % 10)) {
+  if ((rateLimit != (DWORD)SUBSCRIBE_RATE_INFINITE) && (rateLimit < 10 || rateLimit % 10)) {
     rb_raise(rb_eArgError, "Specify a multiples of 10 or RATE_INFINITE constant");
   } else {
     winevtSubscribe->rateLimit = rateLimit;
