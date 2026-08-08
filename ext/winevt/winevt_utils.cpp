@@ -815,16 +815,20 @@ render_system_event(EVT_HANDLE hEvent, BOOL preserve_qualifiers, BOOL preserveSI
                  rb_str_new2("TimeCreated"),
                  Qnil);
   }
-  _snprintf_s(buffer,
-              _countof(buffer),
-              _TRUNCATE,
-              "%llu",
-              pRenderedValues[EvtSystemEventRecordId].UInt64Val);
-  rb_hash_aset(hash,
-               rb_str_new2("EventRecordID"),
-               (EvtVarTypeNull == pRenderedValues[EvtSystemEventRecordId].UInt64Val)
-                 ? Qnil
-                 : rb_str_new2(buffer));
+  if (EvtVarTypeNull != pRenderedValues[EvtSystemEventRecordId].Type) {
+    _snprintf_s(buffer,
+                _countof(buffer),
+                _TRUNCATE,
+                "%llu",
+                pRenderedValues[EvtSystemEventRecordId].UInt64Val);
+    rb_hash_aset(hash,
+                 rb_str_new2("EventRecordID"),
+                 rb_str_new2(buffer));
+  } else {
+    rb_hash_aset(hash,
+                 rb_str_new2("EventRecordID"),
+                 Qnil);
+  }
 
   if (EvtVarTypeNull != pRenderedValues[EvtSystemActivityID].Type) {
     const GUID* Guid = pRenderedValues[EvtSystemActivityID].GuidVal;
