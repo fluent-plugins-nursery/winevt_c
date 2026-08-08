@@ -16,16 +16,6 @@
 #endif /* WIN32_WINNT */
 #define _WIN32_WINNT MINIMUM_WINDOWS_VERSION
 
-/* The sources use both spellings. Ruby provides the RB_-prefixed names and
- * aliases the plain ones to them; where the prefixed names are missing, define
- * them from the plain ones -- not the other way round, which would leave the
- * names this file actually needs undefined. */
-#if !defined(HAVE_RB_ALLOCV)
-#define RB_ALLOCV     ALLOCV
-#define RB_ALLOCV_N   ALLOCV_N
-#define RB_ALLOCV_END ALLOCV_END
-#endif
-
 #include <time.h>
 #include <winevt.h>
 #define EventQuery(object) ((struct WinevtQuery*)DATA_PTR(object))
